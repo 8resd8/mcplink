@@ -17,14 +17,15 @@ COPY settings.gradle .
 COPY src ./src
 
 RUN chmod +x gradlew
-
 RUN ./gradlew clean build -x test
 
 FROM bellsoft/liberica-openjdk-alpine:17
 
-ARG JAR_FILE=build/libs/*.jar
-COPY ${JAR_FILE} mcplink.jar
+WORKDIR /app
 
-ENTRYPOINT ["java", "-jar", "mcplink.jar"]
+ARG JAR_FILE=build/libs/*.jar
+COPY --from=builder ${JAR_FILE} /app/mcplink.jar
+
+ENTRYPOINT ["java", "-jar", "/app/mcplink.jar"]
 
 EXPOSE 8081
