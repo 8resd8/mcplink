@@ -1,5 +1,4 @@
 #FROM  bellsoft/liberica-openjdk-alpine:17 AS build
-#LABEL authors="resd"
 #ARG JAR_FILE=build/libs/mcplink-0.0.1-SNAPSHOT.jar
 #COPY ${JAR_FILE} mcplink.jar
 #
