@@ -1,0 +1,20 @@
+version: '3.8'
+
+services:
+  backend:
+    container_name: backend
+
+    image: resd/backend:latest
+
+    ports:
+      - 80:8081
+
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-default} # 현재는 기본
+
+    networks:
+      - mcplink-network
+
+networks:
+  mcplink-network:
+      driver: bridge
