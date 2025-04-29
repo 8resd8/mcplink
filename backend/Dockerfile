@@ -30,7 +30,7 @@ WORKDIR /app
 
 # ARG JAR_FILE=build/libs/mcplink-0.0.1-SNAPSHOT.jar # 주석 처리 또는 제거
 
-COPY --from=builder /tmp/mcplink-0.0.1-SNAPSHOT.jar /app/mcplink.jar # <-- 소스 경로 변경
+COPY --from=builder /tmp/mcplink-0.0.1-SNAPSHOT.jar /app/mcplink.jar
 
 ENTRYPOINT ["java", "-jar", "/app/mcplink.jar"]
 
