@@ -16,7 +16,7 @@ echo "Docker Image pull... ${IMAGE_TO_DEPLOY}"
 docker pull "${IMAGE_TO_DEPLOY}" || { echo "오류: 이미지 풀(pull) 실패"; exit 1; }
 
 echo "기존 컨테이너 중지 및 삭제..."
-docker-compose down
+docker compose down
 
 echo "New Container Running... ${IMAGE_TO_DEPLOY}"
 DEPLOY_IMAGE_NAME="${IMAGE_TO_DEPLOY}" docker compose up -d
