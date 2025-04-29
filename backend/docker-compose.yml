@@ -16,7 +16,7 @@ services:
 #      - /home/ubuntu/link:/home/ubuntu/link
 
     environment:
-      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-default} # 현재는 기본
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-default}
 
     networks:
       - mcplink-network
