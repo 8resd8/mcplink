@@ -18,6 +18,7 @@ COPY src ./src
 
 RUN chmod +x gradlew
 RUN ./gradlew clean build -x test
+# 예: RUN ls -al build/libs/ # cache Buster 1
 RUN ls -al build/libs/
 
 FROM bellsoft/liberica-openjdk-alpine:17
