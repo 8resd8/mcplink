@@ -24,7 +24,7 @@ FROM bellsoft/liberica-openjdk-alpine:17
 
 WORKDIR /app
 
-ARG JAR_FILE=build/libs/*.jar
+ARG JAR_FILE=build/libs/mcplink-0.0.1-SNAPSHOT.jar
 COPY --from=builder ${JAR_FILE} /app/mcplink.jar
 
 ENTRYPOINT ["java", "-jar", "/app/mcplink.jar"]
