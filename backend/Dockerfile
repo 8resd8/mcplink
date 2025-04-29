@@ -8,7 +8,7 @@
 #EXPOSE 8081
 
 FROM gradle:8.11.1-jdk17 AS builder
-LABEL cache_buster=v6
+LABEL cache_buster=v7
 
 COPY gradlew .
 COPY gradle ./gradle
