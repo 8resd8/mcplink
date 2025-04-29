@@ -19,7 +19,7 @@ echo "기존 컨테이너 중지 및 삭제..."
 docker-compose down
 
 echo "New Container Running... ${IMAGE_TO_DEPLOY}"
-DEPLOY_IMAGE_NAME="${IMAGE_TO_DEPLOY}" docker compose up -d --force-recreate || { echo "오류: 새로운 컨테이너 실행 실패"; exit 1; }
+DEPLOY_IMAGE_NAME="${IMAGE_TO_DEPLOY}" docker compose up -d
 
 echo "==== 배포 완료! ===="
 
