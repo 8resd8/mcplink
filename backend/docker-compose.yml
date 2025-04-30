@@ -4,7 +4,8 @@ services:
   backend:
     container_name: backend
 
-    image: resd/backend:latest
+#    image: resd/backend:latest
+    image: resd/backend:${BACKEND_IMAGE_TAG}
 
     ports:
       - 8081:8081
