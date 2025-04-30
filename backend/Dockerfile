@@ -7,7 +7,8 @@
 #EXPOSE 8081
 
 FROM gradle:8.11.1-jdk17 AS builder
-LABEL cache_buster=v9
+
+WORKDIR /app
 
 COPY gradlew .
 COPY gradle ./gradle
@@ -27,7 +28,7 @@ FROM bellsoft/liberica-openjdk-alpine:17
 
 WORKDIR /app
 
-COPY --from=builder build/libs/mcplink-0.0.1-SNAPSHOT.jar /app/mcplink.jar
+COPY --from=builder /app/build/libs/mcplink-0.0.1-SNAPSHOT.jar /app/mcplink.jar
 #COPY --from=builder /tmp/mcplink-0.0.1-SNAPSHOT.jar /app/mcplink.jar
 
 ENTRYPOINT ["java", "-jar", "/app/mcplink.jar"]
