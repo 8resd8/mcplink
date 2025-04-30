@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-IMAGE_TO_DEPLOY="$1"
+IMAGE_TO_DEPLOY="${BACKEND_IMAGE_TAG}"
 
 if [ -z "$IMAGE_TO_DEPLOY" ]; then
   echo "오류: 배포할 Docker 이미지 이름이 지정되지 않았습니다."
