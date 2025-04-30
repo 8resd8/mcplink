@@ -3,7 +3,6 @@ version: '3.8'
 services:
   backend:
     container_name: backend
-#    container_name: ${CONTAINER_NAME}
 
     image: resd/backend:${BACKEND_IMAGE_TAG} # deploy.sh에 있는 값 읽음
 
