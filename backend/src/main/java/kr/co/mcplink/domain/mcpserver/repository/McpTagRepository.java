@@ -1,4 +1,4 @@
 package kr.co.mcplink.domain.mcpserver.repository;
 
-public interface McpServerRepository {
+public interface McpTagRepository {
 }
