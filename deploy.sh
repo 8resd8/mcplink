@@ -3,6 +3,7 @@ set -e
 
 # env 읽기
 if [ -f .env ]; then
+  set -a
     source .env
 fi
 
@@ -13,17 +14,19 @@ if [ -z "$IMAGE_TO_DEPLOY" ]; then
   exit 1
 fi
 
+# 이미지 전체 이름
 FULL_IMAGE_NAME="resd/backend:${IMAGE_TO_DEPLOY}"
 echo "==== 배포 시작: ${IMAGE_TO_DEPLOY} ===="
+
+# 몽고디비 실행
+docker compose up -d mongodb --wait || { echo "오류: MongoDB 컨테이너 시작 실패"; exit 1; }
 
 echo "Docker Image pull... ${IMAGE_TO_DEPLOY}"
 docker pull "${FULL_IMAGE_NAME}" || { echo "오류: 이미지 풀(${FULL_IMAGE_NAME}) 실패"; exit 1; }
 
-echo "기존 컨테이너 중지..."
-docker compose down
-
+# 기존 백엔드 컨테이너 중지 / 삭제 / 생성 (--no-deps: no dependencies, 백엔드 자체만 적용)
 echo "New Container Running... ${IMAGE_TO_DEPLOY}"
-docker compose up -d --force-recreate --pull always
+docker compose up -d --no-deps --force-recreate backend --wait
 
 echo "Docker Image prune"
 docker image prune -f || true
