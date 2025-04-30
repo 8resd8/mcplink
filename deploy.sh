@@ -1,6 +1,13 @@
 #!/bin/bash
 set -e
 
+# env 읽기
+if [ -f .env ]; then
+    source .env
+fi
+
+echo "${BLUE_PORT}"
+
 IMAGE_TO_DEPLOY="${BACKEND_IMAGE_TAG}"
 
 if [ -z "$IMAGE_TO_DEPLOY" ]; then
