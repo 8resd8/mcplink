@@ -22,17 +22,20 @@ public class McpServer {
 
     @Id
     private String id;
-
     private Long seq;
-    private String type;
+
+    @Builder.Default
+    private String type = "STDIO";
     private String url;
     private int stars;
     private int views;
-    private boolean scanned;
+    @Builder.Default
+    private boolean scanned = true;
+
+    private List<String> tags;
 
     @Field("mcpServers")
     private McpServerDetail detail;
-    private List<String> tags;
 
     @Getter
     @Builder
