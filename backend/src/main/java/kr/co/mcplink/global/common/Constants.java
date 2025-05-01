@@ -2,8 +2,9 @@ package kr.co.mcplink.global.common;
 
 public final class Constants {
 
-    // API 버전
+    // API 엔드포인트
     public static final String API_VERSION                      = "/api/v1";
+    public static final String MCP_BASE_PATH                    = API_VERSION + "/mcp/servers";
 
     // 컬렉션 이름 (MongoDB)
     public static final String COLLECTION_DATABASE_SEQUENCE     = "database_sequences";
