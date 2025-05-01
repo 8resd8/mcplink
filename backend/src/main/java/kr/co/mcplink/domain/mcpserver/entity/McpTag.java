@@ -17,7 +17,6 @@ public class McpTag {
 
     @Id
     private String id;
-
     private Long seq;
 
     @Indexed(unique = true)
