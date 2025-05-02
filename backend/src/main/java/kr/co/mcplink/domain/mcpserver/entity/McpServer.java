@@ -28,7 +28,8 @@ public class McpServer {
     private String type = "STDIO";
     private String url;
     private int stars;
-    private int views;
+    @Builder.Default
+    private int views = 0;
     @Builder.Default
     private boolean scanned = true;
 
