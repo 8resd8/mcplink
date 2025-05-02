@@ -27,13 +27,11 @@
   <input 
     type="search" 
     class="grow" 
-    placeholder="MCP 이름 또는 키워드 검색..." 
+    placeholder="MCP name or keyword search..." 
     bind:value={searchValue} 
     on:input={handleSearch}
     on:keydown={handleKeyDown}
   />
-  <kbd class="kbd kbd-sm">⌘</kbd>
-  <kbd class="kbd kbd-sm">K</kbd>
 </label>
 
   
