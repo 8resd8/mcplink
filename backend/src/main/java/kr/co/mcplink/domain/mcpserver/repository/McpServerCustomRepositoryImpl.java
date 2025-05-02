@@ -24,6 +24,31 @@ public class McpServerCustomRepositoryImpl implements McpServerCustomRepository 
     }
 
     @Override
+    public long countRemaining(Long cursor) {
+        Query query = new Query();
+
+        if (cursor != null) {
+            McpServer last = mongoTemplate.findOne(
+                    Query.query(Criteria.where("seq").is(cursor)),
+                    McpServer.class
+            );
+            if (last != null) {
+                long lastStars = last.getStars();
+
+                query.addCriteria(new Criteria().orOperator(
+                        Criteria.where("stars").lt(lastStars),
+                        new Criteria().andOperator(
+                                Criteria.where("stars").is(lastStars),
+                                Criteria.where("seq").gt(cursor)
+                        )
+                ));
+            }
+        }
+
+        return mongoTemplate.count(query, McpServer.class);
+    }
+
+    @Override
     public List<McpServer> listAll(int limit, Long cursor) {
         Query query = new Query();
 
@@ -61,6 +86,33 @@ public class McpServerCustomRepositoryImpl implements McpServerCustomRepository 
                 .addCriteria(Criteria.where("mcpServers.name").regex(p));
 
         return mongoTemplate.count(regexCount, McpServer.class);
+    }
+
+    @Override
+    public long countRemainingByName(String q, Long cursor) {
+        Pattern p = Pattern.compile(".*" + Pattern.quote(q) + ".*", Pattern.CASE_INSENSITIVE);
+        Query query = new Query()
+                .addCriteria(Criteria.where("mcpServers.name").regex(p));
+
+        if (cursor != null) {
+            McpServer last = mongoTemplate.findOne(
+                    Query.query(Criteria.where("seq").is(cursor)),
+                    McpServer.class
+            );
+            if (last != null) {
+                long lastStars = last.getStars();
+
+                query.addCriteria(new Criteria().orOperator(
+                        Criteria.where("stars").lt(lastStars),
+                        new Criteria().andOperator(
+                                Criteria.where("stars").is(lastStars),
+                                Criteria.where("seq").gt(cursor)
+                        )
+                ));
+            }
+        }
+
+        return mongoTemplate.count(query, McpServer.class);
     }
 
     @Override

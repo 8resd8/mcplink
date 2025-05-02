@@ -19,10 +19,10 @@ public class PaginationUtil {
         return lim;
     }
 
-    public static PageInfoDto buildPageInfo(List<McpServer> items, long totalItems, long remainingAfterEndCursor) {
+    public static PageInfoDto buildPageInfo(List<McpServer> items, long totalItems, long remainings) {
         long startCursor = items.isEmpty() ? 0 : items.get(0).getSeq();
         long endCursor   = items.isEmpty() ? 0 : items.get(items.size() - 1).getSeq();
-        boolean hasNext  = remainingAfterEndCursor > 0;
+        boolean hasNext  = remainings > 0;
 
         return PageInfoDto.builder()
                 .startCursor(startCursor)

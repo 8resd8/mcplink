@@ -29,7 +29,7 @@ public class McpServerService {
         List<McpServer> items = serverRepository.listAll(lim, cursor);
         long total = serverRepository.countAll();
         long endCursor = items.isEmpty() ? 0L : items.get(items.size() - 1).getSeq();
-        long remaining = serverRepository.countBySeqGreaterThan(endCursor);
+        long remaining = serverRepository.countRemaining(endCursor);
         PageInfoDto pageInfo = PaginationUtil.buildPageInfo(items, total, remaining);
         List<McpSummaryDataDto> data = items.stream()
                 .map(this::toSummaryDataDto)
@@ -48,7 +48,7 @@ public class McpServerService {
         List<McpServer> items = serverRepository.searchByName(q, lim, cursor);
         long total = serverRepository.countByName(q);
         long endCursor = items.isEmpty() ? 0L : items.get(items.size() - 1).getSeq();
-        long remaining = serverRepository.countBySeqGreaterThan(endCursor);
+        long remaining = serverRepository.countRemainingByName(q, endCursor);
         PageInfoDto pageInfo = PaginationUtil.buildPageInfo(items, total, remaining);
         List<McpSummaryDataDto> data = items.stream()
                 .map(this::toSummaryDataDto)
