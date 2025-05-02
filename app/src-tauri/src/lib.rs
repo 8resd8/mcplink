@@ -7,11 +7,33 @@ use tauri::{
     tray::{TrayIconBuilder, TrayIconEvent, MouseButton, MouseButtonState},
     menu::{MenuBuilder, MenuItemBuilder},
 };
+// 추가된 import - 도커 Postgres 연결용
+use sqlx::{PgPool, postgres::PgPoolOptions};
+use dotenv::dotenv;
+use std::env;
 
 /// Tauri 앱을 실행하는 함수
 pub fn run() {
+    // 도커 연결 설정
+    dotenv().ok(); // .env 파일에서 환경변수 로드
+    let database_url = env::var("DATABASE_URL")
+        .unwrap_or_else(|_| "postgres://postgres:postgres@localhost:5432/postgres".to_string());
+    
+    // 비동기적으로 DB 연결 풀 생성
+    let db_pool = tokio::runtime::Runtime::new()
+        .unwrap()
+        .block_on(async {
+            PgPoolOptions::new()
+                .max_connections(5)
+                .connect(&database_url)
+                .await
+                .expect("도커 Postgres DB 연결 실패")
+        });
+    
+    // AppState 생성 (Postgres 연결 포함, API 요청용 client 유지)
     let app_state = AppState {
         client: Client::new(),
+        db_pool, // 도커 Postgres 연결 풀 추가
     };
 
     tauri::Builder::default()

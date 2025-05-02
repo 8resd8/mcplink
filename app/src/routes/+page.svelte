@@ -87,6 +87,8 @@
               id={card.id}
               title={card.title}
               description={card.description}
+              url={card.url}
+              stars={card.stars}
             />
           {/each}
         </div>
