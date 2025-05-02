@@ -7,6 +7,7 @@ import org.springframework.data.mongodb.core.query.*;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.regex.Pattern;
 
 @Repository
 public class McpServerCustomRepositoryImpl implements McpServerCustomRepository {
@@ -55,15 +56,18 @@ public class McpServerCustomRepositoryImpl implements McpServerCustomRepository 
 
     @Override
     public long countByName(String q) {
-        TextCriteria tc = TextCriteria.forDefaultLanguage().matching(q);
-        return mongoTemplate.count(TextQuery.queryText(tc),
-                McpServer.class);
+        Pattern p = Pattern.compile(".*" + Pattern.quote(q) + ".*", Pattern.CASE_INSENSITIVE);
+        Query regexCount = new Query()
+                .addCriteria(Criteria.where("mcpServers.name").regex(p));
+
+        return mongoTemplate.count(regexCount, McpServer.class);
     }
 
     @Override
     public List<McpServer> searchByName(String q, int limit, Long cursor) {
-        TextCriteria tc = TextCriteria.forDefaultLanguage().matching(q);
-        Query query = TextQuery.queryText(tc);
+        Pattern p = Pattern.compile(".*" + Pattern.quote(q) + ".*", Pattern.CASE_INSENSITIVE);
+        Query query = new Query()
+                .addCriteria(Criteria.where("mcpServers.name").regex(p));
 
         if (cursor != null) {
             McpServer last = mongoTemplate.findOne(
