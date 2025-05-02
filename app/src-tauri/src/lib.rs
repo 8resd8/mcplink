@@ -19,6 +19,7 @@ pub fn run() {
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_os::init())
         .plugin(tauri_plugin_fs::init())
+        .plugin(tauri_plugin_process::init())
         .setup(|app| {
             // 메뉴 아이템 생성
             let open_item = MenuItemBuilder::with_id("open", "open").build(app)?;
@@ -92,7 +93,8 @@ pub fn run() {
         .manage(app_state)
         .invoke_handler(tauri::generate_handler![
             get_mcp_data,
-            add_mcp_server_config
+            add_mcp_server_config,
+            commands::restart_claude_desktop
         ])
         .run(tauri::generate_context!())
         .expect("error: Tauri application run failed");
