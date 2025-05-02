@@ -25,10 +25,31 @@ public class McpServerCustomRepositoryImpl implements McpServerCustomRepository 
     @Override
     public List<McpServer> listAll(int limit, Long cursor) {
         Query query = new Query();
+
         if (cursor != null) {
-            query.addCriteria(Criteria.where("seq").gt(cursor));
+            McpServer last = mongoTemplate.findOne(
+                    Query.query(Criteria.where("seq").is(cursor)),
+                    McpServer.class
+            );
+            if (last != null) {
+                long lastStars = last.getStars();
+
+                query.addCriteria(new Criteria().orOperator(
+                        Criteria.where("stars").lt(lastStars),
+                        new Criteria().andOperator(
+                                Criteria.where("stars").is(lastStars),
+                                Criteria.where("seq").gt(cursor)
+                        )
+                ));
+            }
         }
-        query.with(Sort.by(Sort.Order.desc("stars"), Sort.Order.asc("seq"))).limit(limit);
+
+        query.with(Sort.by(
+                        Sort.Order.desc("stars"),
+                        Sort.Order.asc("seq")
+                ))
+                .limit(limit);
+
         return mongoTemplate.find(query, McpServer.class);
     }
 
@@ -43,10 +64,30 @@ public class McpServerCustomRepositoryImpl implements McpServerCustomRepository 
     public List<McpServer> searchByName(String q, int limit, Long cursor) {
         TextCriteria tc = TextCriteria.forDefaultLanguage().matching(q);
         Query query = TextQuery.queryText(tc);
+
         if (cursor != null) {
-            query.addCriteria(Criteria.where("seq").gt(cursor));
+            McpServer last = mongoTemplate.findOne(
+                    Query.query(Criteria.where("seq").is(cursor)),
+                    McpServer.class
+            );
+            if (last != null) {
+                long lastStars = last.getStars();
+                query.addCriteria(new Criteria().orOperator(
+                        Criteria.where("stars").lt(lastStars),
+                        new Criteria().andOperator(
+                                Criteria.where("stars").is(lastStars),
+                                Criteria.where("seq").gt(cursor)
+                        )
+                ));
+            }
         }
-        query.with(Sort.by(Sort.Order.desc("stars"), Sort.Order.asc("seq"))).limit(limit);
+
+        query.with(Sort.by(
+                        Sort.Order.desc("stars"),
+                        Sort.Order.asc("seq")
+                ))
+                .limit(limit);
+
         return mongoTemplate.find(query, McpServer.class);
     }
 
