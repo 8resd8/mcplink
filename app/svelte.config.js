@@ -11,7 +11,10 @@ const config = {
 
   kit: {
     // Tauri는 정적 사이트로 생성
-    adapter: adapter(),
+    adapter: adapter({
+      // SPA 모드 빌드
+      fallback: 'index.html'
+    }),
   },
 }
 
