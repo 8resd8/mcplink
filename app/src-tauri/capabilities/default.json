@@ -16,6 +16,19 @@
     "core:window:allow-maximize",
     "core:window:allow-minimize",
     "core:window:allow-unmaximize",
-    "os:default"
+    "os:default",
+    "fs:default",
+    {
+      "identifier": "fs:scope",
+      "allow": [{ "path": "$APPDATA" }, { "path": "$APPDATA/**" }]
+    },
+    {
+      "identifier": "fs:allow-read-file",
+      "allow": [{ "path": "$APPDATA/**" }]
+    },
+    {
+      "identifier": "fs:allow-write-file",
+      "allow": [{ "path": "$APPDATA/**" }]
+    }
   ]
 }
