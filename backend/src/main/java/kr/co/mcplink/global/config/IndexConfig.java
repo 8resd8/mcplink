@@ -8,6 +8,7 @@ import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.data.mongodb.core.mapping.MongoMappingContext;
 import org.springframework.stereotype.Component;
 
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 @Component
@@ -32,10 +33,13 @@ public class IndexConfig
             }
             String collection = ann.collection();
 
+            Map<String, Integer> sortFields = new LinkedHashMap<>();
+            sortFields.put("stars", -1);
+            sortFields.put("seq",   1);
             indexUtil.createCompoundIndex(
                     collection,
                     Constants.IDX_MCP_SERVERS_SORT,
-                    Map.of("stars", -1, "seq", 1)
+                    sortFields
             );
 
             indexUtil.createTextIndex(
