@@ -2,6 +2,12 @@ FROM jenkins/jenkins:jdk17
 
 USER root
 
+ARG DOCKER_HOST_GID=999
+
+# 권한 지정
+RUN groupadd --gid ${DOCKER_HOST_GID} docker_host_match && \
+    usermod -aG docker_host_match jenkins
+
 # 패키지 목록 업데이트 및 빌드 필수 도구, Node.js 필수 도구, 타우리 빌드 필수 시스템 라이브러리 설치
 RUN apt update && apt upgrade -y && \
     apt install -y --no-install-recommends \
