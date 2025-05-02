@@ -46,20 +46,6 @@ services:
     networks:
       - mcplink-network
 
-#  jenkins:
-#    container_name: jenkins
-#    build:
-#      context: ../Dockerfile
-#      dockerfile: Dockerfile.jenkins # 사용할 Dockerfile 이름을 지정
-#    ports:
-#      - "9090:8080"
-#      - "50000:50000"
-#    volumes:
-#      - jenkins_home:/var/jenkins_home
-#      - /var/run/docker.sock:/var/run/docker.sock
-#
-#    networks:
-#      - mcplink-network
 
 networks:
   mcplink-network:
