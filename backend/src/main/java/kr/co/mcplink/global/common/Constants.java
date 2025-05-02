@@ -11,7 +11,7 @@ public final class Constants {
     public static final String COLLECTION_MCP_SERVERS           = "mcp_servers";
     public static final String COLLECTION_MCP_TAGS              = "mcp_tags";
 
-    // 인덱스 이름
+    // 인덱스 이름 (MongoDB)
     // stars 내림차순, seq 오름차순 복합 정렬 인덱스
     public static final String IDX_MCP_SERVERS_SORT             = "idx_mcp_servers_stars_desc_seq_asc";
     // name 필드에 대한 검색(text) 인덱스
@@ -26,6 +26,10 @@ public final class Constants {
     public static final int STATUS_BAD_REQUEST                  = 400;
     public static final int STATUS_NOT_FOUND                    = 404;
     public static final int STATUS_INTERNAL_SERVER_ERROR        = 500;
+
+    public static final String ERROR_BAD_REQUEST                = "BAD_REQUEST";
+    public static final String ERROR_NOT_FOUND                  = "NOT_FOUND";
+    public static final String ERROR_INTERNAL_SERVER_ERROR      = "INTERNAL_SERVER_ERROR";
 
     // 성공 메시지
     public static final String MSG_SUCCESS_LIST                 = "전체 목록 조회에 성공했습니다";
