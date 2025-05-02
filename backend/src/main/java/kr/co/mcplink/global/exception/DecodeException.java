@@ -1,4 +1,4 @@
 package kr.co.mcplink.global.exception;
 
-public class DataInitializationException {
+public class DecodeException {
 }

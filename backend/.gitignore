@@ -3,7 +3,6 @@
 
 ### Custom ###
 # Environment configuration files
-application-local.properties
 application-prod.properties
 
 ### Eclipse ###
