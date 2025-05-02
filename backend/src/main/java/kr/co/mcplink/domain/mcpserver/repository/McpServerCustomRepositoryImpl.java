@@ -80,8 +80,8 @@ public class McpServerCustomRepositoryImpl implements McpServerCustomRepository 
     }
 
     @Override
-    public long countByName(String q) {
-        Pattern p = Pattern.compile(".*" + Pattern.quote(q) + ".*", Pattern.CASE_INSENSITIVE);
+    public long countByName(String name) {
+        Pattern p = Pattern.compile(".*" + Pattern.quote(name) + ".*", Pattern.CASE_INSENSITIVE);
         Query regexCount = new Query()
                 .addCriteria(Criteria.where("mcpServers.name").regex(p));
 
@@ -89,8 +89,8 @@ public class McpServerCustomRepositoryImpl implements McpServerCustomRepository 
     }
 
     @Override
-    public long countRemainingByName(String q, Long cursor) {
-        Pattern p = Pattern.compile(".*" + Pattern.quote(q) + ".*", Pattern.CASE_INSENSITIVE);
+    public long countRemainingByName(String name, Long cursor) {
+        Pattern p = Pattern.compile(".*" + Pattern.quote(name) + ".*", Pattern.CASE_INSENSITIVE);
         Query query = new Query()
                 .addCriteria(Criteria.where("mcpServers.name").regex(p));
 
@@ -116,8 +116,8 @@ public class McpServerCustomRepositoryImpl implements McpServerCustomRepository 
     }
 
     @Override
-    public List<McpServer> searchByName(String q, int limit, Long cursor) {
-        Pattern p = Pattern.compile(".*" + Pattern.quote(q) + ".*", Pattern.CASE_INSENSITIVE);
+    public List<McpServer> searchByName(String name, int limit, Long cursor) {
+        Pattern p = Pattern.compile(".*" + Pattern.quote(name) + ".*", Pattern.CASE_INSENSITIVE);
         Query query = new Query()
                 .addCriteria(Criteria.where("mcpServers.name").regex(p));
 

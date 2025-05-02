@@ -25,11 +25,11 @@ public class McpServerRestController {
 
     @GetMapping("/search")
     public McpListResponse searchByName(
-            @RequestParam("q") String q,
+            @RequestParam("name") String name,
             @RequestParam(required = false) Integer limit,
             @RequestParam(required = false) Long cursor
     ) {
-        return mcpServerService.searchByName(q, limit, cursor);
+        return mcpServerService.searchByName(name, limit, cursor);
     }
 
     @GetMapping("/{id}")

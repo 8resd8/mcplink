@@ -43,12 +43,12 @@ public class McpServerService {
                 .build();
     }
 
-    public McpListResponse searchByName(String q, Integer limit, Long cursor) {
+    public McpListResponse searchByName(String name, Integer limit, Long cursor) {
         int lim = PaginationUtil.validate(limit, cursor);
-        List<McpServer> items = serverRepository.searchByName(q, lim, cursor);
-        long total = serverRepository.countByName(q);
+        List<McpServer> items = serverRepository.searchByName(name, lim, cursor);
+        long total = serverRepository.countByName(name);
         long endCursor = items.isEmpty() ? 0L : items.get(items.size() - 1).getSeq();
-        long remaining = serverRepository.countRemainingByName(q, endCursor);
+        long remaining = serverRepository.countRemainingByName(name, endCursor);
         PageInfoDto pageInfo = PaginationUtil.buildPageInfo(items, total, remaining);
         List<McpSummaryDataDto> data = items.stream()
                 .map(this::toSummaryDataDto)
