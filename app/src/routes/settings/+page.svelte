@@ -1,76 +1,89 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { invoke } from '@tauri-apps/api/core';
   
-  // OS 감지 변수
-  let detectedOS = 'unknown';
+  // 설정 값들
+  let configPath = '';
   
-  // 컴포넌트 마운트 시 실제 OS 감지
-  onMount(() => {
-    // 브라우저 환경에서 기본 감지
-    if (typeof navigator !== 'undefined') {
-      if (navigator.userAgent.indexOf('Win') !== -1) detectedOS = 'win32';
-      else if (navigator.userAgent.indexOf('Mac') !== -1) detectedOS = 'darwin';
-      else if (navigator.userAgent.indexOf('Linux') !== -1) detectedOS = 'linux';
+  // 디렉토리 선택 함수 (실제로는 구현되지 않음)
+  function findPath() {
+    alert('찾기 기능은 현재 구현되지 않았습니다. 직접 경로를 입력해주세요.');
+  }
+  
+  // Config 경로 저장
+  function saveConfigPath() {
+    if (!configPath.trim()) {
+      alert('경로를 입력해주세요');
+      return;
     }
     
-    // Tauri에서 실제 OS 감지 (가능한 경우)
-    if (typeof window !== 'undefined' && ('__TAURI_INTERNALS__' in window || '__TAURI__' in window)) {
-      import('@tauri-apps/plugin-os').then(({ platform }) => {
-        (async () => {
-          try {
-            const os = await platform();
-            detectedOS = os;
-          } catch (error) {
-            console.error(error);
-          }
-        })();
-      }).catch(console.error);
+    // 여기에 실제 저장 로직 추가
+    console.log('Config 경로 저장:', configPath);
+    alert('Config 경로가 저장되었습니다');
+  }
+  
+  // MCP 초기화 함수
+  async function resetMCPs() {
+    if (!confirm('정말로 설치된 모든 MCP를 초기화하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
+      return;
     }
-  });
+    
+    try {
+      // 여기에 실제 초기화 API 호출
+      // await invoke('reset_installed_mcps');
+      alert('모든 MCP가 성공적으로 초기화되었습니다');
+    } catch (error) {
+      console.error('MCP 초기화 중 오류 발생:', error);
+      alert('MCP 초기화 중 오류가 발생했습니다');
+    }
+  }
 </script>
 
-<div class="p-6">
-  <h2 class="text-2xl font-bold mb-6">설정</h2>
-  
-  <div class="mb-6">
-    <button class="btn btn-neutral">Search Workspace</button>
-    <button class="btn btn-error ml-2">제발 누르지마</button>
-  </div>
-  
-  <div class="mb-6">
-    <h3 class="text-xl font-semibold mb-3">시스템 정보</h3>
-    <p class="mb-3">실제 OS: <span class="font-medium">{detectedOS === 'darwin' ? 'macOS' : detectedOS === 'win32' ? 'Windows' : detectedOS === 'linux' ? 'Linux' : detectedOS}</span></p>
-  </div>
-  
-  <div class="mt-8">
-    <h3 class="text-xl font-semibold mb-3">창 컨트롤 미리보기</h3>
+<div class="p-8 max-w-2xl mx-auto">
+  <!-- Config 경로 재설정 섹션 -->
+  <div class="bg-white rounded-lg p-6 shadow-sm mb-8 border border-gray-200">
+    <h2 class="text-xl font-semibold mb-6">Config 경로 재설정</h2>
     
-    <div class="border rounded-lg p-4 mb-6">
-      <div class="flex items-center">
-        <h4 class="font-bold">macOS 스타일</h4>
-        <div class="ml-3 flex items-center">
-          <div class="w-3 h-3 rounded-full bg-red-500 mr-2"></div>
-          <div class="w-3 h-3 rounded-full bg-yellow-500 mr-2"></div>
-          <div class="w-3 h-3 rounded-full bg-green-500"></div>
-        </div>
+    <div class="flex items-center">
+      <input 
+        type="text" 
+        class="input input-bordered w-full rounded-md" 
+        placeholder="설정 파일 경로를 입력하세요" 
+        bind:value={configPath}
+      />
+      <div class="flex ml-2 space-x-2">
+        <button 
+          class="btn btn-sm btn-outline border border-gray-300 rounded-md px-4" 
+          on:click={findPath}
+        >
+          찾기
+        </button>
+        <button 
+          class="btn btn-sm btn-primary rounded-md px-4" 
+          on:click={saveConfigPath}
+        >
+          수정
+        </button>
       </div>
     </div>
+  </div>
+  
+  <!-- 설치된 MCP 초기화 섹션 -->
+  <div class="bg-white rounded-lg p-6 shadow-sm border border-gray-200">
+    <h2 class="text-xl font-semibold mb-6">설치된 MCP 초기화</h2>
     
-    <div class="border rounded-lg p-4">
-      <div class="flex items-center justify-between">
-        <h4 class="font-bold">Windows/Linux 스타일</h4>
-        <div class="flex">
-          <div class="mr-2 opacity-70 hover:opacity-100">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-          </div>
-          <div class="mr-2 opacity-70 hover:opacity-100">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect></svg>
-          </div>
-          <div class="opacity-70 hover:opacity-100 hover:text-red-500">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-          </div>
-        </div>
-      </div>
+    <div class="mb-8">
+      <p class="text-red-600 font-medium text-center mb-4">
+        경고! 이 옵션은 (이 GUI를 통해) 설치된 MCP 서버를 전부 삭제합니다. 유의하여주세요
+      </p>
+    </div>
+    
+    <div class="flex justify-center">
+      <button 
+        class="btn btn-error btn-sm rounded-md border border-red-500 px-6" 
+        on:click={resetMCPs}
+      >
+        초기화
+      </button>
     </div>
   </div>
 </div>

@@ -4,16 +4,18 @@ export interface MCPCard {
   id: number
   title: string
   description: string
+  url: string // GitHub 리포지토리 URL
+  stars: number // GitHub 스타 수
 }
 
 /**
  * Fetch MCP card data from the external server via the Rust backend.
  * @returns MCP card data array
  */
-export async function fetchMCPCards(): Promise<MCPCard[]> {
+export async function fetchMCPCards(searchTerm?: string): Promise<MCPCard[]> {
   try {
-    // Call the get_mcp_data function in the Rust backend
-    const response = await invoke<MCPCard[]>("get_mcp_data")
+    // searchTerm이 있을 때만 파라미터로 전달
+    const response = searchTerm ? await invoke<MCPCard[]>("get_mcp_data", { searchTerm }) : await invoke<MCPCard[]>("get_mcp_data")
     return response
   } catch (error) {
     console.error("Error fetching MCP card data:", error)

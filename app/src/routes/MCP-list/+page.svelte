@@ -27,30 +27,44 @@
   });
   
   // Search event handler
-  function handleSearchEvent(event: CustomEvent<{ value: string }>) {
-    // Implement server-side search in the future
-    // When the server is implemented, call the server API here to get the search results
-    console.log('검색어:', event.detail.value);
-    // Server API call example:
-    // searchMCPs(event.detail.value).then(results => {
-    //   mcpCards = results;
-    // });
+  async function handleSearchEvent(event: CustomEvent<{ value: string }>) {
+    const searchTerm = event.detail.value;
+    console.log('검색어:', searchTerm);
+    
+    if (searchTerm) {
+      loading = true;
+      try {
+        mcpCards = await fetchMCPCards(searchTerm);
+      } catch (error) {
+        console.error('검색 중 오류 발생:', error);
+      } finally {
+        loading = false;
+      }
+    } else {
+      // 검색어가 없으면 모든 MCP 가져오기
+      loading = true;
+      try {
+        mcpCards = await fetchMCPCards();
+      } catch (error) {
+        console.error('MCP 데이터를 가져오는 중 오류 발생:', error);
+      } finally {
+        loading = false;
+      }
+    }
   }
   
 </script>
 
 <div class="p-8">
   <div class="flex flex-col gap-6">
-    <!-- search area -->
-      
-      <div class="w-full max-w-xl rounded-[10px]">
-        <Search on:search={handleSearchEvent} />
-      </div>
-
-    
     <!-- card list area -->
 
-      <p class="text-xl font-semibold mb-2">Search results ({mcpCards.length} MCPs)</p>
+      <div class="flex justify-between items-center mb-2">
+        <p class="text-xl font-semibold">Search results ({mcpCards.length} MCPs)</p>
+        <div class="ml-auto w-72 rounded-[10px]">
+          <Search on:search={handleSearchEvent} />
+        </div>
+      </div>
       
       {#if loading}
         <div class="flex justify-center items-center h-64">
@@ -67,6 +81,8 @@
               id={card.id}
               title={card.title}
               description={card.description}
+              url={card.url}
+              stars={card.stars}
             />
           {/each}
         </div>

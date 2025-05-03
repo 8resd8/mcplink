@@ -2,7 +2,7 @@
   import "../app.css";
   import { onMount } from 'svelte';
   import type { Window } from '@tauri-apps/api/window';
-  import { Presentation, Cog, Minus, X, Square, BookDashed, Settings } from 'lucide-svelte';
+  import { Presentation, Cog, Minus, X, Square, Settings } from 'lucide-svelte';
   
   // Tauri window object to save
   let tauriWindow: Window | null = null;
@@ -78,7 +78,6 @@
   const tabs = [
     { path: "/Installed-MCP", name: "Installed MCP", icon: Presentation, color: "#eef2ff", hoverColor: "#eef2ff", bgColor: "#eef2ff" },
     { path: "/MCP-list", name: "MCP List", icon: Cog, color: "#ecfdf5", hoverColor: "#ecfdf5", bgColor: "#ecfdf5" },
-    { path: "/detail", name: "임시(디테일)", icon: BookDashed, color: "#fffbeb", hoverColor: "#fffbeb", bgColor: "#fffbeb" },
   ];
   
   // Settings tab (placed on the right)

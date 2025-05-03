@@ -32,8 +32,6 @@
     on:input={handleSearch}
     on:keydown={handleKeyDown}
   />
-  <kbd class="kbd kbd-sm">⌘</kbd>
-  <kbd class="kbd kbd-sm">K</kbd>
 </label>
 
   

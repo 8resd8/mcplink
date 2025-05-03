@@ -21,7 +21,7 @@ importers:
         specifier: ^2.2.6
         version: 2.2.6
       '@tauri-apps/plugin-os':
-        specifier: ~2
+        specifier: ^2.2.1
         version: 2.2.1
       clsx:
         specifier: ^2.1.1

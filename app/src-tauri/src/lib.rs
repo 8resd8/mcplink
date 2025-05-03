@@ -10,6 +10,7 @@ use tauri::{
 
 /// Tauri 앱을 실행하는 함수
 pub fn run() {
+    // AppState 생성 (API 요청용 client 유지)
     let app_state = AppState {
         client: Client::new(),
     };
