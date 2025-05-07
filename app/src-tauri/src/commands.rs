@@ -1,13 +1,12 @@
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
-use serde_json;
 use serde_json::Value;
 use std::collections::HashMap;
 use std::fs;
 use std::path::Path;
 use std::process::Command as StdCommand;
 use tauri::{Manager, State};
-use urlencoding;
+use urlencoding::encode;
 
 /// MCP 카드 데이터
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -48,7 +47,7 @@ pub async fn get_mcp_data(
     search_term: Option<String>,
 ) -> Result<Vec<MCPCard>, String> {
     let url = if let Some(term) = &search_term {
-        let encoded_term = urlencoding::encode(term);
+        let encoded_term = encode(term);
         format!(
             "http://localhost:8080/api/mcp-cards?search={}",
             encoded_term
@@ -275,7 +274,6 @@ pub async fn restart_claude_desktop(_app: tauri::AppHandle) -> Result<(), String
 
     // 가능한 Claude Desktop 설치 경로들
     let local_appdata = std::env::var("LOCALAPPDATA").unwrap_or_default();
-    let appdata = std::env::var("APPDATA").unwrap_or_default();
 
     let possible_paths = [
         // 사용자가 지정한 위치
