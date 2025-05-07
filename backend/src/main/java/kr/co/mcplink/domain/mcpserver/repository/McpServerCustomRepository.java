@@ -14,4 +14,6 @@ public interface McpServerCustomRepository {
     long countRemainingByName(String name, Long cursor);
     List<McpServer> searchByName(String name, int limit, Long cursor);
     void incrementViews(Long seq);
+    void updateScanned(Long seq);
+    void updateNotScanned(Long seq);
 }

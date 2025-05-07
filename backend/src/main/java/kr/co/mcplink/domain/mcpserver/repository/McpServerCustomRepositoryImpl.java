@@ -153,4 +153,17 @@ public class McpServerCustomRepositoryImpl implements McpServerCustomRepository 
         Update update = new Update().inc("views", 1);
         mongoTemplate.updateFirst(query, update, McpServer.class);
     }
+
+    @Override
+    public void updateScanned(Long seq) {
+        Query query = Query.query(Criteria.where("seq").is(seq));
+        Update update = new Update().set("scanned", true);
+        mongoTemplate.updateFirst(query, update, McpServer.class);
+    }
+    @Override
+    public void updateNotScanned(Long seq) {
+        Query query = Query.query(Criteria.where("seq").is(seq));
+        Update update = new Update().set("scanned", false);
+        mongoTemplate.updateFirst(query, update, McpServer.class);
+    }
 }
