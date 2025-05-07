@@ -1,14 +1,12 @@
 package kr.co.mcplink.domain.mcpserver.controller;
 
-import kr.co.mcplink.domain.mcpserver.dto.McpDetailDataDto;
-import kr.co.mcplink.domain.mcpserver.dto.request.McpServerSearchRequest;
+import kr.co.mcplink.domain.mcpserver.dto.response.McpDetailResponse;
 import kr.co.mcplink.domain.mcpserver.dto.response.McpListResponse;
-import kr.co.mcplink.domain.mcpserver.dto.response.McpSearchByNameResponse;
+import kr.co.mcplink.domain.mcpserver.dto.response.McpSearchResponse;
+import kr.co.mcplink.domain.mcpserver.dto.response.McpTagResponse;
 import kr.co.mcplink.domain.mcpserver.service.core.McpServerService;
 import kr.co.mcplink.global.common.ApiResponse;
 import lombok.RequiredArgsConstructor;
-
-import org.springframework.data.web.PageableDefault;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -27,19 +25,24 @@ public class McpServerRestController {
     }
 
     @GetMapping("/search")
-    public ApiResponse<McpSearchByNameResponse> searchByName(
-        @ModelAttribute(name = "mcpServerName") McpServerSearchRequest request
+    public ApiResponse<McpSearchResponse> searchByName(
+            @RequestParam("name") String name,
+            @RequestParam(required = false, defaultValue = "5") Integer size,
+            @RequestParam(required = false, defaultValue = "0") Long cursorId
     ) {
-        return mcpServerService.searchByName(request);
+        return mcpServerService.searchByName(name, size, cursorId);
     }
 
     @GetMapping("/{id}")
-    public ApiResponse<McpDetailDataDto> getDetail(@PathVariable("id") Long seq) {
+    public ApiResponse<McpDetailResponse> getDetail(
+            @PathVariable("id") Long seq
+    ) {
         return mcpServerService.getDetail(seq);
     }
 
     @GetMapping("/tags")
-    public ApiResponse<String> listTags() {
+    public ApiResponse<McpTagResponse> listTags() {
+
         return mcpServerService.listTags();
     }
 }
