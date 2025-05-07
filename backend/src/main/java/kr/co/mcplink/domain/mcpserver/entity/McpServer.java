@@ -3,6 +3,7 @@ package kr.co.mcplink.domain.mcpserver.entity;
 import java.util.List;
 import java.util.Map;
 
+import kr.co.mcplink.global.common.Constants;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
@@ -19,9 +20,9 @@ import lombok.NoArgsConstructor;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@AutoSequence(collection = "mcp_servers")
-@AutoIndex(collection = "mcp_servers")
-@Document("mcp_servers")
+@AutoSequence(collection = Constants.COLLECTION_MCP_SERVERS)
+@AutoIndex(collection = Constants.COLLECTION_MCP_SERVERS)
+@Document(collection = Constants.COLLECTION_MCP_SERVERS)
 public class McpServer {
 
 	@Id
@@ -35,7 +36,7 @@ public class McpServer {
 	@Builder.Default
 	private int views = 0;
 	@Builder.Default
-	private boolean scanned = true;
+	private boolean scanned = false;
 
 	private List<String> tags;
 
