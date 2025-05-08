@@ -160,6 +160,7 @@ public class McpServerCustomRepositoryImpl implements McpServerCustomRepository 
         Update update = new Update().set("scanned", true);
         mongoTemplate.updateFirst(query, update, McpServer.class);
     }
+
     @Override
     public void updateNotScanned(Long seq) {
         Query query = Query.query(Criteria.where("seq").is(seq));
