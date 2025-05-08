@@ -40,7 +40,7 @@ public class ServiceTime {
 			.append("▶ [Method]   : ").append(methodName).append("\n")
 			.append("▶ [Params]   : ").append(args.length > 0 ? Arrays.toString(args) : "No parameters").append("\n")
 			.append(LINE_SEPARATOR);
-		log.debug(startLog.toString());
+		log.info(startLog.toString());
 
 		Object result = joinPoint.proceed();
 
@@ -53,7 +53,7 @@ public class ServiceTime {
 			.append("▶ [실행시간]  : ").append(executionTime).append(" ms").append("\n")
 			.append("▶ [Response] : ").append(result != null ? result : "리턴 값 없음").append("\n")
 			.append(LINE_SEPARATOR).append("\n");
-		log.debug(endLog.toString());
+		log.info(endLog.toString());
 
 		return result;
 	}
