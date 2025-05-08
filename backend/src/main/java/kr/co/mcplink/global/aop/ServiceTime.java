@@ -25,7 +25,6 @@ public class ServiceTime {
 	private static final String EXCEPTION_SEPARATOR = "💥💥";
 	private static final String LINE_SEPARATOR = "============================================================";
 
-	// @Around("execution(* com.ssafy.econimal..service..*(..))")
 	@Around("execution(* kr.co.mcplink..service..*(..))")
 	public Object serviceTime(ProceedingJoinPoint joinPoint) throws Throwable {
 		String fullPathClassName = joinPoint.getSignature().getDeclaringTypeName();
