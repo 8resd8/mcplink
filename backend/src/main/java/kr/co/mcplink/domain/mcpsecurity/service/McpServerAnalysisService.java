@@ -42,31 +42,22 @@ public class McpServerAnalysisService {
 
 	public McpServerAnalysisService() {
 		this.osvScannerCommand = "osv-scanner";
-		// baseTempDir = Paths.get(tempDirStr);
-		// osvScannerCommand = "osv-scanner";
-		// try {
-		// 	// 임시 디렉토리 생성 시도
-		// 	Files.createDirectories(baseTempDir);
-		// } catch (IOException e) {
-		// 	log.error("임시 분석 디렉토리 생성 실패: {}", baseTempDir, e);
-		// 	throw new RuntimeException("임시 분석 디렉토리 생성 실패", e);
-		// }
 	}
 
 	/**
-	 * 하드코딩된 특정 Git URL에 대해 OSV 스캔을 수행합니다.
+	 * 모든 몽고DB에 있는 Git URL OSV 스캔
 	 * @return McpServerScanResultDto 스캔 결과를 담은 DTO
 	 */
-	public McpServerScanResultDto scanSpecificNotionServer() {
-		String targetUrl = "https://github.com/makenotion/notion-mcp-server.git";
+	public McpServerScanResultDto scanSpecificServer() {
+		String gitUrl = "https://github.com/makenotion/notion-mcp-server.git";
 		String serverId = "notion-mcp-server-id"; // 식별을 위한 임의의 ID
 		String serverName = "Notion MCP Server";    // 식별을 위한 임의의 이름
 
-		Path specificCloneDir = baseTempDir.resolve("notion-mcp-server");
+		Path cloneDir = baseTempDir.resolve("notion-mcp-server");
 		Path reportOutputFile = baseTempDir.resolve("notion_report.json");
 
-		log.info("지정된 URL 스캔 시작: {}, 클론 위치: {}, 리포트 파일: {}", targetUrl, specificCloneDir, reportOutputFile);
-		McpServerScanResultDto result = performScanForUrl(targetUrl, serverId, serverName, specificCloneDir);
+		log.info("지정된 URL 스캔 시작: {}, 클론 위치: {}, 리포트 파일: {}", gitUrl, cloneDir, reportOutputFile);
+		McpServerScanResultDto result = performScanForUrl(gitUrl, serverId, serverName, cloneDir);
 
 		if (result.scanSuccess() && result.osvOutputJson() != null) {
 			try {
@@ -90,20 +81,18 @@ public class McpServerAnalysisService {
 		boolean success = false;
 
 		try {
-			// cloneDir가 이미 존재할 수 있으므로, cloneRepository 전에 삭제하거나, git clone이 덮어쓰도록 처리 필요
-			// 현재 cloneRepository는 대상 디렉토리가 비어있거나 존재하지 않아야 할 수 있음.
-			// 여기서는 cleanup에서 디렉토리를 삭제하므로, 다음 실행 시 새로 생성됨.
-			// 만약 cloneDir에 이전 내용이 남아 문제를 일으킨다면, clone 전에 삭제하는 로직 추가 필요.
-			Files.createDirectories(cloneDir); // 클론 대상 디렉토리 생성
-			log.info("'{}' (URL: '{}') 클론 시작 -> 대상 폴더: {}", serverName, gitUrl, cloneDir);
+			// 1. 클론 대상 디렉토리 생성
+			Files.createDirectories(cloneDir);
 
+			// 2. 클론
+			log.info("'{}' 클론 시작...", gitUrl);
 			if (!cloneRepository(gitUrl, cloneDir)) {
 				log.error("Git 리포지토리 클론 실패: {}", gitUrl);
-				// 실패 DTO 반환 (osvOutputJson은 null)
+
 				return new McpServerScanResultDto(serverId, serverName, gitUrl, false, null);
 			}
-			log.info("'{}' 클론 완료.", gitUrl);
 
+			// 3. OSV 스캔
 			log.info("'{}' 디렉토리에 OSV-Scanner 실행...", targetScanDir);
 			osvJsonOutput = runOsvScanner(targetScanDir);
 
@@ -134,11 +123,13 @@ public class McpServerAnalysisService {
 	}
 
 	private boolean cloneRepository(String gitUrl, Path targetDir) throws IOException, InterruptedException {
+		// 터미널 명령어 실행, 커밋기록 안가져오는 clone (얕은 클론)
+		// git clone --depth 1 https://github.com/makenotion/notion-mcp-server.git /app/analysis_temp/notion-mcp-server
 		ProcessBuilder processBuilder = new ProcessBuilder("git", "clone", "--depth", "1", gitUrl,
 			targetDir.toString());
 		processBuilder.redirectErrorStream(true);
 
-		log.debug("Git 클론 실행: {}", String.join(" ", processBuilder.command()));
+		log.info("Git 클론 실행: {}", String.join(" ", processBuilder.command()));
 		Process process = processBuilder.start();
 
 		StringBuilder gitOutput = new StringBuilder();
@@ -150,7 +141,7 @@ public class McpServerAnalysisService {
 				log.trace("GIT CLONE: {}", line);
 			}
 		}
-		log.debug("Git 클론 결과 ({}):\n{}", gitUrl, gitOutput);
+		log.info("Git 클론 결과 ({}):\n{}", gitUrl, gitOutput);
 
 		boolean finished = process.waitFor(5, TimeUnit.MINUTES); // 타임아웃 5분
 		if (!finished) {
@@ -170,7 +161,7 @@ public class McpServerAnalysisService {
 		);
 		processBuilder.directory(projectDir.toFile()); // 작업 디렉토리 설정
 		processBuilder.redirectErrorStream(true);
-		log.debug("OSV-Scanner 실행: {} (작업폴더: {})", String.join(" ", processBuilder.command()), projectDir);
+		log.info("OSV-Scanner 실행: {} (작업폴더: {})", String.join(" ", processBuilder.command()), projectDir);
 		Process process = processBuilder.start();
 
 		StringBuilder output = new StringBuilder();

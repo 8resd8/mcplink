@@ -14,7 +14,8 @@ public class McpSecureScanService {
 	private final McpServerAnalysisService analysisService;
 
 	public void triggerNotionScan() {
-		McpServerScanResultDto result = analysisService.scanSpecificNotionServer();
+		// 스캔할 서버 가져옴
+		McpServerScanResultDto result = analysisService.scanSpecificServer();
 
 		if (result.scanSuccess()) {
 			log.info("Notion 서버 스캔 성공. JSON 결과 길이: {}", result.osvOutputJson() != null ? result.osvOutputJson().length() : 0);
