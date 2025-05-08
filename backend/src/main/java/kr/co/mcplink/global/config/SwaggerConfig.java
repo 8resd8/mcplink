@@ -12,7 +12,7 @@ public class SwaggerConfig {
     @Bean
     public OpenAPI openApi() {
         return new OpenAPI()
-                .addServersItem(new Server().url("https://mcplink.co.kr"))
+                .addServersItem(new Server().url("https://mcplink.co.kr/api"))
                 .info(new Info()
                         .title("MCP API")
                         .version("v1")
