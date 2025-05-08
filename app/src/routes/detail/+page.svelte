@@ -102,7 +102,7 @@
           <div class="form-control mb-4">
             <div class="form-control">
               <label class="label">
-                <span class="label-text">API 키</span>
+                <span class="label-text">args.</span>
               </label>
               <input type="password" class="input input-bordered" value="" placeholder="GitHub에서 발급받은 API 키를 입력하세요" />
             </div>
@@ -110,7 +110,7 @@
           
           <div class="form-control">
             <label class="label">
-              <span class="label-text">저장소 URL</span>
+              <span class="label-text">env.</span>
             </label>
             <div class="flex">
               <input 
