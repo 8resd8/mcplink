@@ -31,7 +31,8 @@ struct ApiCardData {
     stars: i32,
     views: i32,
     scanned: bool,
-    mcpServers: McpServerInfo,
+    #[serde(rename = "mcpServer")] // JSON의 "mcpServer" 키를 이 필드에 매핑
+    mcpServers: McpServerInfo, // 필드명 예시 (McpServerInfo는 name, description을 가짐)
 }
 
 #[derive(Debug, Deserialize)]
@@ -47,7 +48,8 @@ struct PageInfo {
 #[allow(non_snake_case)]
 struct DataWrapper {
     pageInfo: PageInfo,
-    data: Vec<ApiCardData>,
+    #[serde(rename = "mcpServers")] // JSON의 "mcpServers" 키를 이 필드에 매핑
+    mcpServers: Vec<ApiCardData>,    // data -> mcpServers로 이름 변경
 }
 
 #[derive(Debug, Deserialize)]
@@ -126,11 +128,11 @@ pub fn some_command() -> String {
 #[tauri::command]
 pub async fn get_mcp_data(
     state: State<'_, AppState>,
-    search_term: Option<String>, // JS에서 searchTerm으로 보내면 Rust에서 search_term으로 받음
+    search_term: Option<String>,
 ) -> Result<Vec<MCPCard>, String> {
     dotenvy::dotenv().ok();
 
-    let base_url: String = match env::var("CRAWLER_API_BASE_URL") { // .env에는 .../servers 까지만
+    let base_url: String = match env::var("CRAWLER_API_BASE_URL") {
         Ok(url_val) => url_val,
         Err(e) => {
             let msg = format!("[get_mcp_data] CRAWLER_API_BASE_URL not set: {}", e);
@@ -138,61 +140,50 @@ pub async fn get_mcp_data(
             return Err(msg);
         }
     };
-    println!("[get_mcp_data] CRAWLER_API_BASE_URL loaded: {}", base_url);
-    println!("[get_mcp_data] Received search_term: {:?}", search_term);
 
     let request_url = if let Some(term) = search_term {
-        // searchTerm이 Some일 때 (mcp-api.ts에서 빈 문자열은 이미 필터링)
-        if term.is_empty(){ // 안전 장치: 혹시 빈 문자열이 오면 전체 목록으로
-             println!("[get_mcp_data] Search term is Some but empty. Requesting all data from base endpoint: {}", base_url);
+        if term.is_empty(){
              base_url.to_string()
         } else {
             let encoded_term = urlencoding::encode(&term);
             let search_url = format!("{}/search?name={}", base_url, encoded_term);
-            println!("[get_mcp_data] Search term is Some(\"{}\"). Requesting from search endpoint: {}", term, search_url);
             search_url
         }
     } else {
-        // searchTerm이 None일 때 (mcp-api.ts에서 인자 없이 호출) -> 전체 목록 요청
-        println!("[get_mcp_data] Search term is None. Requesting all data from base endpoint: {}", base_url);
         base_url.to_string()
     };
 
     match state.client.get(&request_url).send().await {
         Ok(response) => {
             let status = response.status();
-            println!("[get_mcp_data] Response status for {}: {}", request_url, status);
 
             if status.is_success() {
                 match response.text().await {
                     Ok(text_body) => {
-                        println!("[get_mcp_data] Response body (first 500 chars): {:.500}", text_body);
+                        println!("[get_mcp_data] RAW API Response Body: {}", text_body);
                         match serde_json::from_str::<ApiResponse>(&text_body) {
                             Ok(api_response) => {
-                                if let Value::Array(data_array) = &api_response.data {
-                                    if let Some(Value::Object(first_item)) = data_array.get(0) {
-                                        if first_item.contains_key("pageInfo") && first_item.contains_key("data") {
-                                            if let Ok(data_wrapper) = serde_json::from_value::<DataWrapper>(Value::Object(first_item.clone())) {
-                                                let cards: Vec<MCPCard> = data_wrapper.data.iter()
-                                                    .map(|api_card| MCPCard {
-                                                        id: api_card.id,
-                                                        title: api_card.mcpServers.name.clone(),
-                                                        description: api_card.mcpServers.description.clone(),
-                                                        url: api_card.url.clone(),
-                                                        stars: api_card.stars,
-                                                    }).collect();
-                                                println!("[get_mcp_data] Successfully parsed {} cards.", cards.len());
-                                                if let Some(card) = cards.first() { println!("[get_mcp_data] First parsed card: {:?}", card); }
-                                                return Ok(cards);
-                                            } else { println!("[get_mcp_data] Failed to parse first_item into DataWrapper."); }
-                                        } else { println!("[get_mcp_data] First item in data_array missing pageInfo or data fields."); }
-                                    } else { println!("[get_mcp_data] api_response.data array is empty or no object at index 0."); }
-                                    println!("[get_mcp_data] API response.data not expected DataWrapper structure. Returning empty.");
-                                    return Ok(Vec::new());
+                                // data가 객체일 때 DataWrapper로 파싱
+                                if let Value::Object(data_obj) = &api_response.data {
+                                    if let Ok(data_wrapper) = serde_json::from_value::<DataWrapper>(Value::Object(data_obj.clone())) {
+                                        let cards: Vec<MCPCard> = data_wrapper.mcpServers.iter()
+                                            .map(|api_card| MCPCard {
+                                                id: api_card.id,
+                                                title: api_card.mcpServers.name.clone(),
+                                                description: api_card.mcpServers.description.clone(),
+                                                url: api_card.url.clone(),
+                                                stars: api_card.stars,
+                                            }).collect();
+                                        println!("[get_mcp_data] Successfully parsed {} cards.", cards.len());
+                                        if let Some(card) = cards.first() { println!("[get_mcp_data] First parsed card: {:?}", card); }
+                                        return Ok(cards);
+                                    } else {
+                                        println!("[get_mcp_data] Failed to parse data object into DataWrapper.");
+                                    }
                                 } else {
-                                    println!("[get_mcp_data] API response.data is not an array. Type: {:?}. Returning empty.", api_response.data.as_str());
-                                    return Ok(Vec::new());
+                                    println!("[get_mcp_data] API response.data is not an object. Type: {:?}. Returning empty.", api_response.data);
                                 }
+                                return Ok(Vec::new());
                             }
                             Err(e) => {
                                 let msg = format!("[get_mcp_data] JSON parsing error: {}. Body: {:.500}", e, text_body);
@@ -207,7 +198,7 @@ pub async fn get_mcp_data(
                         return Err(msg);
                     }
                 }
-            } else { // HTTP 에러 (500 포함)
+            } else {
                 let error_body = response.text().await.unwrap_or_else(|e| format!("Failed to read error body: {}", e));
                 let msg = format!("[get_mcp_data] Server error for {}: {}. Body: {:.500}", request_url, status, error_body);
                 println!("{}", msg);
@@ -232,7 +223,6 @@ pub async fn get_mcp_detail_data(
         Ok(url_val) => url_val,
         Err(e) => {
             let msg = format!("[get_mcp_detail_data] CRAWLER_API_BASE_URL not set: {}", e);
-            println!("{}", msg);
             return Err(msg);
         }
     };
