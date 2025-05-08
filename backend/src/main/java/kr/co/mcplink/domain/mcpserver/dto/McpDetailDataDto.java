@@ -10,7 +10,7 @@ public record McpDetailDataDto (
     int stars,
     int views,
     boolean scanned,
-    McpDetailDto mcpServers
+    McpServerDetailDto mcpServer
 ) {
 
 }

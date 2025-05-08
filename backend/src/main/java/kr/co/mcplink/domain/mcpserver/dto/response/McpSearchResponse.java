@@ -7,7 +7,7 @@ import java.util.List;
 
 public record McpSearchResponse(
 	PageInfoDto pageInfo,
-	List<McpSummaryDataDto> data
+	List<McpSummaryDataDto> mcpServers
 ) {
 
 }

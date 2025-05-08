@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.Map;
 
 @Builder
-public record McpDetailDto (
+public record McpServerDetailDto (
     String name,
     String description,
     String command,

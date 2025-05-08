@@ -26,37 +26,37 @@ public class McpServerService {
 	private final McpServerRepository mcpServerRepository;
 
 	public ApiResponse<McpListResponse> getLists(Integer size, Long cursorId) {
-		List<McpServer> items = serverRepository.listAll(size, cursorId);
+		List<McpServer> servers = serverRepository.listAll(size, cursorId);
 
 		long total = serverRepository.countAll();
-		long endCursor = items.isEmpty() ? 0L : items.get(items.size() - 1).getSeq();
+		long endCursor = servers.isEmpty() ? 0L : servers.get(servers.size() - 1).getSeq();
 		long remaining = serverRepository.countRemaining(endCursor);
 
-		PageInfoDto pageInfo = PaginationUtil.buildPageInfo(items, total, remaining);
+		PageInfoDto pageInfo = PaginationUtil.buildPageInfo(servers, total, remaining);
 
-		List<McpSummaryDataDto> data = items.stream()
+		List<McpSummaryDataDto> mcpServers = servers.stream()
 			.map(this::toSummaryDataDto)
 			.collect(Collectors.toList());
 
-		McpListResponse response = new McpListResponse(pageInfo, data);
+		McpListResponse response = new McpListResponse(pageInfo, mcpServers);
 
 		return ApiResponse.success(HttpStatus.OK.toString(), Constants.MSG_SUCCESS_LIST, response);
 	}
 
 	public ApiResponse<McpSearchResponse> searchByName(String name, Integer size, Long cursorId) {
-		List<McpServer> items = serverRepository.searchByName(name, size, cursorId);
+		List<McpServer> servers = serverRepository.searchByName(name, size, cursorId);
 
 		long total = serverRepository.countByName(name);
-		long endCursor = items.isEmpty() ? 0L : items.get(items.size() - 1).getSeq();
+		long endCursor = servers.isEmpty() ? 0L : servers.get(servers.size() - 1).getSeq();
 		long remaining = serverRepository.countRemainingByName(name, endCursor);
 
-		PageInfoDto pageInfo = PaginationUtil.buildPageInfo(items, total, remaining);
+		PageInfoDto pageInfo = PaginationUtil.buildPageInfo(servers, total, remaining);
 
-		List<McpSummaryDataDto> data = items.stream()
+		List<McpSummaryDataDto> mcpServers = servers.stream()
 		        .map(this::toSummaryDataDto)
 		        .collect(Collectors.toList());
 
-		McpSearchResponse response = new McpSearchResponse(pageInfo, data);
+		McpSearchResponse response = new McpSearchResponse(pageInfo, mcpServers);
 
 		return ApiResponse.success(HttpStatus.OK.toString(), Constants.MSG_SUCCESS_SEARCH, response);
 	}
@@ -70,16 +70,16 @@ public class McpServerService {
 
 		mcpServerRepository.incrementViews(seq);
 
-		McpDetailDataDto dto = toDetailDataDto(server);
-		McpDetailResponse response = new McpDetailResponse(dto);
+		McpDetailDataDto mcpServer = toDetailDataDto(server);
+		McpDetailResponse response = new McpDetailResponse(mcpServer);
 
 		return ApiResponse.success(HttpStatus.OK.toString(), Constants.MSG_SUCCESS_DETAIL, response);
 	}
 
 	public ApiResponse<McpTagResponse> listTags() {
-		List<String> items = tagRepository.listAll();
+		List<String> tags = tagRepository.listAll();
 
-		McpTagResponse response = new McpTagResponse(items);
+		McpTagResponse response = new McpTagResponse(tags);
 
 		return ApiResponse.success(HttpStatus.OK.toString(), Constants.MSG_SUCCESS_TAG_LIST, response);
 	}
@@ -92,8 +92,8 @@ public class McpServerService {
 			.stars(s.getStars())
 			.views(s.getViews())
 			.scanned(s.isScanned())
-			.mcpServers(
-				McpSummaryDto.builder()
+			.mcpServer(
+				McpServerSummaryDto.builder()
 					.name(s.getDetail().getName())
 					.description(s.getDetail().getDescription())
 					.build()
@@ -109,8 +109,8 @@ public class McpServerService {
 			.stars(s.getStars())
 			.views(s.getViews())
 			.scanned(s.isScanned())
-			.mcpServers(
-				McpDetailDto.builder()
+			.mcpServer(
+				McpServerDetailDto.builder()
 					.name(s.getDetail().getName())
 					.description(s.getDetail().getDescription())
 					.command(s.getDetail().getCommand())

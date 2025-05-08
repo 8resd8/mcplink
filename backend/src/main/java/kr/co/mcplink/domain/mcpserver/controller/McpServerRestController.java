@@ -33,9 +33,9 @@ public class McpServerRestController {
         return mcpServerService.searchByName(name, size, cursorId);
     }
 
-    @GetMapping("/{id}")
+    @GetMapping("/{serverId}")
     public ApiResponse<McpDetailResponse> getDetail(
-            @PathVariable("id") Long seq
+            @PathVariable("serverId") Long seq
     ) {
         return mcpServerService.getDetail(seq);
     }
