@@ -25,7 +25,7 @@ public class ErrorResponse {
 		return ResponseEntity
 			.status(httpStatus)
 			.body(ErrorResponse.builder()
-				.timestamp(Instant.from(LocalDateTime.now()))
+				.timestamp(Instant.now())
 				.status(httpStatus.value())
 				.error(httpStatus.name())
 				.message(message)
