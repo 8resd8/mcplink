@@ -23,13 +23,16 @@ pub fn run() {
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_positioner::init())
         .setup(|app| {
-            
             // Positioner 플러그인 초기화
             #[cfg(desktop)]
             app.handle().plugin(tauri_plugin_positioner::init());
-            
+
             // 팝업 윈도우 생성 예시 (필요한 경우)
-            let popup = tauri::WebviewWindowBuilder::new(app, "popup", tauri::WebviewUrl::App("popup".into()))
+            let popup = tauri::WebviewWindowBuilder::new(
+                app,
+                "popup",
+                tauri::WebviewUrl::App("popup".into()),
+            )
             .title("알림")
             .inner_size(300.0, 200.0)
             .decorations(false) // 창 테두리 제거
