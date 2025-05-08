@@ -1,6 +1,6 @@
 mod commands;
 
-use commands::{add_mcp_server_config, get_mcp_data, AppState};
+use commands::AppState;
 use reqwest::Client;
 use tauri::{
     menu::{MenuBuilder, MenuItemBuilder},
@@ -93,8 +93,9 @@ pub fn run() {
         })
         .manage(app_state)
         .invoke_handler(tauri::generate_handler![
-            get_mcp_data,
-            add_mcp_server_config,
+            commands::get_mcp_data,
+            commands::add_mcp_server_config,
+            commands::remove_mcp_server_config,
             commands::restart_claude_desktop
         ])
         .run(tauri::generate_context!())

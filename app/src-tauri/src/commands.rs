@@ -1,13 +1,12 @@
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
-use serde_json;
 use serde_json::Value;
 use std::collections::HashMap;
 use std::fs;
 use std::path::Path;
 use std::process::Command as StdCommand;
 use tauri::{Manager, State};
-use urlencoding;
+use urlencoding::encode;
 
 /// MCP 카드 데이터
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -49,7 +48,7 @@ pub async fn get_mcp_data(
 ) -> Result<Vec<MCPCard>, String> {
     let new_base_url = "http://localhost:8081/api"; // new local server address (8081 port)
     let url = if let Some(term) = &search_term {
-        let encoded_term = urlencoding::encode(term);
+        let encoded_term = encode(term);
         format!("{}?search={}", new_base_url, encoded_term)
     } else {
         new_base_url.to_string()
@@ -181,6 +180,78 @@ pub async fn add_mcp_server_config(
 
     // 서버 설정 추가 또는 업데이트
     servers.insert(server_name, server_config);
+    config.mcpServers = Some(servers);
+
+    // 설정 파일에 쓰기
+    let config_json = serde_json::to_string_pretty(&config)
+        .map_err(|e| format!("Failed to serialize config: {}", e))?;
+
+    fs::write(&config_path, config_json)
+        .map_err(|e| format!("Failed to write config file: {}", e))?;
+
+    Ok(())
+}
+
+/// MCP 서버 설정을 Claude Desktop 설정 파일에서 삭제
+#[tauri::command]
+pub async fn remove_mcp_server_config(
+    app: tauri::AppHandle,
+    server_name: String,
+) -> Result<(), String> {
+    // 설정 파일 경로를 생성합니다.
+    let config_path = match std::env::consts::OS {
+        "windows" => {
+            // Windows의 경우 %APPDATA%\Claude\claude_desktop_config.json
+            let appdata = app
+                .path()
+                .app_data_dir()
+                .map_err(|e| format!("Failed to get AppData directory: {}", e))?;
+            let claude_dir = appdata.parent().unwrap().join("Claude");
+
+            // Claude 디렉토리가 없으면 에러 반환
+            if !claude_dir.exists() {
+                return Err("Claude directory does not exist".to_string());
+            }
+
+            claude_dir.join("claude_desktop_config.json")
+        }
+        _ => {
+            return Err("This function is currently only supported on Windows".to_string());
+        }
+    };
+
+    // 설정 파일이 존재하는지 확인
+    if !config_path.exists() {
+        return Err("Configuration file does not exist".to_string());
+    }
+
+    // 설정 파일 읽기
+    let config_str = fs::read_to_string(&config_path)
+        .map_err(|e| format!("Failed to read config file: {}", e))?;
+
+    // 설정 파일 파싱
+    let mut config = match serde_json::from_str::<ClaudeDesktopConfig>(&config_str) {
+        Ok(config) => config,
+        Err(e) => return Err(format!("Failed to parse config file: {}", e)),
+    };
+
+    // mcpServers가 없으면 서버가 설치되어 있지 않은 것
+    if config.mcpServers.is_none() {
+        return Err(format!("No MCP servers are installed"));
+    }
+
+    // MCP 서버 맵 가져오기
+    let mut servers = config.mcpServers.unwrap_or_default();
+
+    // 서버가 존재하는지 확인
+    if !servers.contains_key(&server_name) {
+        return Err(format!("MCP server '{}' not found", server_name));
+    }
+
+    // 서버 삭제
+    servers.remove(&server_name);
+
+    // 서버 맵 업데이트
     config.mcpServers = Some(servers);
 
     // 설정 파일에 쓰기
