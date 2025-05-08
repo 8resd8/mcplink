@@ -28,13 +28,9 @@ public class McpServer {
 	private String type = "STDIO";
 	private String url;
 	private int stars;
-	@Builder.Default
 	private int views = 0;
-	@Builder.Default
 	private boolean official = false;
-	@Builder.Default
 	private boolean scanned = false;
-
 	private List<String> tags;
 
 	@Field("mcpServers")
