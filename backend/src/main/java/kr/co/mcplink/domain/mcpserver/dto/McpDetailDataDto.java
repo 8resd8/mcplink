@@ -9,6 +9,7 @@ public record McpDetailDataDto (
     String url,
     int stars,
     int views,
+    boolean official,
     boolean scanned,
     McpServerDetailDto mcpServer
 ) {

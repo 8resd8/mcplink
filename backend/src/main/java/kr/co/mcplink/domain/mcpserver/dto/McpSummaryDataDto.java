@@ -9,6 +9,7 @@ public record McpSummaryDataDto (
     String url,
     int stars,
     int views,
+    boolean official,
     boolean scanned,
     McpServerSummaryDto mcpServer
 ) {
