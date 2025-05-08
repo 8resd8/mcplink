@@ -104,21 +104,16 @@
               <label class="label">
                 <span class="label-text">args.</span>
               </label>
-              <input type="password" class="input input-bordered" value="" placeholder="GitHub에서 발급받은 API 키를 입력하세요" />
+              <input type="password" class="input input-bordered" value="" placeholder="args 값을 입력하세요" />
             </div>
           </div>
           
-          <div class="form-control">
-            <label class="label">
-              <span class="label-text">env.</span>
-            </label>
-            <div class="flex">
-              <input 
-                type="text" 
-                class="input input-bordered flex-1" 
-                value={url} 
-                readonly
-              />
+          <div class="form-control mb-4">
+            <div class="form-control">
+              <label class="label">
+                <span class="label-text">env. </span>
+              </label>
+              <input type="password" class="input input-bordered" value="" placeholder="env 값을 입력하세요" />
             </div>
           </div>
         </div>
