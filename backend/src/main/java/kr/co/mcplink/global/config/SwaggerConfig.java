@@ -13,8 +13,8 @@ public class SwaggerConfig {
 	@Bean
 	public OpenAPI openApi() {
 		return new OpenAPI()
-			.addServersItem(new Server().url("https://mcplink.co.kr/api").description("live server"))
-			.addServersItem(new Server().url("http://localhost:8080/api").description("Local server"))
+			.addServersItem(new Server().url("https://mcplink.co.kr/api").description("Live Server"))
+			.addServersItem(new Server().url("http://localhost:8080/api").description("Local Server"))
 			.info(new Info()
 				.title("MCP API")
 				.version("v1")
