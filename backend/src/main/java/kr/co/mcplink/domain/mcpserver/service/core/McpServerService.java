@@ -1,10 +1,7 @@
 package kr.co.mcplink.domain.mcpserver.service.core;
 
 import kr.co.mcplink.domain.mcpserver.dto.*;
-import kr.co.mcplink.domain.mcpserver.dto.response.McpDetailResponse;
-import kr.co.mcplink.domain.mcpserver.dto.response.McpListResponse;
-import kr.co.mcplink.domain.mcpserver.dto.response.McpSearchResponse;
-import kr.co.mcplink.domain.mcpserver.dto.response.McpTagResponse;
+import kr.co.mcplink.domain.mcpserver.dto.response.*;
 import kr.co.mcplink.domain.mcpserver.entity.McpServer;
 import kr.co.mcplink.domain.mcpserver.repository.McpServerRepository;
 import kr.co.mcplink.domain.mcpserver.repository.McpTagRepository;
@@ -25,7 +22,7 @@ public class McpServerService {
 	private final McpTagRepository tagRepository;
 	private final McpServerRepository mcpServerRepository;
 
-	public ApiResponse<McpListResponse> getLists(Integer size, Long cursorId) {
+	public ApiResponse<McpListResponse> getServers(Integer size, Long cursorId) {
 		List<McpServer> servers = serverRepository.listAll(size, cursorId);
 
 		long total = serverRepository.countAll();
@@ -59,6 +56,21 @@ public class McpServerService {
 		McpSearchResponse response = new McpSearchResponse(pageInfo, mcpServers);
 
 		return ApiResponse.success(HttpStatus.OK.toString(), Constants.MSG_SUCCESS_SEARCH, response);
+	}
+
+	public ApiResponse<McpBatchResponse> getBatch(List<Long> serverIds, Integer size, Long cursorId) {
+		List<Long> pageIds = PaginationUtil.slicePageIdsForBatch(serverIds, size, cursorId);
+		List<McpServer> servers = serverRepository.findBySeqInOrder(pageIds);
+
+		PageInfoDto pageInfo = PaginationUtil.buildPageInfoForBatch(serverIds, size, cursorId);
+
+		List<McpSummaryDataDto> mcpServers = servers.stream()
+				.map(this::toSummaryDataDto)
+				.collect(Collectors.toList());
+
+		McpBatchResponse response = new McpBatchResponse(pageInfo, mcpServers);
+
+		return ApiResponse.success(HttpStatus.OK.toString(), Constants.MSG_SUCCESS_BATCH, response);
 	}
 
 	public ApiResponse<McpDetailResponse> getDetail(Long seq) {

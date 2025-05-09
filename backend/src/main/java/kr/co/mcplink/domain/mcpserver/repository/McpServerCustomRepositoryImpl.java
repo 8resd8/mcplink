@@ -6,8 +6,10 @@ import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.*;
 import org.springframework.stereotype.Repository;
 
-import java.util.List;
+import java.util.*;
+import java.util.function.Function;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 @Repository
 public class McpServerCustomRepositoryImpl implements McpServerCustomRepository {
@@ -49,7 +51,7 @@ public class McpServerCustomRepositoryImpl implements McpServerCustomRepository 
     }
 
     @Override
-    public List<McpServer> listAll(int limit, Long cursor) {
+    public List<McpServer> listAll(int size, Long cursor) {
         Query query = new Query();
 
         if (cursor != null) {
@@ -74,7 +76,7 @@ public class McpServerCustomRepositoryImpl implements McpServerCustomRepository 
                         Sort.Order.desc("stars"),
                         Sort.Order.asc("seq")
                 ))
-                .limit(limit);
+                .limit(size);
 
         return mongoTemplate.find(query, McpServer.class);
     }
@@ -116,7 +118,7 @@ public class McpServerCustomRepositoryImpl implements McpServerCustomRepository 
     }
 
     @Override
-    public List<McpServer> searchByName(String name, int limit, Long cursor) {
+    public List<McpServer> searchByName(String name, int size, Long cursor) {
         Pattern p = Pattern.compile(".*" + Pattern.quote(name) + ".*", Pattern.CASE_INSENSITIVE);
         Query query = new Query()
                 .addCriteria(Criteria.where("mcpServers.name").regex(p));
@@ -142,9 +144,23 @@ public class McpServerCustomRepositoryImpl implements McpServerCustomRepository 
                         Sort.Order.desc("stars"),
                         Sort.Order.asc("seq")
                 ))
-                .limit(limit);
+                .limit(size);
 
         return mongoTemplate.find(query, McpServer.class);
+    }
+
+    public List<McpServer> findBySeqInOrder(List<Long> pageIds) {
+        Query query = new Query()
+                .addCriteria(Criteria.where("seq").in(pageIds));
+        List<McpServer> servers = mongoTemplate.find(query, McpServer.class);
+
+        Map<Long, McpServer> serverMap = servers.stream()
+                .collect(Collectors.toMap(McpServer::getSeq, Function.identity()));
+
+        return pageIds.stream()
+                .map(serverMap::get)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
     }
 
     @Override

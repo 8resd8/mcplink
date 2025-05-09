@@ -1,13 +1,13 @@
 package kr.co.mcplink.domain.mcpserver.controller;
 
-import kr.co.mcplink.domain.mcpserver.dto.response.McpDetailResponse;
-import kr.co.mcplink.domain.mcpserver.dto.response.McpListResponse;
-import kr.co.mcplink.domain.mcpserver.dto.response.McpSearchResponse;
-import kr.co.mcplink.domain.mcpserver.dto.response.McpTagResponse;
+import kr.co.mcplink.domain.mcpserver.dto.request.McpBatchRequest;
+import kr.co.mcplink.domain.mcpserver.dto.response.*;
 import kr.co.mcplink.domain.mcpserver.service.core.McpServerService;
 import kr.co.mcplink.global.common.ApiResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/v1/mcp/servers")
@@ -17,11 +17,11 @@ public class McpServerRestController {
     private final McpServerService mcpServerService;
 
     @GetMapping
-    public ApiResponse<McpListResponse> listAll(
+    public ApiResponse<McpListResponse> listServers(
             @RequestParam(required = false, defaultValue = "5") Integer size,
             @RequestParam(required = false, defaultValue = "0") Long cursorId
     ) {
-        return mcpServerService.getLists(size, cursorId);
+        return mcpServerService.getServers(size, cursorId);
     }
 
     @GetMapping("/search")
@@ -31,6 +31,16 @@ public class McpServerRestController {
             @RequestParam(required = false, defaultValue = "0") Long cursorId
     ) {
         return mcpServerService.searchByName(name, size, cursorId);
+    }
+
+    @PostMapping("/batch")
+    public ApiResponse<McpBatchResponse> getBatch(
+            @RequestParam(required = false, defaultValue = "5") Integer size,
+            @RequestParam(required = false, defaultValue = "0") Long cursorId,
+            @RequestBody McpBatchRequest batchRequest
+    ) {
+        List<Long> serverIds = batchRequest.serverIds();
+        return mcpServerService.getBatch(serverIds, size, cursorId);
     }
 
     @GetMapping("/{serverId}")
