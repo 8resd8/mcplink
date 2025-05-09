@@ -9,9 +9,9 @@ import lombok.extern.slf4j.Slf4j;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class McpSecureScanService {
+public class McpScanService {
 
-	private final McpServerAnalysisService analysisService;
+	private final McpAnalysisService analysisService;
 
 	public void triggerNotionScan() {
 		// 스캔할 서버 가져옴

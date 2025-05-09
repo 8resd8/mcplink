@@ -5,8 +5,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 
-import kr.co.mcplink.domain.mcpsecurity.service.McpSecureScanService;
-import kr.co.mcplink.domain.mcpsecurity.service.McpServerAnalysisService;
+import kr.co.mcplink.domain.mcpsecurity.service.McpScanService;
+import kr.co.mcplink.domain.mcpsecurity.service.McpAnalysisService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -16,8 +16,8 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class McpSecureController {
 
-	private final McpServerAnalysisService analysisService;
-	private final McpSecureScanService scanService;
+	private final McpAnalysisService analysisService;
+	private final McpScanService scanService;
 
 	@PostMapping("/scan/all")
 	public ResponseEntity<String> scanAllServers() {
