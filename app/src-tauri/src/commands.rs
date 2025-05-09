@@ -312,6 +312,7 @@ pub async fn add_mcp_server_config(
     app: AppHandle,
     server_name: String,
     server_config: MCPServerConfig,
+    server_id: i64,
 ) -> Result<(), String> {
     // 설정 파일 경로를 생성합니다.
     let config_path = match env::consts::OS {
@@ -335,6 +336,12 @@ pub async fn add_mcp_server_config(
             return Err("This function is currently only supported on Windows".to_string());
         }
     };
+
+    // mcplink 파일 경로 생성 (claude_desktop_config.json과 같은 위치)
+    let mcplink_path = config_path
+        .parent()
+        .unwrap()
+        .join("mcplink_desktop_config.json");
 
     // 설정 파일 읽기 (파일이 없으면 빈 객체 생성)
     let mut config = if config_path.exists() {
@@ -368,7 +375,7 @@ pub async fn add_mcp_server_config(
     let mut servers = config.mcpServers.unwrap_or_default();
 
     // 서버 설정 추가 또는 업데이트
-    servers.insert(server_name, server_config);
+    servers.insert(server_name.clone(), server_config);
     config.mcpServers = Some(servers);
 
     // 설정 파일에 쓰기
@@ -377,6 +384,29 @@ pub async fn add_mcp_server_config(
 
     fs::write(&config_path, config_json)
         .map_err(|e| format!("Failed to write config file: {}", e))?;
+
+    // mcplink_desktop_config.json 파일에 server_id와 server_name 추가
+    let mut mcplink_config = if mcplink_path.exists() {
+        let mcplink_str = fs::read_to_string(&mcplink_path)
+            .map_err(|e| format!("Failed to read mcplink config file: {}", e))?;
+
+        match serde_json::from_str::<Map<String, Value>>(&mcplink_str) {
+            Ok(map) => map,
+            Err(_) => Map::new(),
+        }
+    } else {
+        Map::new()
+    };
+
+    // server_id를 문자열 키로 변환하고 server_name을 값으로 저장
+    mcplink_config.insert(server_id.to_string(), Value::String(server_name));
+
+    // mcplink 설정 파일에 쓰기
+    let mcplink_json = serde_json::to_string_pretty(&mcplink_config)
+        .map_err(|e| format!("Failed to serialize mcplink config: {}", e))?;
+
+    fs::write(&mcplink_path, mcplink_json)
+        .map_err(|e| format!("Failed to write mcplink config file: {}", e))?;
 
     Ok(())
 }
@@ -405,6 +435,12 @@ pub async fn remove_mcp_server_config(app: AppHandle, server_name: String) -> Re
             return Err("This function is currently only supported on Windows".to_string());
         }
     };
+
+    // mcplink 파일 경로 생성 (claude_desktop_config.json과 같은 위치)
+    let mcplink_path = config_path
+        .parent()
+        .unwrap()
+        .join("mcplink_desktop_config.json");
 
     // 설정 파일이 존재하는지 확인
     if !config_path.exists() {
@@ -446,6 +482,39 @@ pub async fn remove_mcp_server_config(app: AppHandle, server_name: String) -> Re
 
     fs::write(&config_path, config_json)
         .map_err(|e| format!("Failed to write config file: {}", e))?;
+
+    // mcplink_desktop_config.json 파일에서 server_name과 관련된 항목 제거
+    if mcplink_path.exists() {
+        let mcplink_str = fs::read_to_string(&mcplink_path)
+            .map_err(|e| format!("Failed to read mcplink config file: {}", e))?;
+
+        match serde_json::from_str::<Map<String, Value>>(&mcplink_str) {
+            Ok(mut mcplink_config) => {
+                // server_name과 일치하는 모든 항목을 찾아 삭제
+                let mut keys_to_remove = Vec::new();
+                for (key, value) in &mcplink_config {
+                    if let Value::String(name) = value {
+                        if name == &server_name {
+                            keys_to_remove.push(key.clone());
+                        }
+                    }
+                }
+
+                // 찾은 키들을 삭제
+                for key in keys_to_remove {
+                    mcplink_config.remove(&key);
+                }
+
+                // 업데이트된 설정을 파일에 쓰기
+                let mcplink_json = serde_json::to_string_pretty(&mcplink_config)
+                    .map_err(|e| format!("Failed to serialize mcplink config: {}", e))?;
+
+                fs::write(&mcplink_path, mcplink_json)
+                    .map_err(|e| format!("Failed to write mcplink config file: {}", e))?;
+            }
+            Err(e) => return Err(format!("Failed to parse mcplink config file: {}", e)),
+        }
+    }
 
     Ok(())
 }
