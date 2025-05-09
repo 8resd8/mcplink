@@ -1,23 +1,26 @@
 // app/src-tauri/src/commands.rs
 
+use dotenvy::dotenv;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::HashMap;
-use std::fs;
 use std::env;
+use std::fs;
 use std::path::Path;
 use std::process::Command as StdCommand;
 use tauri::{Manager, State};
-use urlencoding;
-use dotenvy::dotenv;
 use tokio;
+use urlencoding;
 
 // --- 기존 구조체 정의 (McpServerInfo, ApiCardData, PageInfo, DataWrapper, ApiResponse) ---
 #[derive(Debug, Deserialize)]
 struct McpServerInfo {
     name: String,
     description: String,
+    args: Option<Vec<String>>,
+    env: Option<serde_json::Map<String, Value>>,
+    command: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -30,8 +33,8 @@ struct ApiCardData {
     stars: i32,
     views: i32,
     scanned: bool,
-    #[serde(rename = "mcpServer")] // JSON의 "mcpServer" 키를 이 필드에 매핑
-    mcpServers: McpServerInfo, // 필드명 예시 (McpServerInfo는 name, description을 가짐)
+    #[serde(rename = "mcpServer")]
+    mcpServers: McpServerInfo,
 }
 
 #[derive(Debug, Deserialize)]
@@ -47,17 +50,19 @@ struct PageInfo {
 #[allow(non_snake_case)]
 struct DataWrapper {
     pageInfo: PageInfo,
-    #[serde(rename = "mcpServers")] // JSON의 "mcpServers" 키를 이 필드에 매핑
-    mcpServers: Vec<ApiCardData>,    // data -> mcpServers로 이름 변경
+    #[serde(rename = "mcpServers")]
+    mcpServers: Vec<ApiCardData>,
 }
 
+// 이 ApiResponse 구조체는 get_mcp_data와 get_mcp_detail_data 모두에서 사용될 수 있습니다.
 #[derive(Debug, Deserialize)]
 #[allow(non_snake_case)]
 struct ApiResponse {
+    // data 필드를 Value로 하여 유연하게 처리
     timestamp: String,
     message: String,
     code: String,
-    data: Value,
+    data: Value, // 실제 데이터는 이 안에 Value 형태로 들어옴
 }
 
 // --- MCPCard, MCPCardDetail, MCPServerConfig, ClaudeDesktopConfig, AppState 구조체 정의 ---
@@ -70,6 +75,20 @@ pub struct MCPCard {
     pub stars: i32,
 }
 
+// DetailApiResponse is now designed to parse the object obtained from `api_response_wrapper.data.get("mcpServer")`
+#[derive(Debug, Deserialize)]
+struct DetailApiResponse {
+    id: i32,
+    url: String,
+    stars: i32,
+    #[serde(rename = "mcpServer")] // This inner mcpServer object holds the actual server details
+    mcp_server_info: McpServerInfo,
+    scanned: Option<bool>,
+    #[serde(rename = "type")]
+    _type: Option<String>,
+    views: Option<i32>,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MCPCardDetail {
     pub id: i32,
@@ -79,21 +98,8 @@ pub struct MCPCardDetail {
     pub stars: i32,
     pub args: Option<Vec<String>>,
     pub env: Option<serde_json::Map<String, Value>>,
-    // pub command: Option<String>,
+    pub command: Option<String>,
 }
-
-#[derive(Debug, Deserialize)] // DetailApiResponse는 Deserialize만 필요할 수 있음
-struct DetailApiResponse {
-    id: i32,
-    url: String,
-    stars: i32,
-    #[serde(rename = "mcpServers")]
-    mcp_servers: McpServerInfo,
-    args: Option<Vec<String>>,
-    env: Option<serde_json::Map<String, Value>>,
-    // command: Option<String>,
-}
-
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MCPServerConfig {
@@ -119,8 +125,8 @@ pub struct AppState {
 #[tauri::command]
 pub fn some_command() -> String {
     let _ = dotenvy::dotenv().ok();
-    let crawler_api_base_url: String = std::env::var("CRAWLER_API_BASE_URL")
-        .expect("CRAWLER_API_BASE_URL must be set");
+    let crawler_api_base_url: String =
+        std::env::var("CRAWLER_API_BASE_URL").expect("CRAWLER_API_BASE_URL must be set");
     return crawler_api_base_url;
 }
 
@@ -141,8 +147,8 @@ pub async fn get_mcp_data(
     };
 
     let request_url = if let Some(term) = search_term {
-        if term.is_empty(){
-             base_url.to_string()
+        if term.is_empty() {
+            base_url.to_string()
         } else {
             let encoded_term = urlencoding::encode(&term);
             let search_url = format!("{}/search?name={}", base_url, encoded_term);
@@ -162,30 +168,52 @@ pub async fn get_mcp_data(
                         println!("[get_mcp_data] RAW API Response Body: {}", text_body);
                         match serde_json::from_str::<ApiResponse>(&text_body) {
                             Ok(api_response) => {
-                                // data가 객체일 때 DataWrapper로 파싱
                                 if let Value::Object(data_obj) = &api_response.data {
-                                    if let Ok(data_wrapper) = serde_json::from_value::<DataWrapper>(Value::Object(data_obj.clone())) {
-                                        let cards: Vec<MCPCard> = data_wrapper.mcpServers.iter()
-                                            .map(|api_card| MCPCard {
-                                                id: api_card.id,
-                                                title: api_card.mcpServers.name.clone(),
-                                                description: api_card.mcpServers.description.clone(),
-                                                url: api_card.url.clone(),
-                                                stars: api_card.stars,
-                                            }).collect();
-                                        println!("[get_mcp_data] Successfully parsed {} cards.", cards.len());
-                                        if let Some(card) = cards.first() { println!("[get_mcp_data] First parsed card: {:?}", card); }
-                                        return Ok(cards);
-                                    } else {
-                                        println!("[get_mcp_data] Failed to parse data object into DataWrapper.");
+                                    // DataWrapper 파싱 전 로그 추가
+                                    println!("[get_mcp_data] Attempting to parse data_obj into DataWrapper: {:?}", data_obj);
+                                    match serde_json::from_value::<DataWrapper>(Value::Object(
+                                        data_obj.clone(),
+                                    )) {
+                                        Ok(data_wrapper) => {
+                                            let cards: Vec<MCPCard> = data_wrapper
+                                                .mcpServers
+                                                .iter()
+                                                .map(|api_card| MCPCard {
+                                                    id: api_card.id,
+                                                    title: api_card.mcpServers.name.clone(),
+                                                    description: api_card
+                                                        .mcpServers
+                                                        .description
+                                                        .clone(),
+                                                    url: api_card.url.clone(),
+                                                    stars: api_card.stars,
+                                                })
+                                                .collect();
+                                            println!(
+                                                "[get_mcp_data] Successfully parsed {} cards.",
+                                                cards.len()
+                                            );
+                                            if let Some(card) = cards.first() {
+                                                println!(
+                                                    "[get_mcp_data] First parsed card: {:?}",
+                                                    card
+                                                );
+                                            }
+                                            return Ok(cards);
+                                        }
+                                        Err(e) => {
+                                            // DataWrapper 파싱 실패 시 상세 로그
+                                            println!("[get_mcp_data] Failed to parse data object into DataWrapper: {}. Data object was: {:?}", e, data_obj);
+                                            return Err(format!("[get_mcp_data] Failed to parse data into DataWrapper: {}", e));
+                                        }
                                     }
                                 } else {
-                                    println!("[get_mcp_data] API response.data is not an object. Type: {:?}. Returning empty.", api_response.data);
+                                    println!("[get_mcp_data] API response.data is not an object or not found. Data: {:?}. Returning empty.", api_response.data);
+                                    return Ok(Vec::new());
                                 }
-                                return Ok(Vec::new());
                             }
                             Err(e) => {
-                                let msg = format!("[get_mcp_data] JSON parsing error: {}. Body: {:.500}", e, text_body);
+                                let msg = format!("[get_mcp_data] JSON parsing error for ApiResponse: {}. Body: {:.500}", e, text_body);
                                 println!("{}", msg);
                                 return Err(msg);
                             }
@@ -198,8 +226,14 @@ pub async fn get_mcp_data(
                     }
                 }
             } else {
-                let error_body = response.text().await.unwrap_or_else(|e| format!("Failed to read error body: {}", e));
-                let msg = format!("[get_mcp_data] Server error for {}: {}. Body: {:.500}", request_url, status, error_body);
+                let error_body = response
+                    .text()
+                    .await
+                    .unwrap_or_else(|e| format!("Failed to read error body: {}", e));
+                let msg = format!(
+                    "[get_mcp_data] Server error for {}: {}. Body: {:.500}",
+                    request_url, status, error_body
+                );
                 println!("{}", msg);
                 return Err(msg);
             }
@@ -218,45 +252,87 @@ pub async fn get_mcp_detail_data(
     id: i32,
 ) -> Result<MCPCardDetail, String> {
     dotenvy::dotenv().ok();
-    let base_url: String = match env::var("CRAWLER_API_BASE_URL") { // .env에는 .../servers 까지만
+    let base_url: String = match env::var("CRAWLER_API_BASE_URL") {
         Ok(url_val) => url_val,
         Err(e) => {
             let msg = format!("[get_mcp_detail_data] CRAWLER_API_BASE_URL not set: {}", e);
             return Err(msg);
         }
     };
-    let request_url = format!("{}/{}", base_url, id); // 예: .../servers/16
-    println!("[get_mcp_detail_data] Requesting detail for ID {}: {}", id, request_url);
+    let request_url = format!("{}/{}", base_url, id);
+    println!(
+        "[get_mcp_detail_data] Requesting detail for ID {}: {}",
+        id, request_url
+    );
 
     match state.client.get(&request_url).send().await {
         Ok(response) => {
             let status = response.status();
-            println!("[get_mcp_detail_data] Response status for {}: {}", request_url, status);
+            println!(
+                "[get_mcp_detail_data] Response status for {}: {}",
+                request_url, status
+            );
             if status.is_success() {
-                match response.json::<DetailApiResponse>().await {
-                    Ok(detail_data) => {
-                        let card_detail = MCPCardDetail {
-                            id: detail_data.id,
-                            title: detail_data.mcp_servers.name,
-                            description: detail_data.mcp_servers.description,
-                            url: detail_data.url,
-                            stars: detail_data.stars,
-                            args: detail_data.args,
-                            env: detail_data.env,
-                            // command: detail_data.command,
-                        };
-                        println!("[get_mcp_detail_data] Successfully parsed detail for ID {}: {:?}", id, card_detail);
-                        Ok(card_detail)
+                match response.json::<ApiResponse>().await {
+                    // Outer ApiResponse wrapper
+                    Ok(api_response_wrapper) => {
+                        println!("[get_mcp_detail_data] Successfully parsed outer ApiResponse. Data field: {:?}", api_response_wrapper.data);
+
+                        // Check if api_response_wrapper.data is an Object and get the inner "mcpServer" value
+                        if let Value::Object(data_map) = api_response_wrapper.data {
+                            if let Some(inner_mcp_server_value) = data_map.get("mcpServer") {
+                                println!("[get_mcp_detail_data] Extracted inner_mcp_server_value (target for DetailApiResponse): {:?}", inner_mcp_server_value);
+
+                                // Now parse this inner_mcp_server_value into DetailApiResponse
+                                match serde_json::from_value::<DetailApiResponse>(
+                                    inner_mcp_server_value.clone(),
+                                ) {
+                                    Ok(detail_data) => {
+                                        let card_detail = MCPCardDetail {
+                                            id: detail_data.id,
+                                            title: detail_data.mcp_server_info.name, // Name from McpServerInfo
+                                            description: detail_data.mcp_server_info.description, // Description from McpServerInfo
+                                            url: detail_data.url,
+                                            stars: detail_data.stars,
+                                            args: detail_data.mcp_server_info.args,
+                                            env: detail_data.mcp_server_info.env,
+                                            command: detail_data.mcp_server_info.command,
+                                        };
+                                        println!("[get_mcp_detail_data] Successfully parsed inner data to MCPCardDetail: {:?}", card_detail);
+                                        Ok(card_detail)
+                                    }
+                                    Err(e_inner_struct) => {
+                                        let msg = format!("[get_mcp_detail_data] Failed to parse inner_mcp_server_value into DetailApiResponse: {}. Value was: {:?}", e_inner_struct, inner_mcp_server_value);
+                                        println!("{}", msg);
+                                        Err(msg)
+                                    }
+                                }
+                            } else {
+                                let msg = format!("[get_mcp_detail_data] Key 'mcpServer' not found inside ApiResponse.data. ApiResponse.data was: {:?}", data_map);
+                                println!("{}", msg);
+                                Err(msg)
+                            }
+                        } else {
+                            let msg = format!("[get_mcp_detail_data] ApiResponse.data is not an object. It was: {:?}", api_response_wrapper.data);
+                            println!("{}", msg);
+                            Err(msg)
+                        }
                     }
-                    Err(e) => {
-                        let msg = format!("[get_mcp_detail_data] JSON parsing error: {}", e);
+                    Err(e_outer) => {
+                        let msg = format!("[get_mcp_detail_data] Failed to parse outer ApiResponse: {}. Check if the overall response matches ApiResponse structure.", e_outer);
                         println!("{}", msg);
                         Err(msg)
                     }
                 }
             } else {
-                let error_body = response.text().await.unwrap_or_else(|e| format!("Failed to read error body: {}", e));
-                let msg = format!("[get_mcp_detail_data] Server error {}: {}. Body: {:.500}", request_url, status, error_body);
+                let error_body = response
+                    .text()
+                    .await
+                    .unwrap_or_else(|e| format!("Failed to read error body: {}", e));
+                let msg = format!(
+                    "[get_mcp_detail_data] Server error {}: {}. Body: {:.500}",
+                    request_url, status, error_body
+                );
                 println!("{}", msg);
                 Err(msg)
             }
@@ -277,9 +353,12 @@ pub async fn add_mcp_server_config(
 ) -> Result<(), String> {
     let config_path = match std::env::consts::OS {
         "windows" => {
-            let appdata_dir = app.path().app_data_dir()
+            let appdata_dir = app
+                .path()
+                .app_data_dir()
                 .map_err(|e| format!("Failed to get AppData directory: {}", e))?;
-            let claude_config_base_dir = appdata_dir.parent()
+            let claude_config_base_dir = appdata_dir
+                .parent()
                 .ok_or_else(|| "Failed to get parent of AppData dir".to_string())?
                 .join("Claude");
             if !claude_config_base_dir.exists() {
@@ -316,21 +395,16 @@ pub async fn remove_mcp_server_config(
     app: tauri::AppHandle,
     server_name: String,
 ) -> Result<(), String> {
-    // 설정 파일 경로를 생성합니다.
     let config_path = match std::env::consts::OS {
         "windows" => {
-            // Windows의 경우 %APPDATA%\Claude\claude_desktop_config.json
             let appdata = app
                 .path()
                 .app_data_dir()
                 .map_err(|e| format!("Failed to get AppData directory: {}", e))?;
             let claude_dir = appdata.parent().unwrap().join("Claude");
-
-            // Claude 디렉토리가 없으면 에러 반환
             if !claude_dir.exists() {
                 return Err("Claude directory does not exist".to_string());
             }
-
             claude_dir.join("claude_desktop_config.json")
         }
         _ => {
@@ -338,41 +412,31 @@ pub async fn remove_mcp_server_config(
         }
     };
 
-    // 설정 파일이 존재하는지 확인
     if !config_path.exists() {
         return Err("Configuration file does not exist".to_string());
     }
 
-    // 설정 파일 읽기
     let config_str = fs::read_to_string(&config_path)
         .map_err(|e| format!("Failed to read config file: {}", e))?;
 
-    // 설정 파일 파싱
     let mut config = match serde_json::from_str::<ClaudeDesktopConfig>(&config_str) {
         Ok(config) => config,
         Err(e) => return Err(format!("Failed to parse config file: {}", e)),
     };
 
-    // mcpServers가 없으면 서버가 설치되어 있지 않은 것
     if config.mcpServers.is_none() {
         return Err(format!("No MCP servers are installed"));
     }
 
-    // MCP 서버 맵 가져오기
     let mut servers = config.mcpServers.unwrap_or_default();
 
-    // 서버가 존재하는지 확인
     if !servers.contains_key(&server_name) {
         return Err(format!("MCP server '{}' not found", server_name));
     }
 
-    // 서버 삭제
     servers.remove(&server_name);
-
-    // 서버 맵 업데이트
     config.mcpServers = Some(servers);
 
-    // 설정 파일에 쓰기
     let config_json = serde_json::to_string_pretty(&config)
         .map_err(|e| format!("Failed to serialize config: {}", e))?;
 
@@ -391,7 +455,13 @@ pub async fn restart_claude_desktop(_app: tauri::AppHandle) -> Result<(), String
 
     for process_name in possible_process_names.iter() {
         let output = StdCommand::new("tasklist")
-            .args(["/FI", &format!("IMAGENAME eq {}", process_name), "/FO", "CSV", "/NH"])
+            .args([
+                "/FI",
+                &format!("IMAGENAME eq {}", process_name),
+                "/FO",
+                "CSV",
+                "/NH",
+            ])
             .output()
             .map_err(|e| format!("Failed to execute tasklist: {}", e))?;
         let stdout = String::from_utf8_lossy(&output.stdout);
@@ -399,8 +469,13 @@ pub async fn restart_claude_desktop(_app: tauri::AppHandle) -> Result<(), String
             let parts: Vec<&str> = line.split(',').collect();
             if parts.len() > 1 {
                 let pid_str = parts[1].trim_matches('"');
-                println!("Found {} process with PID: {}. Attempting to kill...", process_name, pid_str);
-                StdCommand::new("taskkill").args(["/F", "/PID", pid_str]).output()
+                println!(
+                    "Found {} process with PID: {}. Attempting to kill...",
+                    process_name, pid_str
+                );
+                StdCommand::new("taskkill")
+                    .args(["/F", "/PID", pid_str])
+                    .output()
                     .map_err(|e| format!("Failed to kill process {}: {}", pid_str, e))?;
                 println!("Process {} (PID: {}) killed.", process_name, pid_str);
                 found_and_killed = true;
@@ -410,28 +485,33 @@ pub async fn restart_claude_desktop(_app: tauri::AppHandle) -> Result<(), String
 
     if !found_and_killed {
         println!("No running Claude Desktop process found by name. Checking all processes for 'claude'...");
-         let output_all = StdCommand::new("tasklist")
+        let output_all = StdCommand::new("tasklist")
             .args(["/FO", "CSV", "/NH"])
             .output()
             .map_err(|e| format!("Failed to execute tasklist for all processes: {}", e))?;
         let stdout_all = String::from_utf8_lossy(&output_all.stdout);
         for line in stdout_all.lines() {
             if line.to_lowercase().contains("claude") {
-                 let parts: Vec<&str> = line.split(',').collect();
-                 if parts.len() > 0 {
+                let parts: Vec<&str> = line.split(',').collect();
+                if parts.len() > 0 {
                     let process_name_from_all = parts[0].trim_matches('"');
-                     println!("Found potential Claude-related process: {}. Attempting to kill by image name...", process_name_from_all);
-                    StdCommand::new("taskkill").args(["/F", "/IM", process_name_from_all]).output()
-                        .map_err(|e| format!("Failed to kill process {}: {}", process_name_from_all, e))?;
+                    println!("Found potential Claude-related process: {}. Attempting to kill by image name...", process_name_from_all);
+                    StdCommand::new("taskkill")
+                        .args(["/F", "/IM", process_name_from_all])
+                        .output()
+                        .map_err(|e| {
+                            format!("Failed to kill process {}: {}", process_name_from_all, e)
+                        })?;
                     println!("Process {} killed.", process_name_from_all);
-                 }
+                }
             }
         }
     }
 
     tokio::time::sleep(tokio::time::Duration::from_millis(1500)).await;
 
-    let local_appdata = env::var("LOCALAPPDATA").map_err(|e| format!("Failed to get LOCALAPPDATA: {}", e))?;
+    let local_appdata =
+        env::var("LOCALAPPDATA").map_err(|e| format!("Failed to get LOCALAPPDATA: {}", e))?;
     let claude_exe_path_str = format!("{}\\AnthropicClaude\\Claude.exe", local_appdata);
     let claude_path = Path::new(&claude_exe_path_str);
 
@@ -440,20 +520,19 @@ pub async fn restart_claude_desktop(_app: tauri::AppHandle) -> Result<(), String
         return Err(format!("Claude.exe not found at {}", claude_path.display()));
     }
 
-    StdCommand::new(claude_path).spawn()
+    StdCommand::new(claude_path)
+        .spawn()
         .map(|_| println!("Claude Desktop restarted successfully."))
         .map_err(|e| format!("Failed to start Claude Desktop: {}", e))
 }
 
-// extract_pids_from_tasklist 함수는 restart_claude_desktop 함수 내 로직으로 통합되어 더 이상 필요 없을 수 있습니다.
-// 만약 별도로 사용된다면 유지하고, 아니라면 삭제해도 됩니다.
 // fn extract_pids_from_tasklist(tasklist_output: &str) -> Option<Vec<String>> {
 //     let mut pids = Vec::new();
-//     for line in tasklist_output.lines() { // header line skip 제거
+//     for line in tasklist_output.lines() {
 //         let parts: Vec<&str> = line.split(',').collect();
 //         if parts.len() >= 2 {
 //             let pid = parts[1].trim_matches('"').to_string();
-//             if !pid.is_empty() && pid.chars().all(char::is_numeric) { // 간단한 PID 유효성 검사
+//             if !pid.is_empty() && pid.chars().all(char::is_numeric) {
 //                 pids.push(pid);
 //             }
 //         }

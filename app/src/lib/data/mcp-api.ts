@@ -12,7 +12,7 @@ export interface MCPCard {
 export interface MCPCardDetail extends MCPCard {
   args?: string[]
   env?: Record<string, any>
-  // command?: string;
+  command?: string
 }
 
 /**
