@@ -1,6 +1,6 @@
 package kr.co.mcplink.domain.mcpsecurity.dto;
 
-public record McpServerScanResultDto(
+public record McpScanResultDto(
 	String mcpServerId,
 	String mcpServerName,
 	String gitUrl,

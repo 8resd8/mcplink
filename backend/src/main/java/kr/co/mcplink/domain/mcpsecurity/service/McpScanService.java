@@ -2,7 +2,7 @@ package kr.co.mcplink.domain.mcpsecurity.service;
 
 import org.springframework.stereotype.Service;
 
-import kr.co.mcplink.domain.mcpsecurity.dto.McpServerScanResultDto;
+import kr.co.mcplink.domain.mcpsecurity.dto.McpScanResultDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -15,7 +15,7 @@ public class McpScanService {
 
 	public void triggerNotionScan() {
 		// 스캔할 서버 가져옴
-		McpServerScanResultDto result = analysisService.scanSpecificServer();
+		McpScanResultDto result = analysisService.scanSpecificServer();
 
 		if (result.scanSuccess()) {
 			log.info("Notion 서버 스캔 성공. JSON 결과 길이: {}", result.osvOutputJson() != null ? result.osvOutputJson().length() : 0);

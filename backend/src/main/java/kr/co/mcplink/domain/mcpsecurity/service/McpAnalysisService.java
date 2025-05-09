@@ -14,7 +14,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import jakarta.annotation.PostConstruct;
-import kr.co.mcplink.domain.mcpsecurity.dto.McpServerScanResultDto;
+import kr.co.mcplink.domain.mcpsecurity.dto.McpScanResultDto;
 import lombok.extern.slf4j.Slf4j;
 
 @Service
@@ -45,10 +45,10 @@ public class McpAnalysisService {
 	}
 
 	/**
-	 * 모든 몽고DB에 있는 Git URL OSV 스캔
+	 * 모든 몽고DB에 있는 Git URL OSV 스캔, 현재는 노션 하드코딩
 	 * @return McpServerScanResultDto 스캔 결과를 담은 DTO
 	 */
-	public McpServerScanResultDto scanSpecificServer() {
+	public McpScanResultDto scanSpecificServer() {
 		String gitUrl = "https://github.com/makenotion/notion-mcp-server.git";
 		String serverId = "notion-mcp-server-id"; // 식별을 위한 임의의 ID
 		String serverName = "Notion MCP Server";    // 식별을 위한 임의의 이름
@@ -57,7 +57,7 @@ public class McpAnalysisService {
 		Path reportOutputFile = baseTempDir.resolve("notion_report.json");
 
 		log.info("지정된 URL 스캔 시작: {}, 클론 위치: {}, 리포트 파일: {}", gitUrl, cloneDir, reportOutputFile);
-		McpServerScanResultDto result = performScanForUrl(gitUrl, serverId, serverName, cloneDir);
+		McpScanResultDto result = performScanForUrl(gitUrl, serverId, serverName, cloneDir);
 
 		if (result.scanSuccess() && result.osvOutputJson() != null) {
 			try {
@@ -74,7 +74,7 @@ public class McpAnalysisService {
 	 * 주어진 Git URL에 대해 클론, OSV 스캔, 정리를 수행하는 내부 메소드.
 	 * @param cloneDir 스캔을 위해 리포지토리를 클론할 대상 디렉토리
 	 */
-	private McpServerScanResultDto performScanForUrl(String gitUrl, String serverId, String serverName, Path cloneDir) {
+	private McpScanResultDto performScanForUrl(String gitUrl, String serverId, String serverName, Path cloneDir) {
 		Path targetScanDir = cloneDir; // 이 URL은 루트 디렉토리 스캔
 
 		String osvJsonOutput = null;
@@ -89,7 +89,7 @@ public class McpAnalysisService {
 			if (!cloneRepository(gitUrl, cloneDir)) {
 				log.error("Git 리포지토리 클론 실패: {}", gitUrl);
 
-				return new McpServerScanResultDto(serverId, serverName, gitUrl, false, null);
+				return new McpScanResultDto(serverId, serverName, gitUrl, false, null);
 			}
 
 			// 3. OSV 스캔
@@ -100,11 +100,11 @@ public class McpAnalysisService {
 			if (osvJsonOutput != null && osvJsonOutput.trim().startsWith("{\"error\":")) {
 				log.warn("OSV-Scanner 실행 중 오류 감지됨. 출력: {}", osvJsonOutput);
 				// 실패 DTO 반환, osvOutputJson에는 scanner가 반환한 에러 JSON 포함
-				return new McpServerScanResultDto(serverId, serverName, gitUrl, false, osvJsonOutput);
+				return new McpScanResultDto(serverId, serverName, gitUrl, false, osvJsonOutput);
 			} else if (osvJsonOutput == null) {
 				log.error("OSV-Scanner 실행 후 null 출력을 받았습니다.");
 				// 실패 DTO 반환 (osvOutputJson은 null)
-				return new McpServerScanResultDto(serverId, serverName, gitUrl, false, null);
+				return new McpScanResultDto(serverId, serverName, gitUrl, false, null);
 			}
 
 			log.info("'{}' OSV-Scanner 실행 완료.", targetScanDir);
@@ -113,13 +113,13 @@ public class McpAnalysisService {
 			log.error("'{}' (URL: '{}') 스캔 중 오류 발생", serverName, gitUrl, e);
 			Thread.currentThread().interrupt();
 			// 예외 발생 시 실패 DTO 반환 (osvOutputJson은 null)
-			return new McpServerScanResultDto(serverId, serverName, gitUrl, false, null);
+			return new McpScanResultDto(serverId, serverName, gitUrl, false, null);
 		} finally {
 			cleanup(cloneDir);
 		}
 
 		// 최종 결과 DTO 반환
-		return new McpServerScanResultDto(serverId, serverName, gitUrl, success, osvJsonOutput);
+		return new McpScanResultDto(serverId, serverName, gitUrl, success, osvJsonOutput);
 	}
 
 	private boolean cloneRepository(String gitUrl, Path targetDir) throws IOException, InterruptedException {
