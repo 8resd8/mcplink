@@ -12,23 +12,24 @@ import lombok.extern.slf4j.Slf4j;
 public class McpScanService {
 
 	private final McpAnalysisService analysisService;
+	private final McpJsonParsingService parsingService;
 
-	public void triggerNotionScan() {
-		// 스캔할 서버 가져옴
+	// 전체 서버 스캔을 담당하는 메소드
+	public void triggerScan() {
 		McpScanResultDto result = analysisService.scanSpecificServer();
 
-		if (result.scanSuccess()) {
-			log.info("Notion 서버 스캔 성공. JSON 결과 길이: {}", result.osvOutputJson() != null ? result.osvOutputJson().length() : 0);
-			// 여기서 result.osvOutputJson()을 파싱하여 추가 작업 수행
-			// 예: JSON 파싱 후 DB 저장, 알림 발송 등
-			// String json = result.osvOutputJson();
-			// ... 파싱 로직 ...
-		} else {
-			log.error("Notion 서버 스캔 실패.");
-			if (result.osvOutputJson() != null && result.osvOutputJson().contains("error")) {
-				log.error("실패 원인 (JSON): {}", result.osvOutputJson());
-			}
-			// 실패 처리 로직
+		if (!result.scanSuccess()) {
+			log.error("실패 원인 (JSON): {}", result.osvOutputJson());
+			throw new RuntimeException("서버 스캔 실패");
 		}
+
+		String output = result.osvOutputJson();
+
+		int jsonStart = output.indexOf("{");
+		if (jsonStart != -1) {
+			output = output.substring(jsonStart);
+		}
+
+		parsingService.processOsvResult(output);
 	}
 }
