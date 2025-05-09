@@ -20,7 +20,6 @@ import java.util.stream.Collectors;
 public class McpServerService {
 	private final McpServerRepository serverRepository;
 	private final McpTagRepository tagRepository;
-	private final McpServerRepository mcpServerRepository;
 
 	public ApiResponse<McpListResponse> findAllServers(Integer size, Long cursorId) {
 		List<McpServer> servers = serverRepository.listAll(size, cursorId);
@@ -80,7 +79,10 @@ public class McpServerService {
 			return ApiResponse.error(HttpStatus.NOT_FOUND.toString(), Constants.MSG_NOT_FOUND);
 		}
 
-		mcpServerRepository.incrementViews(seq);
+		long updated = serverRepository.findAndIncrementViewsBySeq(seq);
+		if (updated != 1) {
+			// Exception 추가 예정
+		}
 
 		McpDetailDataDto mcpServer = toDetailDataDto(server);
 		McpDetailResponse response = new McpDetailResponse(mcpServer);
