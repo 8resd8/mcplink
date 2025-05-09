@@ -21,7 +21,7 @@ public class McpSecureController {
 
 	@PostMapping("/scan/all")
 	public ResponseEntity<String> scanAllServers() {
-		scanService.triggerNotionScan();
+		scanService.triggerScan();
 
 		return ResponseEntity.status(HttpStatus.ACCEPTED).body("모든 서버에 대한 스캔 작업이 시작되었습니다. 완료까지 시간이 소요될 수 있습니다.");
 	}
