@@ -525,17 +525,3 @@ pub async fn restart_claude_desktop(_app: tauri::AppHandle) -> Result<(), String
         .map(|_| println!("Claude Desktop restarted successfully."))
         .map_err(|e| format!("Failed to start Claude Desktop: {}", e))
 }
-
-// fn extract_pids_from_tasklist(tasklist_output: &str) -> Option<Vec<String>> {
-//     let mut pids = Vec::new();
-//     for line in tasklist_output.lines() {
-//         let parts: Vec<&str> = line.split(',').collect();
-//         if parts.len() >= 2 {
-//             let pid = parts[1].trim_matches('"').to_string();
-//             if !pid.is_empty() && pid.chars().all(char::is_numeric) {
-//                 pids.push(pid);
-//             }
-//         }
-//     }
-//     if pids.is_empty() { None } else { Some(pids) }
-// }
