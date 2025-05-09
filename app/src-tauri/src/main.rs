@@ -15,6 +15,7 @@ fn main() {
             commands::get_mcp_data,
             commands::get_mcp_detail_data, // 상세 정보 함수 추가
             commands::add_mcp_server_config,
+            commands::remove_mcp_server_config,
             commands::restart_claude_desktop
         ])
         .run(tauri::generate_context!())
