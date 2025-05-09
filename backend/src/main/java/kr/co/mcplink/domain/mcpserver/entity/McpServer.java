@@ -31,6 +31,9 @@ public class McpServer {
 	private int views = 0;
 	private boolean official = false;
 	private boolean scanned = false;
+
+	@Builder.Default
+	private SecurityRank securityRank = SecurityRank.UNRATED;
 	private List<String> tags;
 
 	@Field("mcpServers")

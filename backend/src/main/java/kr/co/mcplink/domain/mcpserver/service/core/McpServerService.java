@@ -105,6 +105,7 @@ public class McpServerService {
 			.views(s.getViews())
 			.official(s.isOfficial())
 			.scanned(s.isScanned())
+			.securityRank(s.getSecurityRank())
 			.mcpServer(
 				McpServerSummaryDto.builder()
 					.name(s.getDetail().getName())
@@ -123,6 +124,7 @@ public class McpServerService {
 			.views(s.getViews())
 			.official(s.isOfficial())
 			.scanned(s.isScanned())
+			.securityRank(s.getSecurityRank())
 			.mcpServer(
 				McpServerDetailDto.builder()
 					.name(s.getDetail().getName())
