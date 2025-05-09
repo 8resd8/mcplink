@@ -12,47 +12,47 @@ import java.util.List;
 @RestController
 @RequestMapping("/v1/mcp/servers")
 @RequiredArgsConstructor
-public class McpServerRestController {
+public class McpServerController {
 
     private final McpServerService mcpServerService;
 
     @GetMapping
-    public ApiResponse<McpListResponse> listServers(
+    public ApiResponse<McpListResponse> getAllServers(
             @RequestParam(required = false, defaultValue = "5") Integer size,
             @RequestParam(required = false, defaultValue = "0") Long cursorId
     ) {
-        return mcpServerService.getServers(size, cursorId);
+        return mcpServerService.findAllServers(size, cursorId);
     }
 
     @GetMapping("/search")
-    public ApiResponse<McpSearchResponse> searchByName(
+    public ApiResponse<McpSearchResponse> getServersByName(
             @RequestParam("name") String name,
             @RequestParam(required = false, defaultValue = "5") Integer size,
             @RequestParam(required = false, defaultValue = "0") Long cursorId
     ) {
-        return mcpServerService.searchByName(name, size, cursorId);
+        return mcpServerService.searchServersByName(name, size, cursorId);
     }
 
     @PostMapping("/batch")
-    public ApiResponse<McpBatchResponse> getBatch(
+    public ApiResponse<McpBatchResponse> getServersByIds(
             @RequestParam(required = false, defaultValue = "5") Integer size,
             @RequestParam(required = false, defaultValue = "0") Long cursorId,
             @RequestBody McpBatchRequest batchRequest
     ) {
         List<Long> serverIds = batchRequest.serverIds();
-        return mcpServerService.getBatch(serverIds, size, cursorId);
+        return mcpServerService.findServersByIds(serverIds, size, cursorId);
     }
 
     @GetMapping("/{serverId}")
-    public ApiResponse<McpDetailResponse> getDetail(
+    public ApiResponse<McpDetailResponse> getServerDetail(
             @PathVariable("serverId") Long seq
     ) {
-        return mcpServerService.getDetail(seq);
+        return mcpServerService.findServerById(seq);
     }
 
     @GetMapping("/tags")
-    public ApiResponse<McpTagResponse> listTags() {
+    public ApiResponse<McpTagResponse> getAllTags() {
 
-        return mcpServerService.listTags();
+        return mcpServerService.findAllTags();
     }
 }

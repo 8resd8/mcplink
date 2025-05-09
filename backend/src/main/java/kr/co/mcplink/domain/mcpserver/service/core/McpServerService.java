@@ -22,7 +22,7 @@ public class McpServerService {
 	private final McpTagRepository tagRepository;
 	private final McpServerRepository mcpServerRepository;
 
-	public ApiResponse<McpListResponse> getServers(Integer size, Long cursorId) {
+	public ApiResponse<McpListResponse> findAllServers(Integer size, Long cursorId) {
 		List<McpServer> servers = serverRepository.listAll(size, cursorId);
 
 		long total = serverRepository.countAll();
@@ -40,7 +40,7 @@ public class McpServerService {
 		return ApiResponse.success(HttpStatus.OK.toString(), Constants.MSG_SUCCESS_LIST, response);
 	}
 
-	public ApiResponse<McpSearchResponse> searchByName(String name, Integer size, Long cursorId) {
+	public ApiResponse<McpSearchResponse> searchServersByName(String name, Integer size, Long cursorId) {
 		List<McpServer> servers = serverRepository.searchByName(name, size, cursorId);
 
 		long total = serverRepository.countByName(name);
@@ -58,7 +58,7 @@ public class McpServerService {
 		return ApiResponse.success(HttpStatus.OK.toString(), Constants.MSG_SUCCESS_SEARCH, response);
 	}
 
-	public ApiResponse<McpBatchResponse> getBatch(List<Long> serverIds, Integer size, Long cursorId) {
+	public ApiResponse<McpBatchResponse> findServersByIds(List<Long> serverIds, Integer size, Long cursorId) {
 		List<Long> pageIds = PaginationUtil.slicePageIdsForBatch(serverIds, size, cursorId);
 		List<McpServer> servers = serverRepository.findBySeqInOrder(pageIds);
 
@@ -73,7 +73,7 @@ public class McpServerService {
 		return ApiResponse.success(HttpStatus.OK.toString(), Constants.MSG_SUCCESS_BATCH, response);
 	}
 
-	public ApiResponse<McpDetailResponse> getDetail(Long seq) {
+	public ApiResponse<McpDetailResponse> findServerById(Long seq) {
 		McpServer server = serverRepository.findBySeq(seq).orElse(null);
 
 		if(server == null) {
@@ -88,7 +88,7 @@ public class McpServerService {
 		return ApiResponse.success(HttpStatus.OK.toString(), Constants.MSG_SUCCESS_DETAIL, response);
 	}
 
-	public ApiResponse<McpTagResponse> listTags() {
+	public ApiResponse<McpTagResponse> findAllTags() {
 		List<String> tags = tagRepository.listAll();
 
 		McpTagResponse response = new McpTagResponse(tags);
