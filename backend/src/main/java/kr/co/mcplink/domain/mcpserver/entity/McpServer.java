@@ -1,20 +1,15 @@
 package kr.co.mcplink.domain.mcpserver.entity;
 
-import java.util.List;
-import java.util.Map;
-
+import kr.co.mcplink.global.annotation.AutoIndex;
+import kr.co.mcplink.global.annotation.AutoSequence;
 import kr.co.mcplink.global.common.Constants;
+import lombok.*;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
 
-import kr.co.mcplink.global.annotation.AutoIndex;
-import kr.co.mcplink.global.annotation.AutoSequence;
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import java.util.List;
+import java.util.Map;
 
 @Getter
 @Builder
@@ -33,11 +28,9 @@ public class McpServer {
 	private String type = "STDIO";
 	private String url;
 	private int stars;
-	@Builder.Default
 	private int views = 0;
-	@Builder.Default
+	private boolean official = false;
 	private boolean scanned = false;
-
 	private List<String> tags;
 
 	@Field("mcpServers")

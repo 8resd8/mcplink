@@ -91,6 +91,7 @@ public class McpServerService {
 			.url(s.getUrl())
 			.stars(s.getStars())
 			.views(s.getViews())
+			.official(s.isOfficial())
 			.scanned(s.isScanned())
 			.mcpServer(
 				McpServerSummaryDto.builder()
@@ -108,6 +109,7 @@ public class McpServerService {
 			.url(s.getUrl())
 			.stars(s.getStars())
 			.views(s.getViews())
+			.official(s.isOfficial())
 			.scanned(s.isScanned())
 			.mcpServer(
 				McpServerDetailDto.builder()
