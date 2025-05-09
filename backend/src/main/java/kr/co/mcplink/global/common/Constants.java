@@ -16,6 +16,7 @@ public final class Constants {
     // 성공 메시지
     public static final String MSG_SUCCESS_LIST                 = "전체 목록 조회에 성공했습니다";
     public static final String MSG_SUCCESS_SEARCH               = "검색 목록 조회에 성공했습니다";
+    public static final String MSG_SUCCESS_BATCH                = "선택된 목록 조회에 성공했습니다";
     public static final String MSG_SUCCESS_DETAIL               = "데이터 조회에 성공했습니다.";
     public static final String MSG_SUCCESS_TAG_LIST             = "태그 목록 조회에 성공했습니다";
 

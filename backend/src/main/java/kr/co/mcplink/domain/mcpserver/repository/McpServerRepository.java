@@ -1,16 +1,13 @@
 package kr.co.mcplink.domain.mcpserver.repository;
 
-import java.util.List;
-import java.util.Optional;
-
+import kr.co.mcplink.domain.mcpserver.entity.McpServer;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.stereotype.Repository;
 
-import kr.co.mcplink.domain.mcpserver.entity.McpServer;
+import java.util.Optional;
 
 @Repository
 public interface McpServerRepository extends MongoRepository<McpServer, String>, McpServerCustomRepository {
-    Optional<McpServer> findBySeq(Long seq);
 
-    List<McpServer> findByDetailNameContaining(String name);
+    Optional<McpServer> findBySeq(Long seq);
 }
