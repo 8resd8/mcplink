@@ -8,6 +8,8 @@ fn main() {
     let app_state = commands::AppState { client }; // AppState 생성
 
     tauri::Builder::default()
+        .plugin(tauri_plugin_os::init()) // OS 플러그인 추가
+        .plugin(tauri_plugin_positioner::init()) // Positioner 플러그인 추가
         .manage(app_state) // AppState를 tauri에 등록
         .invoke_handler(tauri::generate_handler![
             commands::some_command,

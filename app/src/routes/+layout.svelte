@@ -1,16 +1,26 @@
 <script lang="ts">
   import "../app.css";
-  import { onMount } from 'svelte';
+  import { onMount, onDestroy } from 'svelte';
   import type { Window } from '@tauri-apps/api/window';
   import { Presentation, Cog, Minus, X, Square, Settings } from 'lucide-svelte';
   import { page } from '$app/stores';
+  import { listen } from '@tauri-apps/api/event';
+  import type { UnlistenFn } from '@tauri-apps/api/event';
+  import { goto } from '$app/navigation';
+  import { move_window, Position } from 'tauri-plugin-positioner-api';
   
   // Tauri window object to save
   let tauriWindow: Window | null = null;
   // OS platform detection
   let platform: string = 'unknown';
   
+  // START: 추가된 변수 (이벤트 리스너 해제용)
+  let unlistenMoveToCenter: UnlistenFn | undefined;
+  let unlistenNavigateTo: UnlistenFn | undefined;
+  // END: 추가된 변수
+  
   onMount(async () => {
+    console.log("[Layout] onMount 시작");
     // Check if Tauri API exists
     if (typeof window !== 'undefined' && ('__TAURI_INTERNALS__' in window || '__TAURI__' in window)) {
       try {
@@ -21,10 +31,45 @@
         // OS type detection
         const { platform: getPlatform } = await import('@tauri-apps/plugin-os');
         platform = await getPlatform();
+        console.log("[Layout] Tauri 환경 감지, 플랫폼:", platform);
+
+        // START: 추가된 이벤트 리스너 (메인 윈도우 중앙 이동)
+        unlistenMoveToCenter = await listen('move-main-to-center', async () => {
+          console.log("[Layout] 'move-main-to-center' 이벤트 수신");
+          try {
+            console.log("[Layout] move_window(Position.Center) 호출 전");
+            await move_window(Position.Center);
+            console.log("[Layout] move_window(Position.Center) 호출 후");
+            await tauriWindow?.show(); // 혹시 숨겨져 있다면 보이도록
+            await tauriWindow?.unminimize(); // 혹시 최소화 상태라면 해제
+            await tauriWindow?.setFocus(); // 포커스
+            console.log("[Layout] 창 중앙 이동 및 상태 복원 완료");
+          } catch (error) {
+            console.error("[Layout] Failed to move main window to center:", error);
+          }
+        });
+        console.log("[Layout] 'move-main-to-center' 리스너 등록 완료");
+
+        // START: 추가된 이벤트 리스너 (특정 페이지로 네비게이션)
+        // popup 페이지에서 MCP-list로 이동 요청 시 처리
+        unlistenNavigateTo = await listen('navigate-to', async (event) => {
+          console.log("[Layout] 'navigate-to' 이벤트 수신, payload:", event.payload);
+          if (event.payload && typeof event.payload === 'string') {
+            const targetUrl = event.payload as string;
+            console.log(`[Layout] goto('${targetUrl}') 호출 전`);
+            goto(targetUrl);
+            console.log(`[Layout] goto('${targetUrl}') 호출 후`);
+          } else {
+            console.warn("[Layout] 'navigate-to' 이벤트 페이로드 없음 또는 문자열 아님:", event.payload);
+          }
+        });
+        console.log("[Layout] 'navigate-to' 리스너 등록 완료");
+
       } catch (error) {
-        console.error('error: get current window or platform', error);
+        console.error('[Layout] error: get current window or platform', error);
       }
     } else {
+      console.log("[Layout] 브라우저 환경 또는 Tauri API 없음");
       // If running in the browser (use Navigator API)
       if (typeof navigator !== 'undefined') {
         if (navigator.userAgent.indexOf('Win') !== -1) platform = 'win32';
@@ -32,7 +77,17 @@
         else if (navigator.userAgent.indexOf('Linux') !== -1) platform = 'linux';
       }
     }
+    console.log("[Layout] onMount 종료");
   });
+  
+  // START: onDestroy 추가 (이벤트 리스너 해제)
+  onDestroy(() => {
+    console.log("[Layout] onDestroy 호출됨, 리스너 해제 시도");
+    unlistenMoveToCenter?.();
+    unlistenNavigateTo?.();
+    console.log("[Layout] 리스너 해제 완료");
+  });
+  // END: onDestroy 추가
   
   // Minimize button handler
   async function minimizeWindow() {
@@ -80,6 +135,7 @@
     { path: "/Installed-MCP", name: "Installed MCP", icon: Presentation, color: "#eef2ff", hoverColor: "#eef2ff", bgColor: "#eef2ff" },
     { path: "/MCP-list", name: "MCP List", icon: Cog, color: "#ecfdf5", hoverColor: "#ecfdf5", bgColor: "#ecfdf5" },
     { path: "/first-install", name: "First Install", icon: Cog, color: "#f0f9ff", hoverColor: "#f0f9ff", bgColor: "#f0f9ff" },
+    { path: "/test", name: "Test", icon: Cog, color: "#f0f9ff", hoverColor: "#f0f9ff", bgColor: "#f0f9ff" },
   ];
   
   // Settings tab (placed on the right)
@@ -206,70 +262,78 @@
 <style>
   /* Set the draggable area of the window */
   .titlebar {
-    height: 40px;
+    height: 3rem; /* Adjust the height as needed */
+    user-select: none;
+    cursor: grab;
+    display: flex;
+    justify-content: flex-end; /* Align items to the right for Windows/Linux */
+    align-items: center;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 9999;
+    background-color: transparent;
   }
   
-  .drag-region {
-    -webkit-app-region: drag;
-    app-region: drag;
-    height: 100%;
-  }
-  
-  /* Apply no-drag to clickable elements within the drag region */
-  button, a {
-    -webkit-app-region: no-drag;
-    app-region: no-drag;
+  .titlebar .drag-region {
+    flex-grow: 1;
   }
 
-  /* Symmetrical trapezoid tab styling */
+  .titlebar:active {
+    cursor: grabbing;
+  }
+
+  /* macOS style adjustments */
+  @media (prefers-color-scheme: dark) {
+    .titlebar.darwin button {
+      /* Dark mode specific styles if needed */
+    }
+  }
+
   .tab-bar {
-    padding-bottom: 0;
-    position: relative;
-    z-index: 10;
+    margin-top: 3rem; /* Adjust to match the height of the title bar */
+    padding-top: 0.5rem; /* Add some padding if needed */
+    border-bottom: 1px solid #e5e7eb; /* Add a bottom border to separate from content */
   }
 
   .tab {
-    position: relative;
-    padding: 0.7em 1.5em;
-    color: #4b5563;
-    text-decoration: none;
-    font-weight: bold;
-    z-index: 1;
-    display: inline-flex;
+    padding: 0.5rem 1rem;
+    border-radius: 0.375rem 0.375rem 0 0; /* Rounded top corners */
+    display: flex;
     align-items: center;
-    transform: perspective(10px) rotateX(1deg);
-    transform-origin: bottom;
+    cursor: pointer;
+    transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
+    background-color: var(--tab-color);
+    color: #374151; /* Default text color */
+    font-weight: 500;
   }
 
-  .tab::before {
-    content: '';
-    position: absolute;
-    left: 0; top: 0; right: 0; bottom: 0;
-    z-index: -1;
-    background: rgba(243, 244, 246, 0.7);
-    border: 1.5px solid #e5e7eb;
-    border-bottom: none;
-    border-radius: 8px 8px 0 0;
-    transition: all 0.2s ease;
-  }
-
-  .tab.active::before {
-    background-color: var(--tab-color, #eef2ff); 
-    border-color: transparent;
-    border-bottom: none;
+  .tab:hover {
+    background-color: var(--tab-hover-color);
+    color: #1f2937; /* Darker text on hover */
   }
 
   .tab.active {
-    color: #4b5563;
+    background-color: var(--tab-hover-color); /* Same as hover for active tab */
+    color: #111827; /* Even darker text for active tab */
+    font-weight: 600;
+    position: relative;
+  }
+  
+  /* Optional: Add a small line below the active tab to make it more prominent */
+  .tab.active::after {
+    content: '';
+    position: absolute;
+    bottom: -1px; /* Align with the border of tab-bar */
+    left: 0;
+    right: 0;
+    height: 2px;
+    background-color: #4f46e5; /* Active tab indicator color (e.g., indigo-600) */
   }
 
-  .tab:not(.active):hover::before {
-    background-color: var(--tab-hover-color, #eef2ff);
-    border-color: var(--tab-hover-color, #eef2ff);
-    opacity: 0.8;
-  }
-
-  .tab:not(.active):hover {
-    color: #4b5563;
+  /* Ensure main content area respects the tab bar */
+  main {
+    padding-top: 1rem; /* Adjust this based on your tab bar's final height */
   }
 </style>
