@@ -1,7 +1,7 @@
 package kr.co.mcplink.domain.mcpserverv2.entity;
 
 import kr.co.mcplink.domain.mcpserver.entity.SecurityRank;
-import kr.co.mcplink.global.annotation.AutoIndex;
+import kr.co.mcplink.global.annotation.AutoIndexV2;
 import kr.co.mcplink.global.annotation.AutoSequence;
 import kr.co.mcplink.global.common.Constants;
 import lombok.*;
@@ -18,7 +18,7 @@ import java.util.Map;
 @AllArgsConstructor
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AutoSequence(collection = Constants.COLLECTION_MCP_SERVERS_V2)
-@AutoIndex(collection = Constants.COLLECTION_MCP_SERVERS_V2)
+@AutoIndexV2(collection = Constants.COLLECTION_MCP_SERVERS_V2)
 @Document(collection = Constants.COLLECTION_MCP_SERVERS_V2)
 public class McpServerV2 {
 

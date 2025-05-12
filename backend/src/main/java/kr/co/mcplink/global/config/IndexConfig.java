@@ -61,12 +61,12 @@ public class IndexConfig
                         sortFields2
                 );
 
-                indexUtil.createTextIndexV2(
-                        collection,
-                        Constants.IDX_MCP_SERVERS_SEARCH,
-                        "mcpServers.name",
-                        "mcpServers.description"
-                );
+//                indexUtil.createTextIndexV2(
+//                        collection,
+//                        Constants.IDX_MCP_SERVERS_SEARCH,
+//                        "mcpServers.name",
+//                        "mcpServers.description"
+//                );
             }
         });
     }

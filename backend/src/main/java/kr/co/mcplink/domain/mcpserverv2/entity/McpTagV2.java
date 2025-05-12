@@ -12,7 +12,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 @AllArgsConstructor
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AutoSequence(collection = Constants.COLLECTION_MCP_TAGS_V2)
-@Document(Constants.COLLECTION_MCP_TAGS)
+@Document(Constants.COLLECTION_MCP_TAGS_V2)
 public class McpTagV2 {
 
     @Id

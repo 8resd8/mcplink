@@ -18,7 +18,7 @@ public interface McpServerRepository extends MongoRepository<McpServer, String>,
     @CountQuery("{}")
     long countAll();
 
-    @CountQuery("{ 'name': { $regex: ?0, $options: 'i' } }")
+    @CountQuery("{ 'mcpServers.name': { $regex: ?0, $options: 'i' } }")
     long countByName(String nameRegex);
 
     Optional<McpServer> findBySeq(Long seq);

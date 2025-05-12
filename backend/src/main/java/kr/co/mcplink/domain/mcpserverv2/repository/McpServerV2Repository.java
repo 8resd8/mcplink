@@ -19,7 +19,7 @@ public interface McpServerV2Repository extends MongoRepository<McpServerV2, Stri
     @CountQuery("{}")
     long countAll();
 
-    @CountQuery("{ 'name': { $regex: ?0, $options: 'i' } }")
+    @CountQuery("{ $or: [ {'mcpServers.name': { $regex: ?0, $options: 'i' }}, {'mcpServers.description': { $regex: ?0, $options: 'i' }} ]}")
     long countByName(String nameRegex);
 
     Optional<McpServerV2> findBySeq(Long seq);

@@ -53,7 +53,7 @@ public class McpServerV2CustomRepositoryImpl implements McpServerV2CustomReposit
     @Override
     public long countRemainingByName(String name, Long cursor) {
         Aggregation agg = Aggregation.newAggregation(
-                createNameMatch(name),
+                createNameAndDescriptionMatch(name),
                 createCursorMatch(cursor),
                 context -> new Document("$count", "count")
         );
@@ -64,7 +64,7 @@ public class McpServerV2CustomRepositoryImpl implements McpServerV2CustomReposit
     @Override
     public List<McpServerV2> searchByName(String name, int size, Long cursor) {
         Aggregation agg = Aggregation.newAggregation(
-                createNameMatch(name),
+                createNameAndDescriptionMatch(name),
                 createCursorMatch(cursor),
                 context -> new Document("$sort",
                         new Document("stars", -1).append("seq", 1)),
@@ -101,11 +101,16 @@ public class McpServerV2CustomRepositoryImpl implements McpServerV2CustomReposit
         };
     }
 
-    private AggregationOperation createNameMatch(String name) {
+    private AggregationOperation createNameAndDescriptionMatch(String name) {
         String regex = ".*" + Pattern.quote(name) + ".*";
         Document pattern = new Document("$regex", regex).append("$options", "i");
 
-        return context -> new Document("$match", new Document("mcpServers.name", pattern));
+        return context -> new Document("$match",
+                new Document("$or", Arrays.asList(
+                        new Document("mcpServers.name", pattern),
+                        new Document("mcpServers.description", pattern)
+                ))
+        );
     }
 
     private long aggregateCount(Aggregation agg) {
