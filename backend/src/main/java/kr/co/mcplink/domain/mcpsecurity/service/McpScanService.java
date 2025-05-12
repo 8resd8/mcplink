@@ -33,7 +33,7 @@ public class McpScanService {
 				output = output.substring(jsonStart);
 			}
 	
-			parsingService.processOsvResult(output);
+			parsingService.processOsvResult(output, scanResult.mcpServerId());
 		}
 		
 	}
