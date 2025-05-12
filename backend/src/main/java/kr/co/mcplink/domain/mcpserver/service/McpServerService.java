@@ -1,4 +1,4 @@
-package kr.co.mcplink.domain.mcpserver.service.core;
+package kr.co.mcplink.domain.mcpserver.service;
 
 import kr.co.mcplink.domain.mcpserver.dto.*;
 import kr.co.mcplink.domain.mcpserver.dto.response.*;
