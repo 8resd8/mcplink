@@ -20,10 +20,14 @@ services:
       APP_ANALYSIS_OSV_SCANNER_CMD: /usr/local/bin/osv-scanner
 
     volumes:
-      - analysis_data:/app/analysis_temp # 추가
+      - analysis_data:/app/analysis_temp
 
     networks:
       - mcplink-network
+
+    depends_on:
+      - mongodb
+      - mysql
 
   mongodb:
     container_name: mongodb
@@ -31,7 +35,7 @@ services:
     image: mongo:6.0
 
     ports:
-      - 0.0.0.0:27017:27017
+      - ${MONGO_PORT}:27017
 
     environment:
       MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME}
@@ -44,6 +48,25 @@ services:
     networks:
       - mcplink-network
 
+  mysql:
+    container_name: mysql
+    image: mysql:8.0
+
+    ports:
+      - ${MYSQL_PORT}:3306
+
+    environment:
+      TZ: Asia/Seoul
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+
+    volumes:
+    - mysql_data:/var/lib/mysql
+
+    networks:
+      - mcplink-network
+
 
 networks:
   mcplink-network:
@@ -52,3 +75,4 @@ networks:
 volumes:
   mongodb_data:
   analysis_data:
+  mysql_data:
