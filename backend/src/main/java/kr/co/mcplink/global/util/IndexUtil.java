@@ -34,4 +34,16 @@ public class IndexUtil {
 			.build();
 		mongoOperations.indexOps(collection).ensureIndex(txtIdx);
 	}
+
+	public void createTextIndexV2(String collection, String indexName, String... fields) {
+		TextIndexDefinition.TextIndexDefinitionBuilder builder =
+				new TextIndexDefinition.TextIndexDefinitionBuilder();
+		for (String field : fields) {
+			builder.onField(field);
+		}
+		TextIndexDefinition txtIdx = builder
+				.named(indexName)
+				.build();
+		mongoOperations.indexOps(collection).ensureIndex(txtIdx);
+	}
 }

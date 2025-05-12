@@ -1,6 +1,7 @@
 package kr.co.mcplink.global.config;
 
 import kr.co.mcplink.global.annotation.AutoIndex;
+import kr.co.mcplink.global.annotation.AutoIndexV2;
 import kr.co.mcplink.global.common.Constants;
 import kr.co.mcplink.global.util.IndexUtil;
 import org.springframework.context.ApplicationListener;
@@ -28,25 +29,45 @@ public class IndexConfig
         mappingContext.getPersistentEntities().forEach(pe -> {
             Class<?> clazz = pe.getType();
             AutoIndex ann  = clazz.getAnnotation(AutoIndex.class);
-            if (ann == null) {
-                return;
+            if (ann != null) {
+                String collection = ann.collection();
+
+                Map<String, Integer> sortFields = new LinkedHashMap<>();
+                sortFields.put("stars", -1);
+                sortFields.put("seq", 1);
+                indexUtil.createCompoundIndex(
+                        collection,
+                        Constants.IDX_MCP_SERVERS_SORT,
+                        sortFields
+                );
+
+                indexUtil.createTextIndex(
+                        collection,
+                        Constants.IDX_MCP_SERVERS_NAME_SEARCH,
+                        "mcpServers.name"
+                );
             }
-            String collection = ann.collection();
 
-            Map<String, Integer> sortFields = new LinkedHashMap<>();
-            sortFields.put("stars", -1);
-            sortFields.put("seq",   1);
-            indexUtil.createCompoundIndex(
-                    collection,
-                    Constants.IDX_MCP_SERVERS_SORT,
-                    sortFields
-            );
+            AutoIndexV2 ann2 = clazz.getAnnotation(AutoIndexV2.class);
+            if (ann2 != null) {
+                String collection = ann2.collection();
 
-            indexUtil.createTextIndex(
-                    collection,
-                    Constants.IDX_MCP_SERVERS_NAME_SEARCH,
-                    "mcpServers.name"
-            );
+                Map<String, Integer> sortFields2 = new LinkedHashMap<>();
+                sortFields2.put("stars", -1);
+                sortFields2.put("seq",   1);
+                indexUtil.createCompoundIndex(
+                        collection,
+                        Constants.IDX_MCP_SERVERS_SORT,
+                        sortFields2
+                );
+
+                indexUtil.createTextIndexV2(
+                        collection,
+                        Constants.IDX_MCP_SERVERS_SEARCH,
+                        "mcpServers.name",
+                        "mcpServers.description"
+                );
+            }
         });
     }
 }
