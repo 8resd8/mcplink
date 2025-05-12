@@ -8,6 +8,9 @@ import kr.co.mcplink.domain.mcpsecurity.dto.osv.OsvPackageEntryDto;
 import kr.co.mcplink.domain.mcpsecurity.dto.osv.OsvResultDto;
 import kr.co.mcplink.domain.mcpsecurity.dto.osv.OsvScanOutputWrapperDto;
 import kr.co.mcplink.domain.mcpsecurity.dto.osv.OsvVulnerabilityDto;
+import kr.co.mcplink.domain.mcpserver.entity.McpServer;
+import kr.co.mcplink.domain.mcpserver.entity.SecurityRank;
+import kr.co.mcplink.domain.mcpserver.repository.McpServerRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -16,20 +19,34 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class McpJsonParsingService {
 
-	private final ObjectMapper objectMapper;
+	private final ObjectMapper objectMapper; 
 
 	public void processOsvResult(String osvOutputJson) {
-		if (osvOutputJson == null || osvOutputJson.trim().isEmpty()) {
-			log.warn("OSV JSON 입력이 비어있거나 null입니다. 파싱을 건너뜁니다.");
+		// 결과가 비어있으면 LOW 단계
+		if (osvOutputJson.contains("\"results\": [],")) {
+			log.warn("result clean, security level is LOW");
 			return;
 		}
 
 		String trimmedJson = osvOutputJson.trim();
 
+		// JSON 파싱 전 순수 JSON 부분 추출 (로그 메시지 제거)
+		int start = trimmedJson.indexOf('{');
+		int end = trimmedJson.lastIndexOf('}');
+		if (start >= 0 && end >= start) {
+			trimmedJson = trimmedJson.substring(start, end + 1);
+		}
+
 		try {
 			OsvScanOutputWrapperDto osvScanOutput = objectMapper.readValue(trimmedJson, OsvScanOutputWrapperDto.class);
 
-			if (osvScanOutput != null && osvScanOutput.results() != null && !osvScanOutput.results().isEmpty()) {
+			// 결과가 비어있으면 보안 위험도 LOW로 처리
+			if (osvScanOutput.results() == null || osvScanOutput.results().isEmpty()) {
+				log.info("보안 위험도: LOW");
+				return;
+			}
+
+			if (osvScanOutput.results() != null && !osvScanOutput.results().isEmpty()) {
 				for (OsvResultDto resultItem : osvScanOutput.results()) {
 					if (resultItem.packages() != null) {
 						for (OsvPackageEntryDto pkgEntry : resultItem.packages()) {
@@ -40,13 +57,15 @@ public class McpJsonParsingService {
 										&& vulnerability.databaseSpecific().severity() != null) {
 										riskSeverity = vulnerability.databaseSpecific().severity();
 									}
-									log.info("패키지: {}, 버전: {}, 취약점 ID: {}, 위험도: {}",
+									log.info("패키지: {}, 버전: {}, 취약점 ID: {}, security_rank: {}",
 										pkgEntry.packageInfo().name(),
 										pkgEntry.packageInfo().version(),
 										vulnerability.id(),
 										riskSeverity);
+									System.out.println("rrrrrrrrrrr: " + riskSeverity);
 
-									// 여기에 추가적인 처리 로직 (예: DB 저장)
+									// DB 반영
+									
 								}
 							}
 						}
