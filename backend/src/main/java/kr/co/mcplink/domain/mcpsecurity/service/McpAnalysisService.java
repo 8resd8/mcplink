@@ -82,7 +82,7 @@ public class McpAnalysisService {
 			Path reportOutputFile = tempDir.resolve(server.getSeq() + "_" + name + ".json");
 			log.info("지정된 URL 스캔 시작: {}, 클론 위치: {}, 리포트 파일: {}", gitUrls, cloneDir, reportOutputFile);
 
-			McpScanResultDto result = performScanForUrl(gitUrls, server.getSeq().toString(), name, cloneDir);
+			McpScanResultDto result = performScanForUrl(gitUrls, server.getId(), name, cloneDir);
 			if (result.scanSuccess() && result.osvOutputJson() != null) {
 				saveReport(reportOutputFile, result.osvOutputJson());
 			}
