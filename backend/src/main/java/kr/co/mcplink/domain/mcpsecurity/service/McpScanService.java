@@ -1,5 +1,7 @@
 package kr.co.mcplink.domain.mcpsecurity.service;
 
+import java.util.List;
+
 import org.springframework.stereotype.Service;
 
 import kr.co.mcplink.domain.mcpsecurity.dto.McpScanResultDto;
@@ -16,20 +18,23 @@ public class McpScanService {
 
 	// 전체 서버 스캔을 담당하는 메소드
 	public void triggerScan() {
-		McpScanResultDto result = analysisService.scanSpecificServer();
-
-		if (!result.scanSuccess()) {
-			log.error("실패 원인 (JSON): {}", result.osvOutputJson());
-			throw new RuntimeException("서버 스캔 실패");
+		List<McpScanResultDto> result = analysisService.scanSpecificServer();
+		
+		for (McpScanResultDto scanResult : result) {
+			if (!scanResult.scanSuccess()) {
+				log.error("파싱 패스, 실패 원인 (JSON): {}", scanResult.osvOutputJson());
+				return;
+			}
+	
+			String output = scanResult.osvOutputJson();
+	
+			int jsonStart = output.indexOf("{");
+			if (jsonStart != -1) {
+				output = output.substring(jsonStart);
+			}
+	
+			parsingService.processOsvResult(output);
 		}
-
-		String output = result.osvOutputJson();
-
-		int jsonStart = output.indexOf("{");
-		if (jsonStart != -1) {
-			output = output.substring(jsonStart);
-		}
-
-		parsingService.processOsvResult(output);
+		
 	}
 }
