@@ -40,15 +40,14 @@ public interface McpServerRepository extends MongoRepository<McpServer, String>,
     @Update("{ '$inc': { 'views': 1 } }")
     long findAndIncrementViewsBySeq(Long seq);
 
-    @Update("{ '$set': { 'scanned': true } }")
-    long findAndUpdateScannedBySeq(Long seq);
-
-    @Update("{ '$set': { 'scanned': false } }")
-    long findAndUpdateNotScannedBySeq(Long seq);
-
-    @Update(update = "{ '$set': { 'securityRank': ?1 } }")
-    long findAndUpdateSecurityRankBySeq(Long seq, SecurityRank securityRank);
-
     // Repository method to fetch servers where official is false
     List<McpServer> findByOfficialFalse();
+
+    @Query("{ '_id': ?0 }")
+    @Update("{ '$set': { 'scanned': true } }")
+    long updateScannedStatusById(String mcpServerId);
+
+    @Query("{ '_id': ?0 }")
+    @Update("{ '$set': { 'securityRank': ?1 } }")
+    long updateSecurityRankById(String mcpServerId, SecurityRank securityRank);
 }
