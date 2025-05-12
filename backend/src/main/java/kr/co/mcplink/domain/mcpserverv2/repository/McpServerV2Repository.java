@@ -1,7 +1,8 @@
-package kr.co.mcplink.domain.mcpserver.repository;
+package kr.co.mcplink.domain.mcpserverv2.repository;
 
-import kr.co.mcplink.domain.mcpserver.entity.McpServer;
+
 import kr.co.mcplink.domain.mcpserver.entity.SecurityRank;
+import kr.co.mcplink.domain.mcpserverv2.entity.McpServerV2;
 import org.springframework.data.mongodb.repository.CountQuery;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.data.mongodb.repository.Query;
@@ -13,23 +14,23 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Repository
-public interface McpServerRepository extends MongoRepository<McpServer, String>, McpServerCustomRepository {
+public interface McpServerV2Repository extends MongoRepository<McpServerV2, String>, McpServerV2CustomRepository {
 
     @CountQuery("{}")
     long countAll();
 
-    @CountQuery("{ 'mcpServers.name': { $regex: ?0, $options: 'i' } }")
+    @CountQuery("{ $or: [ {'mcpServers.name': { $regex: ?0, $options: 'i' }}, {'mcpServers.description': { $regex: ?0, $options: 'i' }} ]}")
     long countByName(String nameRegex);
 
-    Optional<McpServer> findBySeq(Long seq);
+    Optional<McpServerV2> findBySeq(Long seq);
 
     @Query("{ 'seq': { $in: ?0 } }")
-    List<McpServer> findBySeqIn(Collection<Long> seqs);
+    List<McpServerV2> findBySeqIn(Collection<Long> seqs);
 
-    default List<McpServer> findBySeqInOrder(List<Long> seqs) {
-        Map<Long, McpServer> map = findBySeqIn(seqs)
+    default List<McpServerV2> findBySeqInOrder(List<Long> seqs) {
+        Map<Long, McpServerV2> map = findBySeqIn(seqs)
                 .stream()
-                .collect(Collectors.toMap(McpServer::getSeq, Function.identity()));
+                .collect(Collectors.toMap(McpServerV2::getSeq, Function.identity()));
 
         return seqs.stream()
                 .map(map::get)
@@ -37,17 +38,22 @@ public interface McpServerRepository extends MongoRepository<McpServer, String>,
                 .collect(Collectors.toList());
     }
 
+    boolean existsByUrl(String url);
+
     @Update("{ '$inc': { 'views': 1 } }")
     long findAndIncrementViewsBySeq(Long seq);
 
-    // Repository method to fetch servers where official is false
-    List<McpServer> findByOfficialFalse();
+    /*
+    vvvvvvvvvvvvvvvvvvvv McpSecurity vvvvvvvvvvvvvvvvvvvv
+     */
+
+    List<McpServerV2> findByOfficialFalse();
 
     @Query("{ '_id': ?0 }")
     @Update("{ '$set': { 'scanned': true } }")
-    long updateScannedStatusById(String mcpServerId);
+    long updateScannedStatusById(String _id);
 
     @Query("{ '_id': ?0 }")
     @Update("{ '$set': { 'securityRank': ?1 } }")
-    long updateSecurityRankById(String mcpServerId, SecurityRank securityRank);
+    long updateSecurityRankById(String _id, SecurityRank securityRank);
 }

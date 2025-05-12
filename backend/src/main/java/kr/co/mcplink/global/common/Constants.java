@@ -3,15 +3,19 @@ package kr.co.mcplink.global.common;
 public final class Constants {
 
     // 컬렉션 이름 (MongoDB)
-    public static final String COLLECTION_DATABASE_SEQUENCE     = "database_sequences";
+    public static final String COLLECTION_SEQUENCE_COUNTER      = "sequence_counter";
     public static final String COLLECTION_MCP_SERVERS           = "mcp_servers";
     public static final String COLLECTION_MCP_TAGS              = "mcp_tags";
+    public static final String COLLECTION_MCP_SERVERS_V2        = "mcp_servers_v2";
+    public static final String COLLECTION_MCP_TAGS_V2           = "mcp_tags_v2";
 
     // 인덱스 이름 (MongoDB)
     // stars 내림차순, seq 오름차순 복합 정렬 인덱스
     public static final String IDX_MCP_SERVERS_SORT             = "idx_mcp_servers_stars_desc_seq_asc";
     // name 필드에 대한 검색(text) 인덱스
     public static final String IDX_MCP_SERVERS_NAME_SEARCH      = "idx_mcp_servers_name_search_text";
+    // name+description 필드에 대한 검색(text) 인덱스
+    public static final String IDX_MCP_SERVERS_SEARCH           = "idx_mcp_servers_search_text";
 
     // 성공 메시지
     public static final String MSG_SUCCESS_LIST                 = "전체 목록 조회에 성공했습니다";

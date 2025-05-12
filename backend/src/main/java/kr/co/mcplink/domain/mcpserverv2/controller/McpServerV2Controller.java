@@ -1,8 +1,8 @@
-package kr.co.mcplink.domain.mcpserver.controller;
+package kr.co.mcplink.domain.mcpserverv2.controller;
 
 import kr.co.mcplink.domain.mcpserver.dto.request.McpBatchRequest;
 import kr.co.mcplink.domain.mcpserver.dto.response.*;
-import kr.co.mcplink.domain.mcpserver.service.McpServerService;
+import kr.co.mcplink.domain.mcpserverv2.service.McpServerV2Service;
 import kr.co.mcplink.global.common.ApiResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -10,11 +10,11 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/v1/mcp/servers")
+@RequestMapping("/v2/mcp/servers")
 @RequiredArgsConstructor
-public class McpServerController {
+public class McpServerV2Controller {
 
-    private final McpServerService mcpServerService;
+    private final McpServerV2Service mcpServerService;
 
     @GetMapping
     public ApiResponse<McpListResponse> getAllServers(
