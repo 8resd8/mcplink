@@ -1,37 +1,41 @@
 package kr.co.mcplink.global.config;
 
-import kr.co.mcplink.domain.mcpserver.service.storage.SequenceGeneratorService;
 import kr.co.mcplink.global.annotation.AutoSequence;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.event.EventListener;
-import org.springframework.data.mongodb.core.mapping.event.BeforeConvertEvent;
-import org.springframework.stereotype.Component;
+import kr.co.mcplink.global.util.SequenceUtil;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.data.mongodb.core.mapping.event.BeforeConvertCallback;
 
 import java.lang.reflect.Field;
 
-@Component
+@Configuration
 public class SequenceConfig {
-    @Autowired
-    private SequenceGeneratorService sequenceGeneratorService;
 
-    @EventListener
-    public void onBeforeConvert(BeforeConvertEvent<Object> event) {
-        Object source = event.getSource();
-        Class<?> clazz = source.getClass();
-        if (clazz.isAnnotationPresent(AutoSequence.class)) {
-            AutoSequence ann = clazz.getAnnotation(AutoSequence.class);
-            String collectionName = ann.collection();
-            try {
-                Field seqField = clazz.getDeclaredField("seq");
-                seqField.setAccessible(true);
-                Object current = seqField.get(source);
-                if (current == null || ((Long) current) <= 0) {
-                    long next = sequenceGeneratorService.generateSequence(collectionName);
-                    seqField.set(source, next);
+    private final SequenceUtil sequenceUtil;
+
+    public SequenceConfig(SequenceUtil sequenceUtil) {
+        this.sequenceUtil = sequenceUtil;
+    }
+
+    @Bean
+    public BeforeConvertCallback<Object> sequenceBeforeConvertCallback() {
+        return (entity, collection) -> {
+            Class<?> clazz = entity.getClass();
+            if (clazz.isAnnotationPresent(AutoSequence.class)) {
+                String coll = clazz.getAnnotation(AutoSequence.class).collection();
+                try {
+                    Field f = clazz.getDeclaredField("seq");
+                    f.setAccessible(true);
+                    Object curr = f.get(entity);
+                    if (curr == null || ((Long) curr) <= 0) {
+                        long next = sequenceUtil.generateSequence(coll);
+                        f.set(entity, next);
+                    }
+                } catch (NoSuchFieldException | IllegalAccessException e) {
+                    throw new RuntimeException(e);
                 }
-            } catch (NoSuchFieldException | IllegalAccessException e) {
-                throw new RuntimeException("Failed to set seq for " + clazz.getSimpleName(), e);
             }
-        }
+            return entity;
+        };
     }
 }
