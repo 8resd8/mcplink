@@ -7,15 +7,20 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import jakarta.annotation.PostConstruct;
 import kr.co.mcplink.domain.mcpsecurity.dto.McpScanResultDto;
+import kr.co.mcplink.domain.mcpserver.repository.McpServerRepository;
+import kr.co.mcplink.domain.mcpserver.entity.McpServer;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -27,6 +32,7 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class McpAnalysisService {
 
 	private Path tempDir;
@@ -36,6 +42,8 @@ public class McpAnalysisService {
 
 	@Value("${app.analysis.temp-dir}")
 	private String tempDirStr;
+
+	private final McpServerRepository serverRepository;
 
 	@PostConstruct
 	public void init() {
@@ -49,34 +57,48 @@ public class McpAnalysisService {
 	}
 
 	/**
-	 * 모든 몽고DB에 있는 Git URL OSV 스캔, 현재는 노션 하드코딩
-	 * @return McpServerScanResultDto 스캔 결과를 담은 DTO
+	 * 모든 몽고DB에 있는 서버들을 OSV 스캔
+	 * @return 모든 서버의 스캔 결과 리스트
 	 */
-	public McpScanResultDto scanSpecificServer() {
-		// 1. Git URL 획득
-		List<String> gitUrls = getGitCloneUrl();
-
-		String serverId = "notion-mcp-server-id"; // 식별을 위한 임의의 ID
-		String serverName = "Notion MCP Server";    // 식별을 위한 임의의 이름
-
-		Path cloneDir = tempDir.resolve("notion-mcp-server"); // 클론된 리포지토리 이름
-		Path reportOutputFile = tempDir.resolve(serverId + "_" + serverName + ".json"); // 결과 저장 이름
-
-
-		log.info("지정된 URL 스캔 시작: {}, 클론 위치: {}, 리포트 파일: {}", gitUrls, cloneDir, reportOutputFile);
-		McpScanResultDto result = performScanForUrl(gitUrls, serverId, serverName, cloneDir);
-
-		if (result.scanSuccess() && result.osvOutputJson() != null) {
-			saveReport(reportOutputFile, result.osvOutputJson());
+	public List<McpScanResultDto> scanSpecificServer() {
+		List<McpServer> servers = serverRepository.findByOfficialFalse();
+		if (servers.isEmpty()) {
+			log.error("오피셜이 false인게 없으면 안됨.");
+			throw new RuntimeException("No servers to scan");
 		}
+		List<McpScanResultDto> results = new ArrayList<>();
 
-		return result;
+		for (McpServer server : servers) {
+			String rawUrl = server.getUrl();
+			String cloneUrl = rawUrl.endsWith(".git") ? rawUrl : rawUrl + ".git";
+			String name = cloneUrl.substring(cloneUrl.lastIndexOf('/') + 1);
+			
+			if (name.endsWith(".git")) {
+				name = name.substring(0, name.length() - 4);
+			}
+
+			List<String> gitUrls = List.of(cloneUrl);
+			Path cloneDir = tempDir.resolve(name);
+			Path reportOutputFile = tempDir.resolve(server.getSeq() + "_" + name + ".json");
+			log.info("지정된 URL 스캔 시작: {}, 클론 위치: {}, 리포트 파일: {}", gitUrls, cloneDir, reportOutputFile);
+
+			McpScanResultDto result = performScanForUrl(gitUrls, server.getSeq().toString(), name, cloneDir);
+			if (result.scanSuccess() && result.osvOutputJson() != null) {
+				saveReport(reportOutputFile, result.osvOutputJson());
+			}
+			results.add(result);
+		}
+		return results;
 	}
 
 	public List<String> getGitCloneUrl() {
-		// TODO: 나중에 DB나 설정에서 동적으로 가져오도록 변경
-
-		return List.of("https://github.com/makenotion/notion-mcp-server.git");
+		// Fetch Git URLs of servers where official is false from MongoDB
+		return serverRepository.findByOfficialFalse().stream()
+			.map(s -> {
+				String url = s.getUrl();
+				return url.endsWith(".git") ? url : url + ".git";
+			})
+			.collect(Collectors.toList());
 	}
 
 	/**
@@ -155,6 +177,17 @@ public class McpAnalysisService {
 			return false;
 		}
 
+		// 2. 클론한 폴더 들어가서 .gitignore 삭제
+		try {
+			Path gitignore = targetDir.resolve(".gitignore");
+			if (Files.exists(gitignore)) {
+				Files.delete(gitignore);
+				log.info(".gitignore 삭제됨: {}", gitignore);
+			}
+		} catch (IOException e) {
+			log.warn(".gitignore 삭제 실패: {}", targetDir.resolve(".gitignore"), e);
+		}
+		
 		return process.exitValue() == 0;
 	}
 
@@ -200,7 +233,15 @@ public class McpAnalysisService {
 				cloneDir.toString().replace("\\", "\\\\"));
 		}
 
-		return output.toString();
+		// JSON 추출: 로그 제거 후 순수 JSON 반환
+		String fullOutput = output.toString();
+		int startIdx = fullOutput.indexOf('{');
+		int endIdx = fullOutput.lastIndexOf('}');
+		if (startIdx >= 0 && endIdx >= startIdx) {
+			return fullOutput.substring(startIdx, endIdx + 1);
+		}
+
+		return fullOutput;
 	}
 
 	public void cleanup(Path dir) {
