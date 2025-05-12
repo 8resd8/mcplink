@@ -11,14 +11,8 @@ import java.lang.reflect.Field;
 @Configuration
 public class SequenceConfig {
 
-    private final SequenceUtil sequenceUtil;
-
-    public SequenceConfig(SequenceUtil sequenceUtil) {
-        this.sequenceUtil = sequenceUtil;
-    }
-
     @Bean
-    public BeforeConvertCallback<Object> sequenceBeforeConvertCallback() {
+    public BeforeConvertCallback<Object> sequenceBeforeConvertCallback(SequenceUtil sequenceUtil) {
         return (entity, collection) -> {
             Class<?> clazz = entity.getClass();
             if (clazz.isAnnotationPresent(AutoSequence.class)) {

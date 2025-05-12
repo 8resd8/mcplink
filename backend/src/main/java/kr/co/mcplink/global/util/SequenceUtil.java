@@ -1,6 +1,7 @@
 package kr.co.mcplink.global.util;
 
 import kr.co.mcplink.global.entity.SequenceCounter;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.data.mongodb.core.FindAndModifyOptions;
 import org.springframework.data.mongodb.core.MongoOperations;
 import org.springframework.data.mongodb.core.query.BasicQuery;
@@ -10,13 +11,15 @@ import org.springframework.stereotype.Component;
 @Component
 public class SequenceUtil {
 
-    private final MongoOperations mongoOps;
+    private final ObjectProvider<MongoOperations> mongoOpsProvider;
 
-    public SequenceUtil(MongoOperations mongoOps) {
-        this.mongoOps = mongoOps;
+    public SequenceUtil(ObjectProvider<MongoOperations> mongoOpsProvider) {
+        this.mongoOpsProvider = mongoOpsProvider;
     }
 
     public long generateSequence(String seqName) {
+        MongoOperations mongoOps = mongoOpsProvider.getObject();
+
         BasicQuery query = new BasicQuery(
                 String.format("{ \"_id\" : \"%s\" }", seqName)
         );
