@@ -48,4 +48,7 @@ public interface McpServerRepository extends MongoRepository<McpServer, String>,
 
     @Update(update = "{ '$set': { 'securityRank': ?1 } }")
     long findAndUpdateSecurityRankBySeq(Long seq, SecurityRank securityRank);
+
+    // Repository method to fetch servers where official is false
+    List<McpServer> findByOfficialFalse();
 }
