@@ -6,6 +6,18 @@ export interface MCPCard {
   description: string
   url: string // GitHub 리포지토리 URL
   stars: number // GitHub 스타 수
+  installed?: boolean // 설치 여부 (선택적 속성으로 추가)
+}
+
+export interface PageInfo {
+  hasNextPage: boolean
+  endCursor: number | null
+  totalItems: number
+}
+
+export interface MCPCardResponse {
+  cards: MCPCard[]
+  pageInfo: PageInfo
 }
 
 // MCP 카드의 상세 정보 인터페이스
@@ -19,14 +31,19 @@ export interface MCPCardDetail extends MCPCard {
  * Fetch MCP card data from the external server via the Rust backend.
  * @returns MCP card data array
  */
-export async function fetchMCPCards(searchTerm?: string): Promise<MCPCard[]> {
+export async function fetchMCPCards(searchTerm?: string, cursorId?: number): Promise<MCPCardResponse> {
   try {
     if (searchTerm === undefined || searchTerm.trim() === "") {
-      console.log("[mcp-api.ts] fetchMCPCards: No search term or empty. Invoking get_mcp_data WITHOUT params.")
-      return await invoke<MCPCard[]>("get_mcp_data") // 인자 없이 호출
+      if (cursorId) {
+        console.log(`[mcp-api.ts] fetchMCPCards: Loading next page with cursor ${cursorId}`)
+        return await invoke<MCPCardResponse>("get_mcp_data", { cursorId })
+      } else {
+        console.log("[mcp-api.ts] fetchMCPCards: Loading first page")
+        return await invoke<MCPCardResponse>("get_mcp_data")
+      }
     } else {
-      console.log(`[mcp-api.ts] fetchMCPCards: Searching for "${searchTerm}". Invoking get_mcp_data WITH searchTerm (camelCase).`)
-      return await invoke<MCPCard[]>("get_mcp_data", { searchTerm: searchTerm }) // 'searchTerm' (camelCase)으로 전달
+      console.log(`[mcp-api.ts] fetchMCPCards: Searching for "${searchTerm}"`)
+      return await invoke<MCPCardResponse>("get_mcp_data", { searchTerm })
     }
   } catch (error) {
     console.error("[mcp-api.ts] Error fetching MCP card data:", error)
