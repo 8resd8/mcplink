@@ -44,7 +44,6 @@ public class McpServerV2 {
     private McpServerV2.McpServerDetail detail;
 
     @Getter
-    @Builder
     @AllArgsConstructor
     @NoArgsConstructor(access = AccessLevel.PROTECTED)
     public static class McpServerDetail {
@@ -53,5 +52,21 @@ public class McpServerV2 {
         private String command;
         private List<String> args;
         private Map<String, String> env;
+
+        @Builder
+        public static McpServerDetail build(
+                String name,
+                String description,
+                String command,
+                List<String> args,
+                Map<String, String> env
+        ) {
+
+            if (env != null & env.isEmpty()) {
+                env = null;
+            }
+
+            return new McpServerDetail(name, description, command, args, env);
+        }
     }
 }
