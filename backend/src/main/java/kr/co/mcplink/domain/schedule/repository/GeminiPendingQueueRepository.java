@@ -13,9 +13,9 @@ public interface GeminiPendingQueueRepository extends MongoRepository<GeminiPend
 
     boolean existsByServerId(Long serverId);
 
-    long countByProcessedTrue();
+//    long countByProcessedTrue();
 
-    long deleteByProcessedTrue();
+//    long deleteByProcessedTrue();
 
     List<GeminiPendingQueue> findByProcessedFalseOrderBySeqAsc();
 
