@@ -35,7 +35,7 @@ public class User extends BaseTimeEntity {
 		this.nickname = nickname;
 	}
 
-	public static User createuser(String name, String nickname) {
+	public static User createUser(String name, String nickname) {
 		return User.builder()
 			.name(name)
 			.nickname(nickname)
