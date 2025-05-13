@@ -37,7 +37,12 @@ public record ApiResponse<T>(
 		return new ApiResponse<>(Instant.now(), code, message, data);
 	}
 
+	public static ApiResponse<Void> successNoData(String code, String message) {
+		return new ApiResponse<>(Instant.now(), code, message, null);
+	}
+
 	public static <T> ApiResponse<T> error(String code, String message) {
 		return new ApiResponse<>(Instant.now(), code, message, null);
 	}
+
 }
