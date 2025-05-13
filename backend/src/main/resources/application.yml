@@ -19,9 +19,9 @@ spring:
       password: ${mongodb.password}
 
   datasource:
-    jdbc-url: jdbc:mysql://${mysql_host}:${mysql_port}/${mysql_database}?serverTimezone=Asia/Seoul
-    username: ${mysql_user}
-    password: ${mysql_password}
+    jdbc-url: jdbc:mysql://${mysql.host}:${mysql.port}/${mysql.database}?serverTimezone=Asia/Seoul
+    username: ${mysql.user}
+    password: ${mysql.password}
     driver-class-name: com.mysql.cj.jdbc.Driver
 
   jpa:
