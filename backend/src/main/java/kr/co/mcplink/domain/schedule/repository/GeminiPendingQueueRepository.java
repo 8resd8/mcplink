@@ -21,5 +21,5 @@ public interface GeminiPendingQueueRepository extends MongoRepository<GeminiPend
 
     @Query("{ '_id': ?0 }")
     @Update("{ '$set': { 'processed': ?1 } }")
-    long updateProcessedById(String id, boolean processed);
+    long updateProcessedById(String _id, boolean processed);
 }
