@@ -16,8 +16,7 @@ import org.springframework.data.mongodb.repository.config.EnableMongoRepositorie
 @Configuration
 @EnableMongoAuditing 
 @EnableMongoRepositories(
-    basePackages = "kr.co.mcplink.domain.mcpserver.repository",
-    mongoTemplateRef = "mongoTemplate" 
+    basePackages = {"kr.co.mcplink.domain.mcpserver.repository", "kr.co.mcplink.domain.mcpserverv2.repository"}
 )
 public class MongoConfig {
 
