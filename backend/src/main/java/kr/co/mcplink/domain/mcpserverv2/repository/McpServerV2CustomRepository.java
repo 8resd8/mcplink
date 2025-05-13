@@ -11,6 +11,7 @@ public interface McpServerV2CustomRepository {
     List<McpServerV2> listAll(int size, Long cursor);
     long countRemainingByName(String name, Long cursor);
     List<McpServerV2> searchByName(String name, int size, Long cursor);
+
     long updateMetaData(
         String id,
         String url,
