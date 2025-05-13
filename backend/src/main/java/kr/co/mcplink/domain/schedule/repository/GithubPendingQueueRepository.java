@@ -17,7 +17,7 @@ public interface GithubPendingQueueRepository extends MongoRepository<GithubPend
 
 //    long deleteByProcessedTrue();
 
-    List<GithubPendingQueue> findByProcessedFalseOrderBySeqAsc();
+    List<GithubPendingQueue> findTop10ByProcessedFalseOrderBySeqAsc();
 
     @Query("{ '_id': ?0 }")
     @Update("{ '$set': { 'processed': ?1 } }")
