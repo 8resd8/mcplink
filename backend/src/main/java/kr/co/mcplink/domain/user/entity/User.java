@@ -8,6 +8,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import kr.co.mcplink.global.common.BaseTimeEntity;
 import lombok.AccessLevel;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -22,5 +23,23 @@ public class User extends BaseTimeEntity {
 	@Column(name = "user_id")
 	private Long id;
 
+	@Column(name = "name")
+	private String name;
+
+	@Column(name = "nickname")
+	private String nickname;
+
+	@Builder
+	private User(String name, String nickname) {
+		this.name = name;
+		this.nickname = nickname;
+	}
+
+	public static User createuser(String name, String nickname) {
+		return User.builder()
+			.name(name)
+			.nickname(nickname)
+			.build();
+	}
 
 }
