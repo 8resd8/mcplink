@@ -16,7 +16,12 @@ import org.springframework.data.mongodb.repository.config.EnableMongoRepositorie
 @Configuration
 @EnableMongoAuditing 
 @EnableMongoRepositories(
-    basePackages = {"kr.co.mcplink.domain.mcpserver.repository", "kr.co.mcplink.domain.mcpserverv2.repository"}
+    basePackages = {
+            "kr.co.mcplink.domain.mcpserver.repository",
+            "kr.co.mcplink.domain.mcpserverv2.repository",
+            "kr.co.mcplink.domain.schedule.repository",
+            "kr.co.mcplink.global.util"
+    }
 )
 public class MongoConfig {
 
