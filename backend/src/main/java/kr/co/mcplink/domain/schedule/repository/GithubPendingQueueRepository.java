@@ -6,7 +6,6 @@ import org.springframework.data.mongodb.repository.Query;
 import org.springframework.data.mongodb.repository.Update;
 import org.springframework.stereotype.Repository;
 
-import java.time.Instant;
 import java.util.List;
 
 @Repository
@@ -14,13 +13,13 @@ public interface GithubPendingQueueRepository extends MongoRepository<GithubPend
 
     boolean existsByName(String name);
 
-    long countByCompletedAtNotNull();
+    long countByProcessedTrue();
 
-    long deleteByCompletedAtNotNull();
+    long deleteByProcessedTrue();
 
-    List<GithubPendingQueue> findByCompletedAtNullOrderBySeqAsc();
+    List<GithubPendingQueue> findByProcessedFalseOrderBySeqAsc();
 
     @Query("{ '_id': ?0 }")
-    @Update("{ '$set': { 'completedAt': ?1 } }")
-    long updateCompletedAtById(String _id, Instant completedAt);
+    @Update("{ '$set': { 'processed': ?1 } }")
+    long updateProcessedById(String id, boolean processed);
 }
