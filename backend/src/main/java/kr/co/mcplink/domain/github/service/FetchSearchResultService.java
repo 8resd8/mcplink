@@ -7,9 +7,10 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 
-import java.net.URI;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import java.util.stream.StreamSupport;
 
 @Service
 @Slf4j
@@ -22,53 +23,44 @@ public class FetchSearchResultService {
     private final WebClient githubClient;
 
     public FetchSearchResultService(
-            @Qualifier("GithubClient") WebClient githubClient
+            @Qualifier("githubClient") WebClient githubClient
     ) {
         this.githubClient = githubClient;
     }
 
     public List<GithubSearchResultDto> fetchSearchResult(int queryNum) {
-        List<GithubSearchResultDto> results = new ArrayList<>();
         String query = buildQuery(queryNum);
 
-        for (int page = 1; page <= 10; page++) {
-            final int currentPage = page;
+        return IntStream.rangeClosed(1, 10)
+                .mapToObj(page -> {
+                    String logUrl = SEARCH_PATH + "?q=" + query + "&sort=stars&order=desc&per_page=100&page=" + page;
+                    log.info("fetchSearchResult queryNum={} page={} → 요청 URL={}",
+                            queryNum, page, logUrl);
 
-            JsonNode root = githubClient.get()
-                    .uri(uriBuilder -> {
-                        URI uri = uriBuilder
-                                .path(SEARCH_PATH)
-                                .queryParam("q",        query)
-                                .queryParam("sort",     "stars")
-                                .queryParam("order",    "desc")
-                                .queryParam("per_page", 100)
-                                .queryParam("page",     currentPage)
-                                .build();
+                    return githubClient.get()
+                            .uri(uriBuilder -> uriBuilder
+                                    .path(SEARCH_PATH)
+                                    .queryParam("q", query)
+                                    .queryParam("sort", "stars")
+                                    .queryParam("order", "desc")
+                                    .queryParam("per_page", 100)
+                                    .queryParam("page", page)
+                                    .build())
+                            .retrieve()
+                            .bodyToMono(JsonNode.class)
+                            .block();
+                })
 
-                        log.info("fetchSearchResult queryNum={} page={} → 요청 URL={}",
-                                queryNum, currentPage, uri);
-                        return uri;
-                    })
-                    .retrieve()
-                    .bodyToMono(JsonNode.class)
-                    .block();
-
-            if (root == null || !root.has("items")) {
-                break;
-            }
-            JsonNode items = root.get("items");
-            if (!items.isArray() || items.isEmpty()) {
-                break;
-            }
-
-            for (JsonNode item : items) {
-                String owner = item.get("owner").get("login").asText();
-                String repo  = item.get("name").asText();
-                results.add(new GithubSearchResultDto(owner, repo));
-            }
-        }
-
-        return results;
+                .takeWhile(root -> root != null
+                        && root.has("items")
+                        && root.get("items").isArray()
+                        && !root.get("items").isEmpty())
+                .flatMap(root -> StreamSupport.stream(root.get("items").spliterator(), false))
+                .map(item -> new GithubSearchResultDto(
+                        item.get("owner").get("login").asText(),
+                        item.get("name").asText()
+                ))
+                .collect(Collectors.toList());
     }
 
     private String buildQuery(int queryNum) {
