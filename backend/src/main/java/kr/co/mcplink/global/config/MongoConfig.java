@@ -19,8 +19,7 @@ import org.springframework.data.mongodb.repository.config.EnableMongoRepositorie
     basePackages = {
             "kr.co.mcplink.domain.mcpserver.repository",
             "kr.co.mcplink.domain.mcpserverv2.repository",
-            "kr.co.mcplink.domain.schedule.repository",
-            "kr.co.mcplink.global.util"
+            "kr.co.mcplink.domain.schedule.repository"
     }
 )
 public class MongoConfig {
