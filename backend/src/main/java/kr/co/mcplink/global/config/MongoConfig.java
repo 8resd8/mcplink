@@ -1,42 +1,40 @@
 package kr.co.mcplink.global.config;
 
-import com.mongodb.client.MongoClient;
-import com.mongodb.client.MongoClients;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
+import org.springframework.data.mongodb.MongoDatabaseFactory;
+import org.springframework.data.mongodb.MongoTransactionManager;
+import org.springframework.data.mongodb.config.EnableMongoAuditing;
 import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.convert.DefaultDbRefResolver;
+import org.springframework.data.mongodb.core.convert.DefaultMongoTypeMapper;
+import org.springframework.data.mongodb.core.convert.MappingMongoConverter;
+import org.springframework.data.mongodb.core.mapping.MongoMappingContext;
+import org.springframework.data.mongodb.repository.config.EnableMongoRepositories;
 
 @Configuration
+@EnableMongoAuditing 
+@EnableMongoRepositories(
+    basePackages = "kr.co.mcplink.domain.mcpserver.repository",
+    mongoTemplateRef = "mongoTemplate" 
+)
 public class MongoConfig {
 
-    @Value("${spring.data.mongodb.host}")
-    private String mongoHost;
-    @Value("${spring.data.mongodb.port}")
-    private int mongoPort;
-    @Value("${spring.data.mongodb.database}")
-    private String mongoDb;
-    @Value("${spring.data.mongodb.username}")
-    private String mongoUser;
-    @Value("${spring.data.mongodb.password}")
-    private String mongoPassword;
-
+    @Primary 
     @Bean
-    public MongoClient mongoClient() {
-        String uri = String.format(
-                "mongodb://%s:%s@%s:%d/%s?authSource=%s",
-                mongoUser,
-                mongoPassword,
-                mongoHost,
-                mongoPort,
-                mongoDb,
-                mongoDb
-        );
-        return MongoClients.create(uri);
+    public MongoTemplate mongoTemplate(MongoDatabaseFactory mongoDatabaseFactory, MongoMappingContext context) {
+
+        MappingMongoConverter converter = new MappingMongoConverter(
+            new DefaultDbRefResolver(mongoDatabaseFactory), context);
+        converter.setTypeMapper(new DefaultMongoTypeMapper(null));
+
+		return new MongoTemplate(mongoDatabaseFactory, converter);
     }
 
+    @Primary 
     @Bean
-    public MongoTemplate mongoTemplate(MongoClient client) {
-        return new MongoTemplate(client, mongoDb);
+    public MongoTransactionManager mongoTransactionManager(MongoDatabaseFactory mongoDatabaseFactory) {
+        return new MongoTransactionManager(mongoDatabaseFactory);
     }
 }
