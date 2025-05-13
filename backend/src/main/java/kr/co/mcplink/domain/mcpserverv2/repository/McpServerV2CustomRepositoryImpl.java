@@ -126,14 +126,16 @@ public class McpServerV2CustomRepositoryImpl implements McpServerV2CustomReposit
     }
 
     @Override
-    public long updateMetaData(String id,
-                               String url,
-                               int stars,
-                               boolean official,
-                               String name,
-                               String command,
-                               List<String> args,
-                               Map<String, String> env) {
+    public long updateMetaData(
+        String id,
+        String url,
+        int stars,
+        boolean official,
+        String name,
+        String command,
+        List<String> args,
+        Map<String, String> env
+    ) {
         Document filter = new Document("_id", id);
         Document set = new Document()
                 .append("url", url)
@@ -146,16 +148,19 @@ public class McpServerV2CustomRepositoryImpl implements McpServerV2CustomReposit
         Document update = new Document("$set", set);
 
         MongoCollection<Document> coll = mongoTemplate.getCollection(
-                mongoTemplate.getCollectionName(McpServerV2.class));
+            mongoTemplate.getCollectionName(McpServerV2.class)
+        );
         UpdateResult result = coll.updateOne(filter, update);
 
         return result.getModifiedCount();
     }
 
     @Override
-    public long updateSummary(String id,
-                              String description,
-                              List<String> tags) {
+    public long updateSummary(
+        String id,
+        String description,
+        List<String> tags
+    ) {
         Document filter = new Document("_id", id);
         Document set = new Document()
                 .append("mcpServers.description", description)
@@ -163,7 +168,8 @@ public class McpServerV2CustomRepositoryImpl implements McpServerV2CustomReposit
         Document update = new Document("$set", set);
 
         MongoCollection<Document> coll = mongoTemplate.getCollection(
-                mongoTemplate.getCollectionName(McpServerV2.class));
+            mongoTemplate.getCollectionName(McpServerV2.class)
+        );
         UpdateResult result = coll.updateOne(filter, update);
 
         return result.getModifiedCount();

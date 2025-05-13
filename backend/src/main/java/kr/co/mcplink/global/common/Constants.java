@@ -8,6 +8,8 @@ public final class Constants {
     public static final String COLLECTION_MCP_TAGS              = "mcp_tags";
     public static final String COLLECTION_MCP_SERVERS_V2        = "mcp_servers_v2";
     public static final String COLLECTION_MCP_TAGS_V2           = "mcp_tags_v2";
+    public static final String COLLECTION_GITHUB_PENDING_QUEUE  = "github_pending_queue";
+    public static final String COLLECTION_GEMINI_PENDING_QUEUE  = "gemini_pending_queue";
 
     // 인덱스 이름 (MongoDB)
     // stars 내림차순, seq 오름차순 복합 정렬 인덱스
