@@ -5,9 +5,11 @@ import com.mongodb.client.MongoClients;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.data.mongodb.config.EnableMongoAuditing;
 import org.springframework.data.mongodb.core.MongoTemplate;
 
 @Configuration
+@EnableMongoAuditing
 public class MongoConfig {
 
     @Value("${spring.data.mongodb.host}")
@@ -24,19 +26,20 @@ public class MongoConfig {
     @Bean
     public MongoClient mongoClient() {
         String uri = String.format(
-                "mongodb://%s:%s@%s:%d/%s?authSource=%s",
-                mongoUser,
-                mongoPassword,
-                mongoHost,
-                mongoPort,
-                mongoDb,
-                mongoDb
+            "mongodb://%s:%s@%s:%d/%s?authSource=%s",
+            mongoUser,
+            mongoPassword,
+            mongoHost,
+            mongoPort,
+            mongoDb,
+            mongoDb
         );
         return MongoClients.create(uri);
     }
 
     @Bean
     public MongoTemplate mongoTemplate(MongoClient client) {
+
         return new MongoTemplate(client, mongoDb);
     }
 }
