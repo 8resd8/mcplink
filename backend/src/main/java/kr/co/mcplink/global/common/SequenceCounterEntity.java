@@ -6,7 +6,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 
 @Document(collection = Constants.COLLECTION_SEQUENCE_COUNTER)
 @Getter
-public class SequenceCounterEntity {
+public class SequenceCounterEntity extends BaseTimeMongoEntity {
     @Id
     private String id;
     private long seq;

@@ -1,6 +1,7 @@
 package kr.co.mcplink.domain.mcpserverv2.entity;
 
 import kr.co.mcplink.global.annotation.AutoSequence;
+import kr.co.mcplink.global.common.BaseTimeMongoEntity;
 import kr.co.mcplink.global.common.Constants;
 import lombok.*;
 import org.springframework.data.annotation.Id;
@@ -13,7 +14,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AutoSequence(collection = Constants.COLLECTION_MCP_TAGS_V2)
 @Document(Constants.COLLECTION_MCP_TAGS_V2)
-public class McpTagV2 {
+public class McpTagV2 extends BaseTimeMongoEntity {
 
     @Id
     private String id;
