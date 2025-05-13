@@ -15,7 +15,7 @@ public class ScheduleController {
     private final EnQueueService enQueueService;
 
     @PostMapping("/enqueue/github")
-    public void enqueue(@RequestParam int queryNum) {
-        enQueueService.enqueue(queryNum);
+    public void enqueueGithub(@RequestParam int queryNum) {
+        enQueueService.enqueueGithub(queryNum);
     }
 }

@@ -16,7 +16,7 @@ public class EnQueueService {
     private final FetchSearchResultService fetchSearchResultService;
     private final GithubPendingQueueRepository queueRepository;
 
-    public void enqueue(int queryNum) {
+    public void enqueueGithub(int queryNum) {
         List<GithubSearchResultDto> results = fetchSearchResultService.fetchSearchResult(queryNum);
         for (GithubSearchResultDto dto : results) {
             String owner = dto.owner();
