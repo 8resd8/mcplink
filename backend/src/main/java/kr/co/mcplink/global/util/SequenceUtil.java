@@ -1,6 +1,6 @@
 package kr.co.mcplink.global.util;
 
-import kr.co.mcplink.global.entity.SequenceCounter;
+import kr.co.mcplink.global.common.SequenceCounterEntity;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.data.mongodb.core.FindAndModifyOptions;
 import org.springframework.data.mongodb.core.MongoOperations;
@@ -29,11 +29,11 @@ public class SequenceUtil {
                 .returnNew(true)
                 .upsert(true);
 
-        SequenceCounter counter = mongoOps.findAndModify(
+        SequenceCounterEntity counter = mongoOps.findAndModify(
                 query,
                 update,
                 options,
-                SequenceCounter.class
+                SequenceCounterEntity.class
         );
         return (counter != null) ? counter.getSeq() : 1L;
     }
