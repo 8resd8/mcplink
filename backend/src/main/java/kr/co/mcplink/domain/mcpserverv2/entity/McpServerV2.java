@@ -3,6 +3,7 @@ package kr.co.mcplink.domain.mcpserverv2.entity;
 import kr.co.mcplink.domain.mcpserver.entity.SecurityRank;
 import kr.co.mcplink.global.annotation.AutoIndexV2;
 import kr.co.mcplink.global.annotation.AutoSequence;
+import kr.co.mcplink.global.common.BaseTimeMongoEntity;
 import kr.co.mcplink.global.common.Constants;
 import lombok.*;
 import org.springframework.data.annotation.Id;
@@ -20,7 +21,7 @@ import java.util.Map;
 @AutoSequence(collection = Constants.COLLECTION_MCP_SERVERS_V2)
 @AutoIndexV2(collection = Constants.COLLECTION_MCP_SERVERS_V2)
 @Document(collection = Constants.COLLECTION_MCP_SERVERS_V2)
-public class McpServerV2 {
+public class McpServerV2 extends BaseTimeMongoEntity {
 
     @Id
     private String id;
@@ -62,7 +63,7 @@ public class McpServerV2 {
                 Map<String, String> env
         ) {
 
-            if (env != null & env.isEmpty()) {
+            if (env != null && env.isEmpty()) {
                 env = null;
             }
 

@@ -1,17 +1,19 @@
 package kr.co.mcplink.global.aop;
 
-import java.util.Arrays;
-
+import jakarta.servlet.http.HttpServletRequest;
+import kr.co.mcplink.global.annotation.ExcludeResponseLog;
+import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.AfterThrowing;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
+import org.aspectj.lang.reflect.MethodSignature;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
-import jakarta.servlet.http.HttpServletRequest;
-import lombok.extern.slf4j.Slf4j;
+import java.lang.reflect.Method;
+import java.util.Arrays;
 
 @Aspect
 @Slf4j
@@ -46,11 +48,18 @@ public class ServiceTime {
 		long endTime = System.currentTimeMillis();
 		long executionTime = endTime - startTime;
 
+		MethodSignature signature = (MethodSignature) joinPoint.getSignature();
+		Method method = signature.getMethod();
+
+		boolean excludeResponseLog = method.isAnnotationPresent(ExcludeResponseLog.class);
+
 		StringBuilder endLog = new StringBuilder();
 		endLog.append("\n").append(END_SEPARATOR).append(SERVICE_LOG_PREFIX).append(END_SEPARATOR).append("\n")
 			.append("▶ [Method]   : ").append(methodName).append("\n")
 			.append("▶ [실행시간]  : ").append(executionTime).append(" ms").append("\n")
-			.append("▶ [Response] : ").append(result != null ? result : "리턴 값 없음").append("\n")
+				.append("▶ [Response] : ").append(
+						excludeResponseLog ? "[Response content excluded from log]" : (result != null ? result : "리턴 값 없음")
+				).append("\n")
 			.append(LINE_SEPARATOR).append("\n");
 		log.info(endLog.toString());
 

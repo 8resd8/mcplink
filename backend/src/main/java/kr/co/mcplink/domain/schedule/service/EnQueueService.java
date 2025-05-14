@@ -1,0 +1,51 @@
+package kr.co.mcplink.domain.schedule.service;
+
+import kr.co.mcplink.domain.github.dto.GithubSearchResultDto;
+import kr.co.mcplink.domain.github.service.FetchSearchResultService;
+import kr.co.mcplink.domain.schedule.entity.GeminiPendingQueue;
+import kr.co.mcplink.domain.schedule.entity.GithubPendingQueue;
+import kr.co.mcplink.domain.schedule.repository.GeminiPendingQueueRepository;
+import kr.co.mcplink.domain.schedule.repository.GithubPendingQueueRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+
+@Service
+@RequiredArgsConstructor
+public class EnQueueService {
+
+    private final FetchSearchResultService fetchSearchResultService;
+    private final GithubPendingQueueRepository githubRepository;
+    private final GeminiPendingQueueRepository geminiRepository;
+
+    public void enqueueGithub(int queryNum) {
+        List<GithubSearchResultDto> results = fetchSearchResultService.fetchSearchResult(queryNum);
+        for (GithubSearchResultDto dto : results) {
+            String owner = dto.owner();
+            String repo  = dto.repo();
+            String name  = owner + "|" + repo;
+
+            if (!githubRepository.existsByName(name)) {
+                GithubPendingQueue entity = GithubPendingQueue.builder()
+                        .name(name)
+                        .owner(owner)
+                        .repo(repo)
+                        .build();
+
+                githubRepository.save(entity);
+            }
+        }
+    }
+
+    public void enqueueGemini(String serverId, String prepReadme) {
+        if (!geminiRepository.existsByServerId(serverId)) {
+            GeminiPendingQueue entity = GeminiPendingQueue.builder()
+                    .serverId(serverId)
+                    .prepReadme(prepReadme)
+                    .build();
+
+            geminiRepository.save(entity);
+        }
+    }
+}
