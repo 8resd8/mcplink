@@ -1,6 +1,13 @@
 // app/src-tauri/src/lib.rs
 
-use axum::{extract::State as AxumState, http::StatusCode, routing::post, Json, Router};
+use axum::{
+    extract::State as AxumState,
+    http::{Method, Request, StatusCode}, // Method와 Request 추가
+    middleware::{self, Next},            // middleware와 Next 추가
+    response::Response,                  // Response 추가
+    routing::post,
+    Json, Router,
+};
 use reqwest::Client;
 use serde::Deserialize;
 use std::{env, net::SocketAddr, sync::Arc};
@@ -15,6 +22,22 @@ use tokio::sync::Mutex;
 
 pub mod commands;
 use crate::commands::AppState;
+
+// POST 요청 로깅 미들웨어 함수
+async fn log_post_requests(req: Request<axum::body::Body>, next: Next) -> Result<Response, StatusCode> {
+    if req.method() == Method::POST {
+        let uri = req.uri().clone();
+        let headers = req.headers().clone();
+        // 참고: 요청 바디 로깅은 주의가 필요합니다.
+        // 여기서는 URI와 헤더만 로깅합니다.
+        println!(
+            "[GUI HTTP Server] Received POST request: URI = {}, Headers = {:?}",
+            uri, headers
+        );
+    }
+    // 다음 핸들러 또는 미들웨어로 요청 전달
+    Ok(next.run(req).await)
+}
 
 // 키워드 페이로드를 위한 구조체 정의
 #[derive(Deserialize, Debug)]
@@ -46,7 +69,7 @@ async fn handle_recommendations(
     AxumState(state): AxumState<RecommendationServerState>,
     Json(payload): Json<KeywordsPayload>,
 ) -> StatusCode {
-    println!("Received keywords: {:?}", payload.keywords);
+    println!("[GUI HTTP Server] Processing /recommendations POST request. Received keywords: {:?}", payload.keywords);
 
     // 키워드를 쉼표로 구분된 문자열로 변환
     let keywords_str = payload.keywords.join(", ");
@@ -87,8 +110,8 @@ pub async fn start_axum_server(app_state: RecommendationServerState) {
     let gui_api_port = env::var("GUI_API_PORT").unwrap_or_else(|_| "8082".to_string());
 
     let gui_be_api_base_url = env::var("GUI_BE_API_BASE_URL")
-    .unwrap_or_else(|_| "http://localhost:8082/api/v1".to_string());
-    
+        .unwrap_or_else(|_| "http://localhost:8082/api/v1".to_string());
+
     println!("GUI_BE_API_BASE_URL: {}", gui_be_api_base_url);
 
     let addr_str = format!("{}:{}", gui_api_host, gui_api_port);
@@ -97,6 +120,7 @@ pub async fn start_axum_server(app_state: RecommendationServerState) {
     // Axum 라우터 설정
     let app = Router::new()
         .route("/recommendations", post(handle_recommendations))
+        .layer(middleware::from_fn(log_post_requests)) // POST 로깅 미들웨어 적용
         .with_state(app_state);
 
     println!("GUI Backend API server listening on {}", addr);
@@ -107,7 +131,6 @@ pub async fn start_axum_server(app_state: RecommendationServerState) {
         Err(e) => eprintln!("Axum server error: {}", e),
     }
 }
-
 
 pub fn run() {
     // AppState 생성 (API 요청용 client 유지)
