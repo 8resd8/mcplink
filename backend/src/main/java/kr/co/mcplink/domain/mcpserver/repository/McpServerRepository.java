@@ -18,7 +18,7 @@ public interface McpServerRepository extends MongoRepository<McpServer, String>,
     @CountQuery("{}")
     long countAll();
 
-    @CountQuery("{ 'name': { $regex: ?0, $options: 'i' } }")
+    @CountQuery("{ 'mcpServers.name': { $regex: ?0, $options: 'i' } }")
     long countByName(String nameRegex);
 
     Optional<McpServer> findBySeq(Long seq);
@@ -40,12 +40,14 @@ public interface McpServerRepository extends MongoRepository<McpServer, String>,
     @Update("{ '$inc': { 'views': 1 } }")
     long findAndIncrementViewsBySeq(Long seq);
 
+    // Repository method to fetch servers where official is false
+    List<McpServer> findByOfficialFalse();
+
+    @Query("{ '_id': ?0 }")
     @Update("{ '$set': { 'scanned': true } }")
-    long findAndUpdateScannedBySeq(Long seq);
+    long updateScannedStatusById(String mcpServerId);
 
-    @Update("{ '$set': { 'scanned': false } }")
-    long findAndUpdateNotScannedBySeq(Long seq);
-
-    @Update(update = "{ '$set': { 'securityRank': ?1 } }")
-    long findAndUpdateSecurityRankBySeq(Long seq, SecurityRank securityRank);
+    @Query("{ '_id': ?0 }")
+    @Update("{ '$set': { 'securityRank': ?1 } }")
+    long updateSecurityRankById(String mcpServerId, SecurityRank securityRank);
 }

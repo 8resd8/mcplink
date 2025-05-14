@@ -1,0 +1,25 @@
+package kr.co.mcplink.domain.schedule.repository;
+
+import kr.co.mcplink.domain.schedule.entity.GithubPendingQueue;
+import org.springframework.data.mongodb.repository.MongoRepository;
+import org.springframework.data.mongodb.repository.Query;
+import org.springframework.data.mongodb.repository.Update;
+import org.springframework.stereotype.Repository;
+
+import java.util.List;
+
+@Repository
+public interface GithubPendingQueueRepository extends MongoRepository<GithubPendingQueue, String> {
+
+    boolean existsByName(String name);
+
+    long countByProcessedTrue();
+
+    long deleteByProcessedTrue();
+
+    List<GithubPendingQueue> findByProcessedFalseOrderBySeqAsc();
+
+    @Query("{ '_id': ?0 }")
+    @Update("{ '$set': { 'processed': ?1 } }")
+    long updateProcessedById(String id, boolean processed);
+}

@@ -5,5 +5,17 @@ public enum SecurityRank {
     LOW,
     MODERATE,
     HIGH,
-    CRITICAL
+    CRITICAL;
+
+    public static SecurityRank fromString(String severityString) {
+        if (severityString == null) {
+            return UNRATED;
+        }
+
+        try {
+            return SecurityRank.valueOf(severityString.trim().toUpperCase());
+        } catch (IllegalArgumentException e) {
+            return SecurityRank.UNRATED;
+        }
+    }
 }

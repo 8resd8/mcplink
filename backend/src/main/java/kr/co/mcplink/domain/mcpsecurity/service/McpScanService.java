@@ -1,5 +1,8 @@
 package kr.co.mcplink.domain.mcpsecurity.service;
 
+import java.util.List;
+
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import kr.co.mcplink.domain.mcpsecurity.dto.McpScanResultDto;
@@ -14,22 +17,26 @@ public class McpScanService {
 	private final McpAnalysisService analysisService;
 	private final McpJsonParsingService parsingService;
 
-	// 전체 서버 스캔을 담당하는 메소드
+	// 현재는 public, 추후 private 호출 불가 설정 예정, 1시간 마다 수행
+	@Scheduled(cron = "0 0 * * * *")
 	public void triggerScan() {
-		McpScanResultDto result = analysisService.scanSpecificServer();
-
-		if (!result.scanSuccess()) {
-			log.error("실패 원인 (JSON): {}", result.osvOutputJson());
-			throw new RuntimeException("서버 스캔 실패");
+		List<McpScanResultDto> result = analysisService.scanSpecificServer();
+		
+		for (McpScanResultDto scanResult : result) {
+			if (!scanResult.scanSuccess()) {
+				log.error("파싱 패스, 실패 원인 (JSON): {}", scanResult.osvOutputJson());
+				return;
+			}
+	
+			String output = scanResult.osvOutputJson();
+	
+			int jsonStart = output.indexOf("{");
+			if (jsonStart != -1) {
+				output = output.substring(jsonStart);
+			}
+	
+			parsingService.processOsvResult(output, scanResult.mcpServerId());
 		}
-
-		String output = result.osvOutputJson();
-
-		int jsonStart = output.indexOf("{");
-		if (jsonStart != -1) {
-			output = output.substring(jsonStart);
-		}
-
-		parsingService.processOsvResult(output);
+		
 	}
 }

@@ -11,6 +11,8 @@ import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import jakarta.servlet.http.HttpServletRequest;
 import kr.co.mcplink.global.common.ErrorResponse;
+import kr.co.mcplink.global.exception.CommentNotFoundException;
+import kr.co.mcplink.global.exception.PostNotFoundException;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -45,6 +47,18 @@ public class GlobalExceptionHandler {
 	public ResponseEntity<ErrorResponse> handleMessageNotReadableException(HttpMessageNotReadableException ex,
 		HttpServletRequest request) {
 		return ErrorResponse.toResponseEntity(HttpStatus.BAD_REQUEST, "정확한 타입으로 보내야 합니다.", request.getRequestURI());
+	}
+
+	@ExceptionHandler
+	public ResponseEntity<ErrorResponse> handleNotFoundPostException(PostNotFoundException ex,
+		HttpServletRequest request) {
+		return ErrorResponse.toResponseEntity(HttpStatus.NO_CONTENT, "게시글이 없습니다.", request.getRequestURI());
+	}
+
+	@ExceptionHandler
+	public ResponseEntity<ErrorResponse> handleNotFoundPostException(CommentNotFoundException ex,
+		HttpServletRequest request) {
+		return ErrorResponse.toResponseEntity(HttpStatus.NO_CONTENT, "댓글이 없습니다.", request.getRequestURI());
 	}
 
 }

@@ -19,7 +19,7 @@ FULL_IMAGE_NAME="resd/backend:${IMAGE_TO_DEPLOY}"
 echo "==== 배포 시작: ${IMAGE_TO_DEPLOY} ===="
 
 # 몽고디비 실행
-docker compose up -d mongodb --wait || { echo "오류: MongoDB 컨테이너 시작 실패"; exit 1; }
+docker compose up -d mongodb mysql --wait || { echo "오류: MongoDB 컨테이너 시작 실패"; exit 1; }
 
 echo "Docker Image pull... ${IMAGE_TO_DEPLOY}"
 docker pull "${FULL_IMAGE_NAME}" || { echo "오류: 이미지 풀(${FULL_IMAGE_NAME}) 실패"; exit 1; }

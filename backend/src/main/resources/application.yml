@@ -18,6 +18,21 @@ spring:
       username: ${mongodb.username}
       password: ${mongodb.password}
 
+  datasource:
+    jdbc-url: jdbc:mysql://${mysql.host}:${mysql.port}/${mysql.database}?serverTimezone=Asia/Seoul
+    username: ${mysql.user}
+    password: ${mysql.password}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+        format_sql: true
+
 server:
   http2:
     enabled: true

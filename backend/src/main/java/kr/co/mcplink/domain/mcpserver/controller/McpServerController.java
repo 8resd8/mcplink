@@ -2,7 +2,7 @@ package kr.co.mcplink.domain.mcpserver.controller;
 
 import kr.co.mcplink.domain.mcpserver.dto.request.McpBatchRequest;
 import kr.co.mcplink.domain.mcpserver.dto.response.*;
-import kr.co.mcplink.domain.mcpserver.service.core.McpServerService;
+import kr.co.mcplink.domain.mcpserver.service.McpServerService;
 import kr.co.mcplink.global.common.ApiResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
