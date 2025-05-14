@@ -8,6 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 import kr.co.mcplink.domain.post.dto.PostDto;
 import kr.co.mcplink.domain.post.dto.request.CreatePostRequest;
 import kr.co.mcplink.domain.post.dto.request.UpdatePostRequest;
+import kr.co.mcplink.domain.post.dto.response.PostResponse;
 import kr.co.mcplink.domain.post.entity.Post;
 import kr.co.mcplink.domain.post.repository.PostRepository;
 import kr.co.mcplink.domain.user.entity.User;
@@ -37,10 +38,10 @@ public class PostService {
 	}
 
 	// 특정 게시글 조회
-	public PostDto getPostById(Long postId) {
+	public PostResponse getPostById(Long postId) {
 		Post post = getPost(postId);
 
-		return PostDto.PostDtoFromEntity(post);
+		return new PostResponse(PostDto.PostDtoFromEntity(post));
 	}
 
 	// 게시글 수정

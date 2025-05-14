@@ -19,6 +19,7 @@ import jakarta.validation.Valid;
 import kr.co.mcplink.domain.post.dto.PostDto;
 import kr.co.mcplink.domain.post.dto.request.CreatePostRequest;
 import kr.co.mcplink.domain.post.dto.request.UpdatePostRequest;
+import kr.co.mcplink.domain.post.dto.response.PostResponse;
 import kr.co.mcplink.domain.post.service.PostService;
 import kr.co.mcplink.domain.user.repository.UserRepository;
 import kr.co.mcplink.global.common.ApiResponse;
@@ -52,8 +53,8 @@ public class PostController {
 	}
 
 	@GetMapping("/{postId}")
-	public ResponseEntity<ApiResponse<PostDto>> getPostById(@PathVariable("postId") Long postId) {
-		PostDto post = postService.getPostById(postId);
+	public ResponseEntity<ApiResponse<PostResponse>> getPostById(@PathVariable("postId") Long postId) {
+		PostResponse post = postService.getPostById(postId);
 
 		return ResponseEntity
 			.status(HttpStatus.OK)
