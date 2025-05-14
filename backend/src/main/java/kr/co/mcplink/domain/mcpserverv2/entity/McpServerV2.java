@@ -63,7 +63,7 @@ public class McpServerV2 extends BaseTimeMongoEntity {
                 Map<String, String> env
         ) {
 
-            if (env != null & env.isEmpty()) {
+            if (env != null && env.isEmpty()) {
                 env = null;
             }
 
