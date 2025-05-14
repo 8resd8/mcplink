@@ -17,7 +17,7 @@ public interface GeminiPendingQueueRepository extends MongoRepository<GeminiPend
 
 //    long deleteByProcessedTrue();
 
-    List<GeminiPendingQueue> findTop2ByProcessedFalseOrderBySeqAsc();
+    GeminiPendingQueue findTop1ByProcessedFalseOrderBySeqAsc();
 
     @Query("{ '_id': ?0 }")
     @Update("{ '$set': { 'processed': ?1 } }")
