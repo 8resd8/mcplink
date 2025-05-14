@@ -12,6 +12,8 @@ import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.MalformedJwtException;
 import io.jsonwebtoken.UnsupportedJwtException;
+import io.jsonwebtoken.io.Decoders;
+import io.jsonwebtoken.security.Keys;
 import io.jsonwebtoken.security.SignatureException;
 import kr.co.mcplink.domain.user.entity.User;
 import lombok.extern.slf4j.Slf4j;
@@ -20,14 +22,18 @@ import lombok.extern.slf4j.Slf4j;
 @Component
 public class JwtUtil {
 
+	// private SecretKey secretKey;
+	
+	@Value("${jwt.access-expiration}")
+	private long expiration;
+	
 	@Value("${jwt.secret}")
-	private SecretKey secretKey;
-	@Value("${jwt.expiration-ms}")
-	private long expirationMs;
+	private String secret;
+
 
 	public String generateToken(User user) {
 		Date now = new Date();
-		Date expiryDate = new Date(now.getTime() + expirationMs);
+		Date expiryDate = new Date(now.getTime() + expiration);
 
 		return Jwts.builder()
 			.subject(user.getEmail())
@@ -36,7 +42,7 @@ public class JwtUtil {
 			.claim("role", user.getRole())
 			.issuedAt(now)
 			.expiration(expiryDate)
-			.signWith(secretKey)
+			.signWith(getSigningKey())
 			.compact();
 	}
 	// public String generateRefreshToken(User user) { // 리프레시 토큰 생성 로직 (필요시)
@@ -53,7 +59,7 @@ public class JwtUtil {
 
 	public Claims getClaims(String token) {
 		return Jwts.parser()
-			.verifyWith(secretKey)
+			.verifyWith(getSigningKey())
 			.build()
 			.parseSignedClaims(token)
 			.getPayload();
@@ -69,7 +75,7 @@ public class JwtUtil {
 
 	public boolean validateToken(String token) {
 		try {
-			Jwts.parser().verifyWith(secretKey).build().parseSignedClaims(token);
+			Jwts.parser().verifyWith(getSigningKey()).build().parseSignedClaims(token);
 			return true;
 		} catch (SignatureException ex) {
 			log.error("Invalid JWT signature");
@@ -83,6 +89,14 @@ public class JwtUtil {
 			log.error("JWT claims string is empty.");
 		}
 		return false;
+	}
+
+	private SecretKey getSigningKey() {
+		byte[] keyBytes = Decoders.BASE64.decode(secret);
+		if (keyBytes.length < 32) {
+			throw new IllegalArgumentException("키의 길이가 짧은 오류, 256비트 이상이어야 함");
+		}
+		return Keys.hmacShaKeyFor(keyBytes);
 	}
 
 }

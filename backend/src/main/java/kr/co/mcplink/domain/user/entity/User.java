@@ -56,11 +56,11 @@ public class User extends BaseTimeEntity {
 		this.ssafyUserId = ssafyUserId;
 	}
 
-	public static User createUser(String name, String email) {
+	public static User createUser(String name, String nickname,String email) {
 		return User.builder()
 			.name(name)
 			.email(email)
-			.nickname(name)
+			.nickname(nickname == null ? name : nickname)
 			.role(UserRole.USER)
 			.build();
 	}
