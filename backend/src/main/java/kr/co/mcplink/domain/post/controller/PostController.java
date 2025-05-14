@@ -16,10 +16,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import jakarta.validation.Valid;
+import kr.co.mcplink.domain.post.dto.PostDetailDto;
 import kr.co.mcplink.domain.post.dto.PostDto;
 import kr.co.mcplink.domain.post.dto.request.CreatePostRequest;
 import kr.co.mcplink.domain.post.dto.request.UpdatePostRequest;
-import kr.co.mcplink.domain.post.dto.response.PostResponse;
 import kr.co.mcplink.domain.post.service.PostService;
 import kr.co.mcplink.domain.user.repository.UserRepository;
 import kr.co.mcplink.global.common.ApiResponse;
@@ -53,8 +53,8 @@ public class PostController {
 	}
 
 	@GetMapping("/{postId}")
-	public ResponseEntity<ApiResponse<PostResponse>> getPostById(@PathVariable("postId") Long postId) {
-		PostResponse post = postService.getPostById(postId);
+	public ResponseEntity<ApiResponse<PostDetailDto>> getPostById(@PathVariable("postId") Long postId) {
+		PostDetailDto post = postService.getPostById(postId);
 
 		return ResponseEntity
 			.status(HttpStatus.OK)
@@ -64,7 +64,6 @@ public class PostController {
 	@PutMapping("/{postId}")
 	public ResponseEntity<ApiResponse<PostDto>> updatePost(@PathVariable("postId") Long postId,
 		@Valid @RequestBody UpdatePostRequest request) {
-
 		PostDto updatedPostDto = postService.updatePost(postId, request, userRepository.findById(1L).get());
 
 		return ResponseEntity
