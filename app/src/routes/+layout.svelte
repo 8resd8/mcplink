@@ -212,7 +212,6 @@
   const tabs = [
     { path: "/Installed-MCP", name: "Installed MCP", icon: Presentation, color: "#eef2ff", hoverColor: "#eef2ff", bgColor: "#eef2ff" },
     { path: "/MCP-list", name: "MCP List", icon: Cog, color: "#ecfdf5", hoverColor: "#ecfdf5", bgColor: "#ecfdf5" },
-    { path: "/notification", name: "Notification", icon: Cog, color: "#f0f9ff", hoverColor: "#f0f9ff", bgColor: "#f0f9ff" },
     { path: "/test", name: "Test", icon: Cog, color: "#f0f9ff", hoverColor: "#f0f9ff", bgColor: "#f0f9ff" },
   ]
   const settingsTab = { path: "/settings", name: "Settings", icon: Settings, color: "#f3f4f6", hoverColor: "#f3f4f6", bgColor: "#f3f4f6" }

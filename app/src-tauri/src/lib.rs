@@ -103,8 +103,41 @@ async fn handle_recommendations(
     StatusCode::OK
 }
 
+// /api/v1 요청을 처리하는 핸들러
+async fn handle_api_v1_request(
+    AxumState(state): AxumState<RecommendationServerState>,
+) -> StatusCode {
+    println!("[GUI HTTP Server] Processing /api/v1 POST request.");
+    
+    // AppHandle을 사용하여 알림 보내기
+    if let Some(app_handle) = &*state.app_handle.lock().await {
+        // 알림 본문 설정
+        let notification_body = String::from("새로운 데이터가 수신되었습니다. (From /api/v1)");
+        
+        // 알림 생성 및 표시
+        let builder = app_handle
+            .notification()
+            .builder()
+            .title("API 알림")
+            .body(&notification_body)
+            .icon("icons/icon.png");
+            
+        // 알림 표시 시도 및 결과 로깅
+        match builder.show() {
+            Ok(_) => println!("Notification sent successfully for /api/v1."),
+            Err(e) => eprintln!("Failed to send notification for /api/v1: {}", e),
+        }
+    } else {
+        eprintln!("AppHandle not set, cannot send notification for /api/v1");
+    }
+    
+    StatusCode::OK
+}
+
 // Axum 서버 시작 함수
-pub async fn start_axum_server(app_state: RecommendationServerState) {
+pub async fn start_axum_server(app_state: RecommendationServerState) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    println!("[DEBUG] Inside start_axum_server function");
+    
     // 환경 변수에서 GUI API URL 설정 가져오기
     let gui_api_host = env::var("GUI_API_HOST").unwrap_or_else(|_| "0.0.0.0".to_string());
     let gui_api_port = env::var("GUI_API_PORT").unwrap_or_else(|_| "8082".to_string());
@@ -112,23 +145,54 @@ pub async fn start_axum_server(app_state: RecommendationServerState) {
     let gui_be_api_base_url = env::var("GUI_BE_API_BASE_URL")
         .unwrap_or_else(|_| "http://localhost:8082/api/v1".to_string());
 
-    println!("GUI_BE_API_BASE_URL: {}", gui_be_api_base_url);
+    println!("[DEBUG] GUI_BE_API_BASE_URL: {}", gui_be_api_base_url);
+    println!("[DEBUG] Binding server to {}:{}", gui_api_host, gui_api_port);
 
     let addr_str = format!("{}:{}", gui_api_host, gui_api_port);
-    let addr: SocketAddr = addr_str.parse().expect("Failed to parse address");
+    let addr: SocketAddr = match addr_str.parse() {
+        Ok(addr) => addr,
+        Err(e) => {
+            eprintln!("[DEBUG] Failed to parse address: {}", e);
+            return Err(Box::new(e));
+        }
+    };
 
     // Axum 라우터 설정
     let app = Router::new()
         .route("/recommendations", post(handle_recommendations))
+        .route("/api/v1", post(handle_api_v1_request)) // /api/v1 경로에 대한 핸들러 추가
+        .route("/api/v1/recommendations", post(handle_recommendations)) // mcp-server에서 오는 요청을 위한 추가 경로 (app .env 기준)
+        // 중복 경로 제거: "/recommendations" 경로가 이미 위에서 추가됨
         .layer(middleware::from_fn(log_post_requests)) // POST 로깅 미들웨어 적용
         .with_state(app_state);
 
-    println!("GUI Backend API server listening on {}", addr);
+    println!("[DEBUG] Router configured");
+    println!("[DEBUG] GUI Backend API server attempting to listen on {}", addr);
+
+    // TcpListener 바인딩 시도
+    let listener = match tokio::net::TcpListener::bind(addr).await {
+        Ok(listener) => {
+            println!("[DEBUG] Successfully bound to {}", addr);
+            listener
+        },
+        Err(e) => {
+            eprintln!("[DEBUG] Failed to bind to {}: {}", addr, e);
+            return Err(Box::new(e));
+        }
+    };
+
+    println!("[DEBUG] GUI Backend API server now listening on {}", addr);
 
     // Axum 서버 시작
-    match axum::serve(tokio::net::TcpListener::bind(addr).await.unwrap(), app).await {
-        Ok(_) => println!("Axum server shut down gracefully"),
-        Err(e) => eprintln!("Axum server error: {}", e),
+    match axum::serve(listener, app).await {
+        Ok(_) => {
+            println!("[DEBUG] Axum server shut down gracefully");
+            Ok(())
+        },
+        Err(e) => {
+            eprintln!("[DEBUG] Axum server error: {}", e);
+            Err(Box::new(e))
+        }
     }
 }
 
@@ -285,17 +349,28 @@ pub fn run() {
             // --- Axum 서버 시작 코드 추가 시작 ---
             let app_handle_for_axum = app.handle().clone();
 
+            println!("[DEBUG] Before spawning Axum server task..."); // 디버깅 로그 추가
+            
             // AppHandle 설정 및 Axum 서버 시작
             tauri::async_runtime::spawn(async move {
+                println!("[DEBUG] Inside async task for Axum server..."); // 디버깅 로그 추가
+                
                 // AppHandle 설정
+                println!("[DEBUG] Setting AppHandle...");
                 recommendation_server_state_clone
                     .set_app_handle(app_handle_for_axum)
                     .await;
+                println!("[DEBUG] AppHandle set successfully");
 
                 // Axum 서버 시작
-                println!("Starting Axum server for recommendations API...");
-                start_axum_server(recommendation_server_state_clone).await;
+                println!("[DEBUG] Starting Axum server for recommendations API...");
+                match start_axum_server(recommendation_server_state_clone).await {
+                    Ok(_) => println!("[DEBUG] Axum server completed successfully"),
+                    Err(e) => eprintln!("[DEBUG] Error in Axum server: {:?}", e),
+                }
             });
+            
+            println!("[DEBUG] After spawning Axum server task..."); // 디버깅 로그 추가
             // --- Axum 서버 시작 코드 추가 끝 ---
 
             Ok(())
