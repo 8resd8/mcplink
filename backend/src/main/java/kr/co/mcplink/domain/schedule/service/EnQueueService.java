@@ -14,7 +14,7 @@ import java.util.List;
 public class EnQueueService {
 
     private final FetchSearchResultService fetchSearchResultService;
-    private final GithubPendingQueueRepository queueRepository;
+    private final GithubPendingQueueRepository githubRepository;
 
     public void enqueueGithub(int queryNum) {
         List<GithubSearchResultDto> results = fetchSearchResultService.fetchSearchResult(queryNum);
@@ -23,14 +23,14 @@ public class EnQueueService {
             String repo  = dto.repo();
             String name  = owner + "|" + repo;
 
-            if (!queueRepository.existsByName(name)) {
+            if (!githubRepository.existsByName(name)) {
                 GithubPendingQueue entity = GithubPendingQueue.builder()
                         .name(name)
                         .owner(owner)
                         .repo(repo)
                         .build();
 
-                queueRepository.save(entity);
+                githubRepository.save(entity);
             }
         }
     }

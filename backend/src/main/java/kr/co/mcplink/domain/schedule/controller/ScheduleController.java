@@ -12,10 +12,10 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class ScheduleController {
 
-    private final EnQueueService enQueueService;
+    private final EnQueueService enqueueService;
 
     @PostMapping("/enqueue/github")
     public void enqueueGithub(@RequestParam int queryNum) {
-        enQueueService.enqueueGithub(queryNum);
+        enqueueService.enqueueGithub(queryNum);
     }
 }
