@@ -45,3 +45,19 @@ app:
 #    temp-dir: "C:/ssafy/a201-gitlab"
     osv-scanner-cmd: osv-scanner
 #    osv-scanner-cmd: /usr/local/bin/osv-scanner
+
+
+ssafy:
+  oauth:
+    client-id: ${ssafy.oauth.client-id}
+    client-secret: ${ssafy.oauth.client-secret}
+    redirect-uri: ${ssafy.oauth.redirect-uri}
+    authorization-uri: ${ssafy.oauth.authorization-uri}
+    token-uri: ${ssafy.oauth.token-uri}
+    user-info-uri: ${ssafy.oauth.user-info-uri}
+    scope: ${ssafy.oauth.scope}
+
+jwt:
+  secret: ${jwt.secret}
+  access-expiration: ${jwt.access-expiration}
+  refresh-expiration: ${jwt.refresh-expiration}
