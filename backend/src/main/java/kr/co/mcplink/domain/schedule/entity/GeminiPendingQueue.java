@@ -23,8 +23,8 @@ public class GeminiPendingQueue extends BaseTimeMongoEntity {
     private Long seq;
 
     @Indexed(unique = true)
-    private Long serverId;
-    private String resizedReadme;
+    private String serverId;
+    private String prepReadme;
 
     @Indexed
     @Builder.Default

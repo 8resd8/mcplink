@@ -6,12 +6,10 @@ import org.springframework.data.mongodb.repository.Query;
 import org.springframework.data.mongodb.repository.Update;
 import org.springframework.stereotype.Repository;
 
-import java.util.List;
-
 @Repository
 public interface GeminiPendingQueueRepository extends MongoRepository<GeminiPendingQueue, String> {
 
-    boolean existsByServerId(Long serverId);
+    boolean existsByServerId(String serverId);
 
 //    long countByProcessedTrue();
 
