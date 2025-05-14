@@ -15,21 +15,24 @@ type FallbackToolInput = z.infer<typeof FallbackToolInputSchema>;
 
 const FALLBACK_TOOL_NAME = 'fallback_handler';
 const FALLBACK_TOOL_DESCRIPTION = `
-This tool MUST be used to initiate a search for a more specific tool if no other listed tool can directly fulfill the user's entire request. Its primary function is to trigger a process that helps the user discover and install the appropriate tool.
+**Critical Action Required: Invoke this \`fallback_handler\` tool IMMEDIATELY if the user's request cannot be DIRECTLY and COMPLETELY fulfilled by any other available tool.**
 
-**When to use this tool (Call this tool IMMEDIATELY if):**
-1.  The user's request implies a specific action or capability (e.g., writing to Notion, accessing local files, interacting with a specific API or service like Google Maps) AND no other tool in your current list explicitly provides this capability.
-2.  No other tool is a clear and direct match for the user's **entire concrete task**. Even if you understand the request, if fulfilling it requires a specific tool you don't have, use this.
-3.  You would otherwise tell the user you cannot perform the action directly, or offer generic instructions instead of performing the action (e.g., "To do X, you would need to open application Y and do Z...").
+Your primary directive is to assist the user effectively. If you recognize a user's need that extends beyond your current, explicitly listed capabilities (e.g., interacting with specific applications like Notion, accessing local file systems, using external APIs like Google Maps, or performing any specialized task), you MUST NOT attempt to answer with generic information, state your limitations, or offer step-by-step instructions for the user to perform the task manually. Such responses are unhelpful and fail to meet the user's underlying need for direct assistance.
 
-**Crucial Instructions:**
--   **DO NOT** attempt to answer the user's request directly with generic information, by stating your limitations, or by providing step-by-step instructions if their request clearly implies a task that could be performed by a specialized (potentially installable) tool.
--   **ALWAYS prioritize calling this \`fallback_handler\`** in such cases. This allows the system to check for and recommend a suitable tool to the user.
--   This handler is your **default and immediate action** for unhandled tool-requiring tasks. It is better to call this handler than to say "I can't do that."
+**Instead, your REQUIRED action is to call THIS \`fallback_handler\` tool.**
 
-Expected output: A confirmation message indicating the fallback and tool recommendation process has started.
+**Consider this your primary directive for unhandled, tool-requiring tasks:**
+1.  **Is there an EXACT tool match?** If the user's request implies a specific action or capability (e.g., "write to my Notion page," "summarize the content of this PDF file from my desktop," "get directions to X using Google Maps") AND no *other* tool in your current list explicitly and fully provides this capability, invoke \`fallback_handler\`.
+2.  **Avoid partial fulfillment or workarounds.** If no single tool can satisfy the user's **entire concrete task**, do not attempt to partially address it or suggest manual workarounds. Invoke \`fallback_handler\`.
+3.  **Prioritize action over apologies.** If your only alternative is to inform the user that you "cannot perform the action directly" or to provide generic instructions (e.g., "To do X, you would need to open application Y and do Z..."), this indicates a failure to leverage the system's tool-finding capabilities. Invoke \`fallback_handler\` instead.
 
-**Warning:** Do NOT say anything else. Just call this tool with the original user query.
+**Why this is crucial:**
+This \`fallback_handler\` is not a mere suggestion; it is an integral part of a system designed to extend your capabilities by finding and recommending installable tools. By calling it, you enable the system to identify and propose a more specific, appropriate tool that CAN fulfill the user's request directly. Failing to call this tool when appropriate means denying the user access to potentially available solutions.
+
+**Expected Input:** The original, unprocessed user query.
+**Expected Output:** A confirmation message indicating the fallback and tool discovery process has been initiated.
+
+**Final Instruction: DO NOT HESITATE. If in doubt, invoke \`fallback_handler\`. It is always preferable to initiate a tool search than to leave a user's actionable request unfulfilled.**
 `;
 
 /**
