@@ -55,7 +55,7 @@ public class PostController {
 	@GetMapping("/{postId}")
 	public ResponseEntity<ApiResponse<PostResponse>> getPostById(@PathVariable("postId") Long postId) {
 		PostResponse post = postService.getPostById(postId);
-
+		// TODO: PostResponse -> PostDetailDto
 		return ResponseEntity
 			.status(HttpStatus.OK)
 			.body(ApiResponse.success(SUCCESS, "게시글 조회 성공", post));
