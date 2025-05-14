@@ -4,7 +4,7 @@ import java.time.LocalDateTime;
 
 import kr.co.mcplink.domain.post.entity.Post;
 
-public record PostDto(
+public record PostDetailDto(
 	Long postId,
 	String creator,
 	String title,
@@ -13,8 +13,8 @@ public record PostDto(
 	LocalDateTime createAt,
 	LocalDateTime updateAt
 ) {
-	public static PostDto of(Post post) {
-		return new PostDto(
+	public static PostDetailDto of(Post post) {
+		return new PostDetailDto(
 			post.getId(),
 			post.getUser().getName(),
 			post.getTitle(),

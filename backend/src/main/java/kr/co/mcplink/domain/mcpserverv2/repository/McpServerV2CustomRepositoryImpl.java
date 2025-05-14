@@ -14,7 +14,6 @@ import org.springframework.stereotype.Repository;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.regex.Pattern;
 
 @Repository
@@ -125,35 +124,35 @@ public class McpServerV2CustomRepositoryImpl implements McpServerV2CustomReposit
         return countNum == null ? 0L : countNum.longValue();
     }
 
-    @Override
-    public long updateMetaData(
-        String id,
-        String url,
-        int stars,
-        boolean official,
-        String name,
-        String command,
-        List<String> args,
-        Map<String, String> env
-    ) {
-        Document filter = new Document("_id", id);
-        Document set = new Document()
-                .append("url", url)
-                .append("stars", stars)
-                .append("official", official)
-                .append("mcpServers.name", name)
-                .append("mcpServers.command", command)
-                .append("mcpServers.args", args)
-                .append("mcpServers.env", env);
-        Document update = new Document("$set", set);
-
-        MongoCollection<Document> coll = mongoTemplate.getCollection(
-            mongoTemplate.getCollectionName(McpServerV2.class)
-        );
-        UpdateResult result = coll.updateOne(filter, update);
-
-        return result.getModifiedCount();
-    }
+//    @Override
+//    public long updateMetaData(
+//        String id,
+//        String url,
+//        int stars,
+//        boolean official,
+//        String name,
+//        String command,
+//        List<String> args,
+//        Map<String, String> env
+//    ) {
+//        Document filter = new Document("_id", id);
+//        Document set = new Document()
+//                .append("url", url)
+//                .append("stars", stars)
+//                .append("official", official)
+//                .append("mcpServers.name", name)
+//                .append("mcpServers.command", command)
+//                .append("mcpServers.args", args)
+//                .append("mcpServers.env", env);
+//        Document update = new Document("$set", set);
+//
+//        MongoCollection<Document> coll = mongoTemplate.getCollection(
+//            mongoTemplate.getCollectionName(McpServerV2.class)
+//        );
+//        UpdateResult result = coll.updateOne(filter, update);
+//
+//        return result.getModifiedCount();
+//    }
 
     @Override
     public long updateSummary(

@@ -48,6 +48,9 @@ public class Post extends BaseTimeEntity {
 	@Column(nullable = false, columnDefinition = "integer default 0")
 	private Integer likeCount = 0;
 
+	@Column(nullable = false, columnDefinition = "integer default 0")
+	private Integer viewCount = 0;
+
 	@OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
 	private List<Comment> comments = new ArrayList<>();
 
@@ -80,5 +83,9 @@ public class Post extends BaseTimeEntity {
 		if (this.likeCount > 0) {
 			this.likeCount--;
 		}
+	}
+
+	public void incrementViewCount() {
+		this.viewCount++;
 	}
 }

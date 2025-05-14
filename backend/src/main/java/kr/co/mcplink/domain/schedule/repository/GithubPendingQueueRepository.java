@@ -13,13 +13,13 @@ public interface GithubPendingQueueRepository extends MongoRepository<GithubPend
 
     boolean existsByName(String name);
 
-    long countByProcessedTrue();
+//    long countByProcessedTrue();
 
-    long deleteByProcessedTrue();
+//    long deleteByProcessedTrue();
 
-    List<GithubPendingQueue> findByProcessedFalseOrderBySeqAsc();
+    List<GithubPendingQueue> findTop10ByProcessedFalseOrderBySeqAsc();
 
     @Query("{ '_id': ?0 }")
     @Update("{ '$set': { 'processed': ?1 } }")
-    long updateProcessedById(String id, boolean processed);
+    long updateProcessedById(String _id, boolean processed);
 }

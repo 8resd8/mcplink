@@ -13,10 +13,10 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
 import jakarta.persistence.EntityManager;
+import kr.co.mcplink.domain.post.dto.PostDetailDto;
 import kr.co.mcplink.domain.post.dto.PostDto;
 import kr.co.mcplink.domain.post.dto.request.CreatePostRequest;
 import kr.co.mcplink.domain.post.dto.request.UpdatePostRequest;
-import kr.co.mcplink.domain.post.dto.response.PostResponse;
 import kr.co.mcplink.domain.post.entity.Post;
 import kr.co.mcplink.domain.post.repository.PostRepository;
 import kr.co.mcplink.domain.user.entity.User;
@@ -105,11 +105,10 @@ class PostServiceTest {
 	void 특정_게시글_조회() {
 		Post saved = postRepository.save(Post.createPost("특정 게시글", "내용", fixedUser));
 
-		PostResponse response = postService.getPostById(saved.getId());
-		PostDto postDto = response.postDetail();
-		assertThat(postDto).isNotNull();
-		assertThat(postDto.postId()).isEqualTo(saved.getId());
-		assertThat(postDto.title()).isEqualTo("특정 게시글");
+		PostDetailDto postDetailDto = postService.getPostById(saved.getId());
+		assertThat(postDetailDto).isNotNull();
+		assertThat(postDetailDto.postId()).isEqualTo(saved.getId());
+		assertThat(postDetailDto.title()).isEqualTo("특정 게시글");
 	}
 
 	@Test
