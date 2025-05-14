@@ -1,10 +1,9 @@
 package kr.co.mcplink.domain.post.controller;
 
+import static kr.co.mcplink.global.common.Constants.*;
+
 import java.util.List;
 
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -20,8 +19,8 @@ import jakarta.validation.Valid;
 import kr.co.mcplink.domain.post.dto.PostDto;
 import kr.co.mcplink.domain.post.dto.request.CreatePostRequest;
 import kr.co.mcplink.domain.post.dto.request.UpdatePostRequest;
+import kr.co.mcplink.domain.post.dto.response.PostResponse;
 import kr.co.mcplink.domain.post.service.PostService;
-import kr.co.mcplink.domain.user.entity.User;
 import kr.co.mcplink.domain.user.repository.UserRepository;
 import kr.co.mcplink.global.common.ApiResponse;
 import lombok.RequiredArgsConstructor;
@@ -36,37 +35,49 @@ public class PostController {
 
 	// 현재 유저는 하드코딩
 	@PostMapping
-	public ApiResponse<Void> createPost(@Valid @RequestBody CreatePostRequest request) {
+	public ResponseEntity<ApiResponse<Void>> createPost(@Valid @RequestBody CreatePostRequest request) {
 		postService.createPost(request, userRepository.findById(1L).get());
 
-		return ApiResponse.successNoData(HttpStatus.CREATED.toString(), null);
+		return ResponseEntity
+			.status(HttpStatus.CREATED)
+			.body(ApiResponse.successNoContent(SUCCESS, "게시글 생성 성공"));
 	}
 
 	@GetMapping
-	public ApiResponse<List<PostDto>> getAllPosts() {
-		return ApiResponse.success(HttpStatus.OK.toString(), "success", postService.getAllPosts());
+	public ResponseEntity<ApiResponse<List<PostDto>>> getAllPosts() {
+		List<PostDto> posts = postService.getAllPosts();
+
+		return ResponseEntity
+			.status(HttpStatus.OK)
+			.body(ApiResponse.success(SUCCESS, "게시글 목록 조회 성공", posts));
 	}
 
 	@GetMapping("/{postId}")
-	public ApiResponse<PostDto> getPostById(@PathVariable Long postId) {
-		return ApiResponse.success(HttpStatus.OK.toString(), "success", postService.getPostById(postId));
+	public ResponseEntity<ApiResponse<PostResponse>> getPostById(@PathVariable("postId") Long postId) {
+		PostResponse post = postService.getPostById(postId);
+
+		return ResponseEntity
+			.status(HttpStatus.OK)
+			.body(ApiResponse.success(SUCCESS, "게시글 조회 성공", post));
 	}
 
-	// 게시글 수정
 	@PutMapping("/{postId}")
-	public ApiResponse<PostDto> updatePost(@PathVariable("postId") Long postId,
+	public ResponseEntity<ApiResponse<PostDto>> updatePost(@PathVariable("postId") Long postId,
 		@Valid @RequestBody UpdatePostRequest request) {
 
 		PostDto updatedPostDto = postService.updatePost(postId, request, userRepository.findById(1L).get());
 
-		return ApiResponse.success(HttpStatus.CREATED.toString(), "게시글이 성공적으로 수정되었습니다.", updatedPostDto);
+		return ResponseEntity
+			.status(HttpStatus.OK)
+			.body(ApiResponse.success(SUCCESS, "게시글 수정 성공", updatedPostDto));
 	}
 
-	// 게시글 삭제
 	@DeleteMapping("/{postId}")
-	public ApiResponse<Void> deletePost(@PathVariable("postId") Long postId) {
+	public ResponseEntity<ApiResponse<Void>> deletePost(@PathVariable("postId") Long postId) {
 		postService.deletePost(postId, userRepository.findById(1L).get());
 
-		return ApiResponse.successNoData(HttpStatus.NO_CONTENT.toString(), null);
+		return ResponseEntity
+			.status(HttpStatus.NO_CONTENT)
+			.body(ApiResponse.successNoContent(SUCCESS, "게시글 삭제 성공"));
 	}
 }

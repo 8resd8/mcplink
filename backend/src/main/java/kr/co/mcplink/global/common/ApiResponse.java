@@ -25,7 +25,6 @@ public record ApiResponse<T>(
 ) {
 	public ApiResponse {
 		Objects.requireNonNull(timestamp, "timestamp는 null이 될 수 없습니다.");
-		Objects.requireNonNull(message, "message는 null이 될 수 없습니다.");
 		Objects.requireNonNull(code, "code는 null이 될 수 없습니다.");
 	}
 
@@ -37,7 +36,7 @@ public record ApiResponse<T>(
 		return new ApiResponse<>(Instant.now(), code, message, data);
 	}
 
-	public static ApiResponse<Void> successNoData(String code, String message) {
+	public static ApiResponse<Void> successNoContent(String code, String message) {
 		return new ApiResponse<>(Instant.now(), code, message, null);
 	}
 

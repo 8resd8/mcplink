@@ -1,7 +1,20 @@
 package kr.co.mcplink.domain.post.entity;
 
+import java.util.ArrayList;
+import java.util.List;
 
-import jakarta.persistence.*;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.Lob;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
 import kr.co.mcplink.domain.comment.entity.Comment;
 import kr.co.mcplink.domain.user.entity.User;
 import kr.co.mcplink.global.common.BaseTimeEntity;
@@ -9,9 +22,6 @@ import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-
-import java.util.ArrayList;
-import java.util.List;
 
 @Entity
 @Getter
@@ -31,7 +41,7 @@ public class Post extends BaseTimeEntity {
 	@Column(nullable = false)
 	private String content;
 
-	@ManyToOne(fetch = FetchType.LAZY) // 사용자 엔티티와 연관관계 (현재는 주석 처리)
+	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = "user_id")
 	private User user;
 
