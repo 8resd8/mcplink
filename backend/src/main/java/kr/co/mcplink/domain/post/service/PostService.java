@@ -5,10 +5,10 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import kr.co.mcplink.domain.post.dto.PostDetailDto;
 import kr.co.mcplink.domain.post.dto.PostDto;
 import kr.co.mcplink.domain.post.dto.request.CreatePostRequest;
 import kr.co.mcplink.domain.post.dto.request.UpdatePostRequest;
-import kr.co.mcplink.domain.post.dto.response.PostResponse;
 import kr.co.mcplink.domain.post.entity.Post;
 import kr.co.mcplink.domain.post.repository.PostRepository;
 import kr.co.mcplink.domain.user.entity.User;
@@ -31,17 +31,17 @@ public class PostService {
 
 	// 게시글 전체 조회
 	public List<PostDto> getAllPosts() {
-		return postRepository.findAll()
+		return postRepository.findAllWithUser()
 			.stream()
-			.map(PostDto::PostDtoFromEntity)
+			.map(PostDto::of)
 			.toList();
 	}
 
 	// 특정 게시글 조회
-	public PostResponse getPostById(Long postId) {
+	public PostDetailDto getPostById(Long postId) {
 		Post post = getPost(postId);
-
-		return new PostResponse(PostDto.PostDtoFromEntity(post));
+		post.incrementViewCount();
+		return PostDetailDto.of(post);
 	}
 
 	// 게시글 수정
@@ -50,7 +50,7 @@ public class PostService {
 
 		post.updatePost(request.title(), request.content());
 
-		return PostDto.PostDtoFromEntity(post);
+		return PostDto.of(post);
 	}
 
 	// 게시글 삭제
@@ -61,7 +61,7 @@ public class PostService {
 	}
 
 	private Post getPost(Long postId) {
-		return postRepository.findById(postId).orElseThrow(PostNotFoundException::new);
+		return postRepository.findPostWithUserById(postId).orElseThrow(PostNotFoundException::new);
 	}
 
 	// 본인 소유의 게시글
