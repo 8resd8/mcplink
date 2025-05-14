@@ -5,14 +5,12 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import jakarta.persistence.EntityManager;
 import kr.co.mcplink.domain.post.dto.PostDto;
 import kr.co.mcplink.domain.post.dto.request.CreatePostRequest;
 import kr.co.mcplink.domain.post.dto.request.UpdatePostRequest;
 import kr.co.mcplink.domain.post.entity.Post;
 import kr.co.mcplink.domain.post.repository.PostRepository;
 import kr.co.mcplink.domain.user.entity.User;
-import kr.co.mcplink.domain.user.repository.UserRepository;
 import kr.co.mcplink.global.exception.PostNotFoundException;
 import lombok.RequiredArgsConstructor;
 
@@ -22,8 +20,6 @@ import lombok.RequiredArgsConstructor;
 public class PostService {
 
 	private final PostRepository postRepository;
-	private final UserRepository userRepository;
-	private final EntityManager em;
 
 	// 게시글 생성
 	public void createPost(CreatePostRequest request, User user) {
@@ -52,8 +48,6 @@ public class PostService {
 		Post post = getOwnPost(postId, user);
 
 		post.updatePost(request.title(), request.content());
-		System.out.println("post.getContent() = " + post.getContent());
-		System.out.println("post.getContent() = " + post.getTitle());
 
 		return PostDto.PostDtoFromEntity(post);
 	}
