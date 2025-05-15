@@ -41,31 +41,34 @@ public class DataPrepService {
 
         for (GithubPendingQueue item : items) {
             String pendingItemId = item.getId();
-            githubRepository.updateProcessedById(pendingItemId, true);
 
             try {
                 String owner = item.getOwner();
                 String repo = item.getRepo();
                 if (owner == null || repo == null) {
                     log.warn("Invalid Github pending item → {}", pendingItemId);
+                    githubRepository.updateProcessedById(pendingItemId, true);
                     continue;
                 }
 
                 String rawReadme = fetchReadmeService.fetchReadme(owner, repo);
                 if (rawReadme == null) {
                     log.warn("No README fetched for {}/{} → skip", owner, repo);
+                    githubRepository.updateProcessedById(pendingItemId, true);
                     continue;
                 }
 
                 String prepReadme = prepReadmeService.decodeReadme(rawReadme);
                 if (prepReadme == null) {
                     log.warn("Failed to decode README for {}/{} → skip", owner, repo);
+                    githubRepository.updateProcessedById(pendingItemId, true);
                     continue;
                 }
 
                 ParsedReadmeInfoDto parsedReadmeInfo = prepReadmeService.parseReadme(prepReadme);
                 if (parsedReadmeInfo == null) {
                     log.warn("README parsing failed for {}/{} → skip", owner, repo);
+                    githubRepository.updateProcessedById(pendingItemId, true);
                     continue;
                 }
 
@@ -74,6 +77,7 @@ public class DataPrepService {
                 GithubMetaDataDto metaData = fetchMetaDataService.fetchMetaData(owner, repo);
                 if (metaData == null) {
                     log.warn("Metadata not found for {}/{} → skip", owner, repo);
+                    githubRepository.updateProcessedById(pendingItemId, true);
                     continue;
                 }
 
@@ -84,6 +88,7 @@ public class DataPrepService {
                 }
 
                 String savedServerName = parsedReadmeInfo.name();
+                githubRepository.updateProcessedById(pendingItemId, true);
                 enqueueService.enqueueGemini(savedServerId, savedServerName, prepReadme);
                 log.info("Successfully processed and enqueued Gemini task for {}/{}", owner, repo);
             } catch (Exception e) {
@@ -100,14 +105,13 @@ public class DataPrepService {
         }
 
         String pendingItemId = item.getId();
-        geminiRepository.updateProcessedById(pendingItemId, true);
-
         String serverId = item.getServerId();
         String serverName = item.getServerName();
         String prepReadme = item.getPrepReadme();
 
         if (serverId == null || prepReadme == null || prepReadme.isEmpty()) {
             log.warn("Invalid Gemini pending item → {}", pendingItemId);
+            geminiRepository.updateProcessedById(pendingItemId, true);
             return;
         }
 
@@ -130,6 +134,7 @@ public class DataPrepService {
             for (String generatedTag : generatedTags) {
                 dataStoreService.saveMcpTag(generatedTag);
             }
+            geminiRepository.updateProcessedById(pendingItemId, true);
             log.info("Successfully processed for {}", serverId);
         } catch (Exception e) {
             log.error("Error processing Gemini item {} → {}", pendingItemId, e.getMessage(), e);
