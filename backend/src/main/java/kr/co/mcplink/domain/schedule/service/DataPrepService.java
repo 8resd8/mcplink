@@ -62,12 +62,14 @@ public class DataPrepService {
             GithubMetaDataDto metaData = fetchMetaDataService.fetchMetaData(owner, repo);
             if (metaData == null) {
                 log.warn("Metadata not found for {}/{} → skip", owner, repo);
+                continue;
             }
 
             String savedServerId = dataStoreService.saveMcpServer(metaData, parsedReadmeInfo);
 
             if (savedServerId == null) {
                 log.warn("McpServer not found for {}/{} <UNK> skip", owner, repo);
+                continue;
             }
 
             enqueueService.enqueueGemini(savedServerId, prepReadme);
