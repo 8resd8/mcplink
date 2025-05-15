@@ -28,6 +28,5 @@ public class GithubPendingQueue extends BaseTimeMongoEntity {
     private String repo;
 
     @Indexed
-    @Builder.Default
-    private boolean processed = false;
+    private boolean processed;
 }

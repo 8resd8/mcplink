@@ -16,6 +16,10 @@ public class DataStoreService {
     public String saveMcpServer(GithubMetaDataDto metaData, ParsedReadmeInfoDto parsedReadmeInfo) {
         McpServerV2 mcpServer = toMcpServerV2(metaData, parsedReadmeInfo);
 
+        if (mcpServer == null) {
+            return null;
+        }
+
         if (!mcpServerV2Repository.existsByUrl(mcpServer.getUrl())) {
             McpServerV2 savedMcpServer = mcpServerV2Repository.save(mcpServer);
 
@@ -25,8 +29,19 @@ public class DataStoreService {
     }
 
     private McpServerV2 toMcpServerV2(GithubMetaDataDto m, ParsedReadmeInfoDto p) {
+        if (m.url() == null || m.stars() == 0 || p.name() == null || p.command() == null || p.args() == null) {
+            return null;
+        }
+
+        String rawUrl = m.url();
+        String prepUrl = rawUrl;
+
+        if (rawUrl.endsWith(".git")) {
+            prepUrl = rawUrl.substring(0, rawUrl.length() - 4);
+        }
+
         return McpServerV2.builder()
-                .url(m.url())
+                .url(prepUrl)
                 .stars(m.stars())
                 .official(m.official())
                 .scanned(m.scanned())
