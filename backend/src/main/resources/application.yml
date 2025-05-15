@@ -41,11 +41,8 @@ server:
 
 app:
   analysis:
-    temp-dir: /app/analysis_temp
-#    temp-dir: "C:/ssafy/a201-gitlab"
-    osv-scanner-cmd: osv-scanner
-#    osv-scanner-cmd: /usr/local/bin/osv-scanner
-
+    temp-dir: ${app.analysis.temp-dir}
+    osv-scanner-cmd: ${app.analysis.osv-scanner-cmd}
 
 ssafy:
   oauth:
@@ -61,3 +58,5 @@ jwt:
   secret: ${jwt.secret}
   access-expiration: ${jwt.access-expiration}
   refresh-expiration: ${jwt.refresh-expiration}
+  secure-path: ${jwt.secure-path}
+  oauth-ssafy-path: ${jwt.oauth-ssafy-path}
