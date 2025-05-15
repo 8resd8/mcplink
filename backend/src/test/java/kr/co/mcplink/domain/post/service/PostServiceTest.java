@@ -48,12 +48,12 @@ class PostServiceTest {
 		postRepository.deleteAll();
 		userRepository.deleteAll();
 
-		User userToSave = User.createUser("fixedUser", "fixed_user");
+		User userToSave = User.createUser("fixedUser", "fixed_user", "email");
 		fixedUser = userRepository.save(userToSave);
 
 		if (!userRepository.existsById(1L)) {
 			userRepository.deleteAll();
-			User userWithIdOne = User.createUser("fixedUser", "fixed_user");
+			User userWithIdOne = User.createUser("fixedUser", "fixed_user", "email");
 			fixedUser = userRepository.save(userWithIdOne);
 		} else {
 			fixedUser = userRepository.findById(1L)

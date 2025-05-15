@@ -27,6 +27,5 @@ public class GeminiPendingQueue extends BaseTimeMongoEntity {
     private String prepReadme;
 
     @Indexed
-    @Builder.Default
-    private boolean processed = false;
+    private boolean processed;
 }

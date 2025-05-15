@@ -33,9 +33,9 @@ public class McpServerV2 extends BaseTimeMongoEntity {
     @Indexed(unique = true)
     private String url;
     private int stars;
-    private int views = 0;
-    private boolean official = false;
-    private boolean scanned = false;
+    private int views;
+    private boolean official;
+    private boolean scanned;
 
     @Builder.Default
     private SecurityRank securityRank = SecurityRank.UNRATED;
