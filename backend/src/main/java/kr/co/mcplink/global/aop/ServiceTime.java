@@ -1,6 +1,7 @@
 package kr.co.mcplink.global.aop;
 
 import jakarta.servlet.http.HttpServletRequest;
+import kr.co.mcplink.global.annotation.ExcludeParamLog;
 import kr.co.mcplink.global.annotation.ExcludeResponseLog;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.ProceedingJoinPoint;
@@ -33,13 +34,24 @@ public class ServiceTime {
 		String className = fullPathClassName.substring(fullPathClassName.lastIndexOf(".") + 1);
 		String methodName = className + "." + joinPoint.getSignature().getName();
 
+		MethodSignature signature = (MethodSignature) joinPoint.getSignature();
+		Method interfaceMethod = signature.getMethod();
+		Method implMethod = joinPoint.getTarget().getClass()
+				.getMethod(interfaceMethod.getName(), interfaceMethod.getParameterTypes());
+
+		boolean excludeParamLog    = implMethod.isAnnotationPresent(ExcludeParamLog.class);
+		boolean excludeResponseLog = implMethod.isAnnotationPresent(ExcludeResponseLog.class);
+
 		Object[] args = joinPoint.getArgs();
 		long startTime = System.currentTimeMillis();
 
 		StringBuilder startLog = new StringBuilder();
 		startLog.append("\n").append(START_SEPARATOR).append(SERVICE_LOG_PREFIX).append(START_SEPARATOR).append("\n")
 			.append("▶ [Method]   : ").append(methodName).append("\n")
-			.append("▶ [Params]   : ").append(args.length > 0 ? Arrays.toString(args) : "No parameters").append("\n")
+			.append("▶ [Params]   : ").append(
+					excludeParamLog ? "[Parameters excluded from log]" :
+							(args.length > 0 ? Arrays.toString(args) : "No parameters")
+			).append("\n")
 			.append(LINE_SEPARATOR);
 		log.info(startLog.toString());
 
@@ -47,11 +59,6 @@ public class ServiceTime {
 
 		long endTime = System.currentTimeMillis();
 		long executionTime = endTime - startTime;
-
-		MethodSignature signature = (MethodSignature) joinPoint.getSignature();
-		Method method = signature.getMethod();
-
-		boolean excludeResponseLog = method.isAnnotationPresent(ExcludeResponseLog.class);
 
 		StringBuilder endLog = new StringBuilder();
 		endLog.append("\n").append(END_SEPARATOR).append(SERVICE_LOG_PREFIX).append(END_SEPARATOR).append("\n")

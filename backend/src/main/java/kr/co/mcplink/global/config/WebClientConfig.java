@@ -27,4 +27,18 @@ public class WebClientConfig {
                 .exchangeStrategies(strategies)
                 .build();
     }
+
+    @Bean(name = "geminiClient")
+    public WebClient geminiClient(WebClient.Builder builder) {
+        ExchangeStrategies strategies = ExchangeStrategies.builder()
+                .codecs(configurer -> configurer.defaultCodecs()
+                        .maxInMemorySize(16 * 1024 * 1024))
+                .build();
+
+        return builder.clone()
+                .baseUrl("https://generativelanguage.googleapis.com")
+                .defaultHeader(HttpHeaders.CONTENT_TYPE, "application/json")
+                .exchangeStrategies(strategies)
+                .build();
+    }
 }

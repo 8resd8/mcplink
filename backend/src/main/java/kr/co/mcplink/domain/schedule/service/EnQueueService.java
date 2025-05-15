@@ -6,6 +6,7 @@ import kr.co.mcplink.domain.schedule.entity.GeminiPendingQueue;
 import kr.co.mcplink.domain.schedule.entity.GithubPendingQueue;
 import kr.co.mcplink.domain.schedule.repository.GeminiPendingQueueRepository;
 import kr.co.mcplink.domain.schedule.repository.GithubPendingQueueRepository;
+import kr.co.mcplink.global.annotation.ExcludeParamLog;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -38,10 +39,12 @@ public class EnQueueService {
         }
     }
 
-    public void enqueueGemini(String serverId, String prepReadme) {
+    @ExcludeParamLog
+    public void enqueueGemini(String serverId, String serverName, String prepReadme) {
         if (!geminiRepository.existsByServerId(serverId)) {
             GeminiPendingQueue entity = GeminiPendingQueue.builder()
                     .serverId(serverId)
+                    .serverName(serverName)
                     .prepReadme(prepReadme)
                     .build();
 
