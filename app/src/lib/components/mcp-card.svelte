@@ -2,6 +2,10 @@
   import { Star, Github, Info } from "lucide-svelte"
   import { invoke } from "@tauri-apps/api/core"
   import { goto } from "$app/navigation"
+  import { createEventDispatcher } from "svelte"
+
+  // 이벤트 디스패처 생성
+  const dispatch = createEventDispatcher()
 
   // 카드 컴포넌트에 필요한 props 정의
   export let id: number
@@ -60,8 +64,11 @@
       description,
       url: url || "",
       stars: stars.toString(),
+      mode: mode === "installed" ? "edit" : "install",
+      referrer: window.location.pathname, // 현재 경로를 referrer로 저장
     })
 
+    console.log(`[mcp-card] 상세 페이지로 이동: ${window.location.pathname} → /detail`)
     window.location.href = `/detail?${params.toString()}`
   }
 
@@ -74,14 +81,24 @@
   async function handleComplete() {
     let errorMessage = ""
     try {
+      console.log(`[mcp-card] 삭제 시도: 서버 이름 '${title}', ID: ${id}`)
+
+      // 1. 백엔드에서 설정 제거
       await invoke("remove_mcp_server_config", {
         serverName: title,
       })
 
-      // 2. Restart Claude Desktop
+      // 2. 삭제 성공 이벤트 발생 (GUI 업데이트 요청)
+      console.log(`[mcp-card] Dispatching 'deleted' event for ID: ${id}`)
+      dispatch("deleted", { id: id })
+
+      // 3. Claude Desktop 재시작 (이벤트 발생 후)
       await invoke("restart_claude_desktop")
-    } catch (err) {
-      errorMessage = `error occurred: ${err}`
+    } catch (err: any) {
+      // err 타입을 any 또는 Error로 명시
+      errorMessage = `error occurred: ${err.message || err}`
+      console.error(`[mcp-card] Error during removal or restart: ${errorMessage}`)
+      alert(`오류가 발생했습니다: ${errorMessage}`)
     }
   }
 </script>

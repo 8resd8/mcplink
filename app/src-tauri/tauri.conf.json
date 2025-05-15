@@ -29,7 +29,10 @@
   "plugins": {
     "shell": {
       "open": true
-    }
+    },
+    "fs": {},
+    "os": {},
+    "notification": null
   },
   "bundle": {
     "active": true,
