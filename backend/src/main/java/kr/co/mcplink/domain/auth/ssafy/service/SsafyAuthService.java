@@ -81,11 +81,14 @@ public class SsafyAuthService {
 		params.add("code", code);
 
 		HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(params, headers);
-
-		ResponseEntity<SsafyTokenDto> response = restTemplate.postForEntity(ssafyProperties.tokenUri(), request,
-			SsafyTokenDto.class);
-
-		return response.getBody();
+		try {
+			ResponseEntity<SsafyTokenDto> response = restTemplate.postForEntity(ssafyProperties.tokenUri(), request,
+				SsafyTokenDto.class);
+			return response.getBody();
+		} catch (Exception e) {
+			throw new JwtForbiddenException("SSAFY Access Token을 발급받는데 실패했습니다.");
+		}
+		// return response.getBody();
 	}
 
 	private SsafyUserInfoDto requestUserInfo(String accessToken) {
