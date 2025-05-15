@@ -5,7 +5,7 @@
   let permissionGrantedGlobally = false
 
   onMount(async () => {
-    // 페이지 로드 시 알림 권한 확인 및 요청
+    // Check and request notification permission on page load
     permissionGrantedGlobally = await isPermissionGranted()
     if (!permissionGrantedGlobally) {
       const permission = await requestPermission()
@@ -13,18 +13,13 @@
     }
 
     if (!permissionGrantedGlobally) {
-      console.log("Notification permission not granted.")
-      alert("알림 권한이 거부되었습니다. 알림을 받으려면 앱 설정에서 권한을 허용해주세요.")
+      alert("Notification permission denied. Please allow notifications in app settings to receive them.")
     }
   })
 
   async function showNotification(buttonText: string) {
     if (!permissionGrantedGlobally) {
-      alert("알림 권한이 없습니다. 페이지를 새로고침하거나 설정을 확인해주세요.")
-      // 권한을 다시 요청할 수도 있습니다.
-      // const permission = await requestPermission();
-      // permissionGrantedGlobally = permission === 'granted';
-      // if (!permissionGrantedGlobally) return;
+      alert("No notification permission. Please refresh the page or check settings.")
       return
     }
 
@@ -33,10 +28,7 @@
         title: buttonText,
         body: `${buttonText} is awesome!`,
       })
-      console.log(`Notification sent: ${buttonText}`)
-    } catch (error) {
-      console.error("Error sending notification:", error)
-    }
+    } catch (error) {}
   }
 
   const buttonLabels = ["GOOGLE", "FACEBOOK", "APPLE", "TAURI"]
@@ -83,6 +75,4 @@
 </div>
 
 <style>
-  /* TailwindCSS를 사용하고 있다고 가정하므로, 추가적인 전역 스타일은 불필요할 수 있습니다. */
-  /* 필요하다면 여기에 컴포넌트 특정 스타일을 추가하세요. */
 </style>

@@ -26,12 +26,12 @@
     "@tauri-apps/plugin-os": "^2.2.1",
     "clsx": "^2.1.1",
     "fe": "file:",
-    "ky-universal": "^0.12.0",
     "lucide-svelte": "^0.503.0",
     "tailwindcss": "^4.1.4",
     "zod": "^3.24.3"
   },
   "devDependencies": {
+    "@catppuccin/daisyui": "^2.1.1",
     "@sveltejs/adapter-static": "^3.0.8",
     "@sveltejs/kit": "^2.20.7",
     "@sveltejs/vite-plugin-svelte": "^5.0.3",

@@ -22,7 +22,6 @@
     try {
       // Get the config file content directly from the backend
       const configContent = await invoke<string>("read_mcplink_config_content")
-      console.log("[Installed-MCP] mcplink_desktop_config content from backend:", configContent)
 
       let serverIds: number[] = []
 
@@ -31,12 +30,9 @@
         const configData = JSON.parse(configContent)
         serverIds = Object.keys(configData)
           .map(Number)
-          .filter((id) => !isNaN(id) && id !== -1) // -1은 폴백 서버이므로 제외
-        console.log("[Installed-MCP] Found server IDs (폴백 서버 제외):", serverIds)
+          .filter((id) => !isNaN(id) && id !== -1) // -1 is a fallback server, so exclude it
       } catch (parseError: any) {
         // Handle parsing error, e.g., if the content is not valid JSON (though Rust returns "{}" if not found)
-        console.error(`[Installed-MCP] Failed to parse config content: ${configContent}. Error:`, parseError)
-        // Depending on requirements, could treat as empty or show error
         errorMessage.set("Failed to parse local MCP configuration.")
         installedServers.set([])
         isLoading.set(false)
@@ -47,31 +43,26 @@
       if (serverIds.length === 0) {
         installedServers.set([])
         pageInfo.set({
-          hasNextPage: false,
-          endCursor: null,
-          totalItems: 0,
+          has_next_page: false,
+          end_cursor: null,
+          total_items: 0,
         })
         isLoading.set(false)
-        console.log("[Installed-MCP] No installed servers found in config.")
         return
       }
 
       // Invoke the Rust command to get data for the installed servers
-      const response = await invoke<{ cards: MCPCard[]; pageInfo: PageInfo }>("get_installed_mcp_data", { serverIds: serverIds, cursorId: null })
+      const response = await invoke<{ cards: MCPCard[]; page_info: PageInfo }>("get_installed_mcp_data", { serverIds: serverIds, cursorId: null })
 
-      console.log("[Installed-MCP] API Response:", response)
       installedServers.set(response.cards)
 
-      // 폴백 서버를 제외한 실제 설치된 서버 수로 pageInfo 업데이트
-      const actualTotalItems = response.pageInfo.totalItems
+      // Update pageInfo with the actual number of installed servers, excluding the fallback server
+      const actualTotalItems = response.page_info.total_items
       pageInfo.set({
-        ...response.pageInfo,
-        totalItems: actualTotalItems,
+        ...response.page_info,
+        total_items: actualTotalItems,
       })
     } catch (error: any) {
-      console.error("[Installed-MCP] Error loading installed MCPs:", error)
-      // Check if the error is the specific 'not found' signal from Rust if you implemented it
-      // if (error === "mcplink_config_not_found") { ... handle differently ... }
       errorMessage.set(`Failed to load installed MCPs: ${error.message || error}`)
       installedServers.set([])
       pageInfo.set(null)
@@ -80,18 +71,16 @@
     }
   }
 
-  // ✅ 삭제 이벤트 핸들러 추가
+  // ✅ Added delete event handler
   function handleCardDeleted(event: CustomEvent<{ id: number }>) {
     const deletedId = event.detail.id
-    console.log(`[Installed-MCP] MCPCard 삭제 이벤트 수신: id=${deletedId}`)
-    // installedServers 스토어 업데이트
+    // Update installedServers store
     installedServers.update((servers) => servers.filter((server) => server.id !== deletedId))
-    // 페이지 정보도 업데이트 (선택적)
+    // Also update page information (optional)
     pageInfo.update((info) => {
       if (!info) return null
-      return { ...info, totalItems: Math.max(0, info.totalItems - 1) }
+      return { ...info, total_items: Math.max(0, info.total_items - 1) }
     })
-    console.log(`[Installed-MCP] Server ID ${deletedId} removed from store.`)
   }
 
   // Load data on mount
@@ -117,7 +106,7 @@
       {/each}
     </div>
     {#if $pageInfo}
-      <p class="text-center mt-4 text-gray-500">Total installed servers: {$pageInfo.totalItems}</p>
+      <p class="text-center mt-4 text-gray-500">Total installed servers: {$pageInfo.total_items}</p>
       <!-- Note: No pagination/infinite scroll implemented here as we fetch all installed servers at once -->
     {/if}
   {:else}

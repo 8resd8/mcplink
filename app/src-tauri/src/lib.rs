@@ -2,9 +2,9 @@
 
 use axum::{
     extract::State as AxumState,
-    http::{Method, Request, StatusCode}, // Method와 Request 추가
-    middleware::{self, Next},            // middleware와 Next 추가
-    response::Response,                  // Response 추가
+    http::{Method, Request, StatusCode}, // Added Method and Request
+    middleware::{self, Next},            // Added middleware and Next
+    response::Response,                  // Added Response
     routing::post,
     Json, Router,
 };
@@ -23,23 +23,19 @@ use tokio::sync::Mutex;
 pub mod commands;
 use crate::commands::AppState;
 
-// POST 요청 로깅 미들웨어 함수
+// POST request logging middleware function
 async fn log_post_requests(req: Request<axum::body::Body>, next: Next) -> Result<Response, StatusCode> {
     if req.method() == Method::POST {
-        let uri = req.uri().clone();
-        let headers = req.headers().clone();
-        // 참고: 요청 바디 로깅은 주의가 필요합니다.
-        // 여기서는 URI와 헤더만 로깅합니다.
-        println!(
-            "[GUI HTTP Server] Received POST request: URI = {}, Headers = {:?}",
-            uri, headers
-        );
+        let _uri = req.uri().clone(); // _uri to avoid warning, or log it
+        let _headers = req.headers().clone(); // _headers to avoid warning, or log them
+        // Note: Logging the request body requires caution.
+        // Here, only URI and headers are (potentially) logged.
     }
-    // 다음 핸들러 또는 미들웨어로 요청 전달
+    // Pass the request to the next handler or middleware
     Ok(next.run(req).await)
 }
 
-// 키워드 페이로드를 위한 구조체 정의
+// Struct for keyword payload
 #[derive(Deserialize, Debug)]
 pub struct KeywordsPayload {
     keywords: Vec<String>,
@@ -64,145 +60,130 @@ impl RecommendationServerState {
     }
 }
 
-// 키워드 추천 요청을 처리하는 핸들러
+// Handler for keyword recommendation requests
 async fn handle_recommendations(
     AxumState(state): AxumState<RecommendationServerState>,
     Json(payload): Json<KeywordsPayload>,
 ) -> StatusCode {
-    println!("[GUI HTTP Server] Processing /recommendations POST request. Received keywords: {:?}", payload.keywords);
 
-    // 키워드를 쉼표로 구분된 문자열로 변환
+    // Convert keywords to a comma-separated string
     let keywords_str = payload.keywords.join(", ");
 
-    // AppHandle을 사용하여 알림 보내기
+    // Send notification using AppHandle
     if let Some(app_handle) = &*state.app_handle.lock().await {
-        // 기존 알림 로직 활용
-        let notification_body = format!("선택된 키워드: {}. 클릭하여 확인하세요.", keywords_str);
+        // Utilize existing notification logic
+        let notification_body = format!("Selected keywords: {}. Click to check.", keywords_str);
 
         let builder = app_handle
             .notification()
             .builder()
-            .title("새로운 추천 키워드")
+            .title("New Recommended Keywords") // Title in English
             .body(&notification_body)
             .icon("icons/icon.png");
 
         match builder.show() {
-            Ok(_) => println!("Notification sent successfully."),
-            Err(e) => eprintln!("Failed to send notification: {}", e),
+            Ok(_) => {} // println!("Notification sent successfully."), // Log removed
+            Err(_e) => {} // eprintln!("Failed to send notification: {}", e), // Log removed
         }
 
-        // emit_all 대신 emit 사용 - Emitter trait 명시적 사용
+        // Use emit instead of emit_all - Explicitly use Emitter trait
         {
             use tauri::Emitter;
             let _ = app_handle.emit("new-keywords", payload.keywords.clone());
         }
     } else {
-        eprintln!("AppHandle not set, cannot send notification");
+        // eprintln!("AppHandle not set, cannot send notification"); // Log removed
     }
 
     StatusCode::OK
 }
 
-// /api/v1 요청을 처리하는 핸들러
+// Handler for /api/v1 requests
 async fn handle_api_v1_request(
     AxumState(state): AxumState<RecommendationServerState>,
 ) -> StatusCode {
-    println!("[GUI HTTP Server] Processing /api/v1 POST request.");
     
-    // AppHandle을 사용하여 알림 보내기
+    // Send notification using AppHandle
     if let Some(app_handle) = &*state.app_handle.lock().await {
-        // 알림 본문 설정
-        let notification_body = String::from("새로운 데이터가 수신되었습니다. (From /api/v1)");
+        // Set notification body
+        let notification_body = String::from("New data received. (From /api/v1)");
         
-        // 알림 생성 및 표시
+        // Create and display notification
         let builder = app_handle
             .notification()
             .builder()
-            .title("API 알림")
+            .title("API Notification") // Title in English
             .body(&notification_body)
             .icon("icons/icon.png");
             
-        // 알림 표시 시도 및 결과 로깅
+        // Attempt to display notification and log result
         match builder.show() {
-            Ok(_) => println!("Notification sent successfully for /api/v1."),
-            Err(e) => eprintln!("Failed to send notification for /api/v1: {}", e),
+            Ok(_) => {} // println!("Notification sent successfully for /api/v1."), // Log removed
+            Err(_e) => {} // eprintln!("Failed to send notification for /api/v1: {}", e), // Log removed
         }
     } else {
-        eprintln!("AppHandle not set, cannot send notification for /api/v1");
+        // eprintln!("AppHandle not set, cannot send notification for /api/v1"); // Log removed
     }
     
     StatusCode::OK
 }
 
-// Axum 서버 시작 함수
+// Function to start Axum server
 pub async fn start_axum_server(app_state: RecommendationServerState) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-    println!("[DEBUG] Inside start_axum_server function");
+
     
-    // 환경 변수에서 GUI API URL 설정 가져오기
+    // Get GUI API URL settings from environment variables
     let gui_api_host = env::var("GUI_API_HOST").unwrap_or_else(|_| "0.0.0.0".to_string());
     let gui_api_port = env::var("GUI_API_PORT").unwrap_or_else(|_| "8082".to_string());
-
-    let gui_be_api_base_url = env::var("GUI_BE_API_BASE_URL")
-        .unwrap_or_else(|_| "http://localhost:8082/api/v1".to_string());
-
-    println!("[DEBUG] GUI_BE_API_BASE_URL: {}", gui_be_api_base_url);
-    println!("[DEBUG] Binding server to {}:{}", gui_api_host, gui_api_port);
 
     let addr_str = format!("{}:{}", gui_api_host, gui_api_port);
     let addr: SocketAddr = match addr_str.parse() {
         Ok(addr) => addr,
         Err(e) => {
-            eprintln!("[DEBUG] Failed to parse address: {}", e);
+            // eprintln!("[DEBUG] Failed to parse address: {}", e); // Log removed
             return Err(Box::new(e));
         }
     };
 
-    // Axum 라우터 설정
+    // Configure Axum router
     let app = Router::new()
         .route("/recommendations", post(handle_recommendations))
-        .route("/api/v1", post(handle_api_v1_request)) // /api/v1 경로에 대한 핸들러 추가
-        .route("/api/v1/recommendations", post(handle_recommendations)) // mcp-server에서 오는 요청을 위한 추가 경로 (app .env 기준)
-        // 중복 경로 제거: "/recommendations" 경로가 이미 위에서 추가됨
-        .layer(middleware::from_fn(log_post_requests)) // POST 로깅 미들웨어 적용
+        .route("/api/v1", post(handle_api_v1_request)) // Add handler for /api/v1 path
+        .route("/api/v1/recommendations", post(handle_recommendations)) // Additional path for requests from mcp-server (based on app .env)
+        // Removed duplicate path: "/recommendations" path was already added above
+        .layer(middleware::from_fn(log_post_requests)) // Apply POST logging middleware
         .with_state(app_state);
 
-    println!("[DEBUG] Router configured");
-    println!("[DEBUG] GUI Backend API server attempting to listen on {}", addr);
-
-    // TcpListener 바인딩 시도
+    // Attempt to bind TcpListener
     let listener = match tokio::net::TcpListener::bind(addr).await {
         Ok(listener) => {
-            println!("[DEBUG] Successfully bound to {}", addr);
             listener
         },
         Err(e) => {
-            eprintln!("[DEBUG] Failed to bind to {}: {}", addr, e);
+            // eprintln!("[DEBUG] Failed to bind to {}: {}", addr, e); // Log removed
             return Err(Box::new(e));
         }
     };
 
-    println!("[DEBUG] GUI Backend API server now listening on {}", addr);
-
-    // Axum 서버 시작
+    // Start Axum server
     match axum::serve(listener, app).await {
         Ok(_) => {
-            println!("[DEBUG] Axum server shut down gracefully");
             Ok(())
         },
         Err(e) => {
-            eprintln!("[DEBUG] Axum server error: {}", e);
+            // eprintln!("[DEBUG] Axum server error: {}", e); // Log removed
             Err(Box::new(e))
         }
     }
 }
 
 pub fn run() {
-    // AppState 생성 (API 요청용 client 유지)
+    // Create AppState (maintains client for API requests)
     let app_state = AppState {
         client: Client::new(),
     };
 
-    // Axum 서버를 위한 AppState 생성
+    // Create AppState for Axum server
     let recommendation_server_state = RecommendationServerState::new();
     let recommendation_server_state_clone = recommendation_server_state.clone();
 
@@ -212,15 +193,15 @@ pub fn run() {
         .plugin(tauri_plugin_os::init())
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_process::init())
-        .plugin(tauri_plugin_notification::init()) // 알림 플러그인 초기화
+        .plugin(tauri_plugin_notification::init()) // Initialize notification plugin
         .setup(|app| {
-            // 메뉴 아이템 생성
+            // Create menu items
             let open_item = MenuItemBuilder::with_id("open", "Open").build(app)?;
             let quit_item = MenuItemBuilder::with_id("quit", "Quit").build(app)?;
             let hide_item = MenuItemBuilder::with_id("hide", "Hide").build(app)?;
             let show_item = MenuItemBuilder::with_id("show", "Show").build(app)?;
 
-            // 메뉴 생성
+            // Create menu
             let menu = MenuBuilder::new(app)
                 .item(&open_item)
                 .separator()
@@ -230,7 +211,7 @@ pub fn run() {
                 .item(&quit_item)
                 .build()?;
 
-            // 트레이 아이콘 생성
+            // Create tray icon
             let _tray = TrayIconBuilder::new()
                 .tooltip("Keyword Search")
                 .icon(app.default_window_icon().cloned().unwrap())
@@ -270,66 +251,58 @@ pub fn run() {
                 })
                 .build(app)?;
 
-            // --- 알림 클릭 핸들러 수정 시작 ---
-            let app_handle = app.handle().clone(); // app_handle을 여기서 클론하여 아래 클로저에서 사용
+            // --- Start of notification click handler modification ---
+            let app_handle = app.handle().clone(); // Clone app_handle here to use in the closure below
 
-            // 알림 권한 상태 확인 및 로깅
+            // Check and log notification permission state on app start
             if let Ok(permission_state) = app_handle.notification().permission_state() {
-                println!(
-                    "[SETUP] Notification permission state: {:?}",
-                    permission_state
-                );
                 if permission_state != PermissionState::Granted {
-                    println!("[SETUP] Notification permission not granted, requesting...");
-                    if let Ok(new_state) = app_handle.notification().request_permission() {
-                        println!("[SETUP] New notification permission state: {:?}", new_state);
+                    // If permission not granted, request it
+                    if let Ok(_new_state) = app_handle.notification().request_permission() {
+                        // Permission request sent, new state can be handled if needed
                     }
                 }
             }
 
-            // 태그 추출 공통 함수
+            // Common function to extract tag
             fn extract_tag_from_body(body: &str) -> Option<String> {
-                // "선택된 키워드: TAG. 클릭하여 확인하세요."에서 TAG 부분 추출
-                if let Some(start) = body.find("선택된 키워드: ") {
+                // Extracts TAG from "선택된 키워드: TAG. 클릭하여 확인하세요." (Selected keywords: TAG. Click to check.)
+                if let Some(start) = body.find("선택된 키워드: ") { // Find the Korean part for tag extraction
                     let start_idx = start + "선택된 키워드: ".len();
                     if let Some(end) = body[start_idx..].find(". ") {
                         let tag = body[start_idx..(start_idx + end)].to_string();
-                        println!("Tag extracted from body: {}", tag);
                         return Some(tag);
                     }
                 }
                 None
             }
 
-            // 알림 처리 함수
+            // Notification handler function
             fn handle_notification(body: &str, app_handle: &tauri::AppHandle) {
-                println!("Notification received with body: {}", body);
 
-                // 메인 윈도우 가져오기
+                // Get main window
                 if let Some(window) = app_handle.get_webview_window("main") {
-                    // 1. 창 활성화 (동일한 순서로 처리)
+                    // 1. Activate window (process in the same order)
                     let _ = window.show();
                     let _ = window.unminimize();
                     let _ = window.set_focus();
 
-                    // 2. 창을 맨 앞으로 가져오기
+                    // 2. Bring window to front
                     let _ = window.set_always_on_top(true);
-                    let _ = window.set_focus();
+                    let _ = window.set_focus(); // Redundant if already focused, but ensures focus
                     let _ = window.set_always_on_top(false);
 
-                    // 3. 태그 추출 로직
+                    // 3. Tag extraction logic
                     let final_tag = extract_tag_from_body(body).unwrap_or_else(|| {
-                        println!("No tag found in notification body, using default: GOOGLE");
+                        // Default tag if extraction fails
                         "GOOGLE".to_string()
                     });
 
-                    // 4. 이벤트 발생
-                    // MCP-list 페이지로 이동
+                    // 4. Emit events
+                    // Navigate to MCP-list page
                     let target_url = format!("/MCP-list?keyword={}", final_tag);
-                    println!("Emitting navigate-to event with URL: {}", target_url);
-
-                    // 이벤트 발생 - navigate-to로 페이지 이동 (emit_all 대신 emit 사용)
-                    // Emitter 트레이트를 사용하기 위해 명시적으로 use 선언 추가
+                    // Emit event - navigate to page using navigate-to (use emit instead of emit_all)
+                    // Explicitly use Emitter trait
                     {
                         use tauri::Emitter;
                         let _ = window.emit("navigate-to", target_url.clone());
@@ -337,45 +310,31 @@ pub fn run() {
                     }
                 }
             }
+            // --- End of notification click handler modification ---
 
-            // Tauri v2에서는 알림 클릭 이벤트 처리 방식이 변경됨
-            // 앱이 실행 중일 때 알림을 클릭하면 이벤트가 발생하지만,
-            // 실제로는 클라이언트 측 시뮬레이션으로 알림 클릭 동작을 대체함
-
-            println!("알림 클릭 처리는 프론트엔드에서 시뮬레이션됩니다.");
-            println!("알림을 수신한 후 test/+page.svelte에서 시뮬레이션 클릭 핸들러가 실행됩니다.");
-            // --- 알림 클릭 핸들러 수정 끝 ---
-
-            // --- Axum 서버 시작 코드 추가 시작 ---
+            // --- Start of Axum server startup code addition ---
             let app_handle_for_axum = app.handle().clone();
-
-            println!("[DEBUG] Before spawning Axum server task..."); // 디버깅 로그 추가
             
-            // AppHandle 설정 및 Axum 서버 시작
+            // Set AppHandle and start Axum server
             tauri::async_runtime::spawn(async move {
-                println!("[DEBUG] Inside async task for Axum server..."); // 디버깅 로그 추가
                 
-                // AppHandle 설정
-                println!("[DEBUG] Setting AppHandle...");
+                // Set AppHandle
                 recommendation_server_state_clone
                     .set_app_handle(app_handle_for_axum)
                     .await;
-                println!("[DEBUG] AppHandle set successfully");
 
-                // Axum 서버 시작
-                println!("[DEBUG] Starting Axum server for recommendations API...");
+                // Start Axum server
                 match start_axum_server(recommendation_server_state_clone).await {
-                    Ok(_) => println!("[DEBUG] Axum server completed successfully"),
-                    Err(e) => eprintln!("[DEBUG] Error in Axum server: {:?}", e),
+                    Ok(_) => {} // println!("[DEBUG] Axum server completed successfully"), // Log removed
+                    Err(_e) => {} // eprintln!("[DEBUG] Error in Axum server: {:?}", e), // Log removed
                 }
             });
             
-            println!("[DEBUG] After spawning Axum server task..."); // 디버깅 로그 추가
-            // --- Axum 서버 시작 코드 추가 끝 ---
+            // --- End of Axum server startup code addition ---
 
             Ok(())
         })
-        .manage(app_state)
+        .manage(app_state) // Manage AppState with Tauri
         .invoke_handler(tauri::generate_handler![
             commands::show_popup,
             commands::get_mcp_data,

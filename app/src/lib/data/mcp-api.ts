@@ -4,23 +4,23 @@ export interface MCPCard {
   id: number
   title: string
   description: string
-  url: string // GitHub 리포지토리 URL
-  stars: number // GitHub 스타 수
-  installed?: boolean // 설치 여부 (선택적 속성으로 추가)
+  url: string // GitHub repository URL
+  stars: number // GitHub stars count
+  installed?: boolean // Installation status (optional property added)
 }
 
 export interface PageInfo {
-  hasNextPage: boolean
-  endCursor: number | null
-  totalItems: number
+  has_next_page: boolean
+  end_cursor: number | null
+  total_items: number
 }
 
 export interface MCPCardResponse {
   cards: MCPCard[]
-  pageInfo: PageInfo
+  page_info: PageInfo
 }
 
-// MCP 카드의 상세 정보 인터페이스
+// Interface for detailed MCP card information
 export interface MCPCardDetail extends MCPCard {
   args?: string[]
   env?: Record<string, any>
@@ -35,18 +35,14 @@ export async function fetchMCPCards(searchTerm?: string, cursorId?: number): Pro
   try {
     if (searchTerm === undefined || searchTerm.trim() === "") {
       if (cursorId) {
-        console.log(`[mcp-api.ts] fetchMCPCards: Loading next page with cursor ${cursorId}`)
         return await invoke<MCPCardResponse>("get_mcp_data", { cursorId })
       } else {
-        console.log("[mcp-api.ts] fetchMCPCards: Loading first page")
         return await invoke<MCPCardResponse>("get_mcp_data")
       }
     } else {
-      console.log(`[mcp-api.ts] fetchMCPCards: Searching for "${searchTerm}"`)
       return await invoke<MCPCardResponse>("get_mcp_data", { searchTerm })
     }
   } catch (error) {
-    console.error("[mcp-api.ts] Error fetching MCP card data:", error)
     throw error
   }
 }
@@ -58,10 +54,8 @@ export async function fetchMCPCards(searchTerm?: string, cursorId?: number): Pro
  */
 export async function fetchMCPCardDetail(id: number): Promise<MCPCardDetail> {
   try {
-    console.log(`[mcp-api.ts] fetchMCPCardDetail: Fetching detail for ID ${id}.`)
-    return await invoke<MCPCardDetail>("get_mcp_detail_data", { id }) // id를 객체로 감싸서 전달
+    return await invoke<MCPCardDetail>("get_mcp_detail_data", { id }) // Pass id wrapped in an object
   } catch (error) {
-    console.error(`[mcp-api.ts] Error fetching MCP card detail for ID ${id}:`, error)
     throw error
   }
 }
