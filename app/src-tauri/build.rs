@@ -3,15 +3,12 @@ fn main() {
     let env_path = std::path::Path::new(&project_root).join("..").join(".env");
 
     if env_path.exists() {
-        println!("cargo:rerun-if-changed={}", env_path.display());
-        println!("cargo:rerun-if-env-changed=.env");
 
         match dotenvy::from_path_iter(&env_path) {
             Ok(iter) => {
                 for item in iter {
                     match item {
                         Ok((key, value)) => {
-                            println!("cargo:rustc-env={}={}", key, value);
                         }
                         Err(e) => {
                             eprintln!(

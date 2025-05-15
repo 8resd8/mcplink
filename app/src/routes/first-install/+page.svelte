@@ -16,27 +16,17 @@
   async function handleComplete() {
     errorMessage = ""
 
-    const serverNameForEntry = "McpFallbackServer"
-    const configData: MCPServerConfigTypeScript = {
-      command: "node",
-      args: ["C:\\S12P31A201\\mcp-server\\dist\\main.js"],
-      cwd: "C:\\S12P31A201\\mcp-server",
-    }
-
     try {
-      await invoke("add_mcp_server_config", {
-        serverId: -1,
-        serverName: serverNameForEntry,
-        serverConfig: configData,
-      })
-
-      // 2. Restart Claude Desktop
+      // Use the new ensure_config_files function that creates any missing config files
+      await invoke("ensure_config_files")
+      
+      // Restart Claude Desktop
       await invoke("restart_claude_desktop")
 
-      // After setup is complete, navigate to the /Installed-MCP page. (Case corrected)
-      await goto("/Installed-MCP", { state: { config: configData } })
+      // Navigate to the Installed-MCP page
+      await goto("/Installed-MCP")
     } catch (err) {
-      errorMessage = `error occurred: ${err}`
+      errorMessage = `Error during setup: ${err}`
     }
   }
 </script>

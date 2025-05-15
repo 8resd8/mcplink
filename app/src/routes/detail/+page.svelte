@@ -48,7 +48,6 @@
 
   // Change goBack function to use goto
   function goBack() {
-    console.log(`[Detail] goBack: Navigating to previous page. referrer: ${referrer}`)
     goto(referrer)
   }
 
@@ -80,8 +79,8 @@
     error = ""
 
     try {
-      const detail = await fetchMCPCardDetail(mcpId)
-      console.log("Successfully loaded detail data:", detail)
+      // Pass title along to check installation status and fetch from config if installed
+      const detail = await fetchMCPCardDetail(mcpId, title)
 
       // Update basic information (optional, as already fetched from URL)
       title = detail.title || title
@@ -89,16 +88,29 @@
       url = detail.url || url
       stars = detail.stars || stars
 
-      // Update detailed settings
-      args = detail.args || []
-      env = detail.env || {}
-      command = detail.command || ""
+      // Update detailed settings - do not show fields if they are not present in the data received from the crawler server
+      if (detail.args) args = detail.args
+      // 환경 변수는 크롤러 서버 데이터에 존재할 경우에만 표시
+      if (detail.env && Object.keys(detail.env).length > 0) env = detail.env
+      else env = {} // 환경 변수 데이터가 없으면 비어있는 객체로 설정하여 표시하지 않음
+      if (detail.command) command = detail.command
 
       // Update star rating array
       const starCount = Math.min(Math.round(stars / 1000), 5)
       starsArray = Array(5)
         .fill(0)
         .map((_, i) => (i < starCount ? 1 : 0))
+      
+      // Check if the server is already installed
+      try {
+        const isInstalled = await invoke<boolean>("is_mcp_server_installed", { serverName: title })
+        // Update button text based on installation status
+        if (isInstalled && mode === "install") {
+          mode = "edit" // Change to edit mode if already installed
+        }
+      } catch (err) {
+        console.warn("Failed to check installation status:", err)
+      }
     } catch (err: any) {
       console.error("Failed to load detail data", err)
       error = `Failed to load detail data: ${err.message || err.toString()}`
@@ -211,37 +223,84 @@
         <div>
           <h2 class="text-xl font-semibold mb-4">Required Settings</h2>
           <div class="mb-6">
-            {#if command}
-              <div class="form-control mb-4">
-                <div class="form-control">
-                  <label class="label">
-                    <span class="label-text">Command</span>
-                  </label>
-                  <input type="text" class="input input-bordered" value={command} />
-                </div>
+            <div class="form-control mb-4">
+              <div class="form-control">
+                <label class="label">
+                  <span class="label-text">Command</span>
+                </label>
+                <input type="text" class="input input-bordered" bind:value={command} />
               </div>
-            {/if}
+            </div>
 
-            {#if args && args.length > 0}
-              <div class="form-control mb-4">
-                <div class="form-control">
-                  <label class="label">
-                    <span class="label-text">Arguments</span>
-                  </label>
-                  <!-- Use readonly textarea instead of password type -->
-                  <textarea class="textarea textarea-bordered" rows="3">{formatValueForPlaceholder(args)}</textarea>
-                </div>
+            <div class="form-control mb-4">
+              <div class="form-control">
+                <label class="label">
+                  <span class="label-text">Arguments</span>
+                </label>
+                <!-- First, get the string as a variable and bind it -->
+                {#if args}
+                  <textarea 
+                    class="textarea textarea-bordered resize-none" 
+                    rows="2" 
+                    value={formatValueForPlaceholder(args)} 
+                    on:input={(e) => {
+                      // Convert text input value to an array
+                      try {
+                        args = e.currentTarget.value.split(',').map(s => s.trim()).filter(s => s);
+                      } catch (err) {
+                        console.error("Failed to parse arguments:", err);
+                      }
+                    }}
+                  ></textarea>
+                {:else}
+                  <textarea 
+                    class="textarea textarea-bordered resize-none" 
+                    rows="2" 
+                    on:input={(e) => {
+                      try {
+                        args = e.currentTarget.value.split(',').map(s => s.trim()).filter(s => s);
+                      } catch (err) {
+                        console.error("Failed to parse arguments:", err);
+                      }
+                    }}
+                  ></textarea>
+                {/if}
+                <span class="text-xs text-gray-500 mt-1">Comma-separated values</span>
               </div>
-            {/if}
+            </div>
 
+            <!-- Display only if environment variables exist -->
             {#if env && Object.keys(env).length > 0}
               <div class="form-control mb-4">
                 <div class="form-control">
                   <label class="label">
                     <span class="label-text">Environment Variables</span>
                   </label>
-                  <!-- Use readonly textarea instead of password type -->
-                  <textarea class="textarea textarea-bordered" rows="3">{formatValueForPlaceholder(env)}</textarea>
+                  <textarea 
+                    class="textarea textarea-bordered resize-none" 
+                    rows="2" 
+                    value={formatValueForPlaceholder(env)} 
+                    on:input={(e) => {
+                      // Convert text input value to an environment variable object
+                      try {
+                        const envObj: Record<string, any> = {};
+                        e.currentTarget.value.split(',').forEach(item => {
+                          const parts = item.split(':');
+                          if (parts.length >= 2) {
+                            const key = parts[0].trim();
+                            const value = parts.slice(1).join(':').trim(); // Handle values that may contain colons
+                            if (key) {
+                              envObj[key] = value;
+                            }
+                          }
+                        });
+                        env = envObj;
+                      } catch (err) {
+                        console.error("Failed to parse environment variables:", err);
+                      }
+                    }}
+                  ></textarea>
+                  <span class="text-xs text-gray-500 mt-1">Key:value pairs, separated by commas</span>
                 </div>
               </div>
             {/if}
@@ -260,38 +319,36 @@
       <button
         class="btn btn-sm btn-primary"
         on:click={() => {
-          if (mode === "edit") {
-            alert("MCP has been modified!")
-            // Add actual modification logic later
-            goBack() // Automatically go back to previous page
-          } else {
-            // Configure MCP server settings
-            const serverConfig = {
-              command: command || "",
-              args: args || [],
-              env: env || {},
-              cwd: null,
-            }
-
-            // Add server and restart
-            invoke("add_mcp_server_config", {
-              serverId: id,
-              serverName: title,
-              serverConfig: serverConfig,
-            })
-              .then(() => {
-                // Restart Claude Desktop
-                return invoke("restart_claude_desktop")
-              })
-              .then(() => {
-                alert("MCP has been installed!")
-                goBack() // Automatically go back to previous page
-              })
-              .catch((err) => {
-                alert(`Error during MCP installation: ${err}`)
-                console.error("MCP installation error:", err)
-              })
+          // Configure server settings with the current input values
+          const serverConfig = {
+            command: command || "",
+            args: args || [],
+            env: env || {},
+            cwd: null,
           }
+          
+          // Installation or save operation
+          invoke("add_mcp_server_config", {
+            serverId: id,
+            serverName: title,
+            serverConfig: serverConfig,
+          })
+            .then(() => {
+              // Restart Claude Desktop
+              return invoke("restart_claude_desktop")
+            })
+            .then(() => {
+              if (mode === "edit") {
+                alert("MCP configuration has been updated!")
+              } else {
+                alert("MCP has been installed!")
+              }
+              goBack() // Automatically go back to previous page
+            })
+            .catch((err) => {
+              alert(`Error during MCP ${mode === "edit" ? "update" : "installation"}: ${err}`)
+              console.error(`MCP ${mode === "edit" ? "update" : "installation"} error:`, err)
+            })
         }}
         disabled={loading || !!error}
       >

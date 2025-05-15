@@ -39,12 +39,12 @@
 
   // Function to open GitHub link
   async function openGitHub(urlToOpen: string) {
-    console.log("Attempting to open GitHub link:", urlToOpen)
+
     if (!urlToOpen) return
 
     // Add https:// if protocol is missing
     const finalUrl = urlToOpen.startsWith("http") ? urlToOpen : `https://${urlToOpen}`
-    console.log("Final URL:", finalUrl)
+
 
     try {
       // Use browser's default window.open method
@@ -68,7 +68,7 @@
       referrer: window.location.pathname, // Save current path as referrer
     })
 
-    console.log(`[mcp-card] Navigating to detail page: ${window.location.pathname} → /detail`)
+
     window.location.href = `/detail?${params.toString()}`
   }
 
@@ -81,7 +81,7 @@
   async function handleComplete() {
     let errorMessage = ""
     try {
-      console.log(`[mcp-card] Attempting to delete: Server name '${title}', ID: ${id}`)
+
 
       // 1. Remove config from backend
       await invoke("remove_mcp_server_config", {
@@ -89,7 +89,7 @@
       })
 
       // 2. Dispatch 'deleted' event (request GUI update)
-      console.log(`[mcp-card] Dispatching 'deleted' event for ID: ${id}`)
+
       dispatch("deleted", { id: id })
 
       // 3. Restart Claude Desktop (after event dispatch)
