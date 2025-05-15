@@ -1,5 +1,6 @@
 package kr.co.mcplink.domain.auth.ssafy.service;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Optional;
 
 import org.springframework.http.HttpEntity;
@@ -71,7 +72,9 @@ public class SsafyAuthService {
 
 	private SsafyTokenDto requestAccessToken(String code) {
 		HttpHeaders headers = new HttpHeaders();
-		headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+
+		MediaType mediaType = new MediaType("application", "x-www-form-urlencoded", StandardCharsets.UTF_8);
+		headers.setContentType(mediaType);
 
 		MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
 		params.add("grant_type", "authorization_code");
@@ -87,7 +90,7 @@ public class SsafyAuthService {
 			return response.getBody();
 		} catch (Exception e) {
 			log.error("SSAFY Access Token을 발급받는데 실패했습니다.");
-			throw new JwtForbiddenException("SSAFY Access Token을 발급받는데 실패했습니다.");
+			throw new IllegalStateException("SSAFY Access Token을 발급받는데 실패했습니다.");
 		}
 		// return response.getBody();
 	}
