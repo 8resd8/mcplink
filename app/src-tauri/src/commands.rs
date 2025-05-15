@@ -3,10 +3,11 @@
 use dotenvy::dotenv;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
-use serde_json::{Map, Value};
+use serde_json::{json, Map, Value};
 use std::collections::HashMap;
 use std::{env, fs, path::PathBuf, process::Command as StdCommand};
 use tauri::{AppHandle, Manager, State};
+use tauri_plugin_notification::NotificationExt;
 use tokio::time::{sleep, Duration};
 use urlencoding::encode;
 
@@ -72,6 +73,20 @@ pub struct MCPCard {
     pub stars: i32,
 }
 
+// 페이지 정보를 포함한 응답 구조체
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PageInfoResponse {
+    pub hasNextPage: bool,
+    pub endCursor: Option<i32>,
+    pub totalItems: i32,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct MCPCardResponse {
+    pub cards: Vec<MCPCard>,
+    pub pageInfo: PageInfoResponse,
+}
+
 // DetailApiResponse is now designed to parse the object obtained from `api_response_wrapper.data.get("mcpServer")`
 #[derive(Debug, Deserialize)]
 struct DetailApiResponse {
@@ -104,6 +119,8 @@ pub struct MCPServerConfig {
     pub args: Option<Vec<String>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub env: Option<Map<String, Value>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub cwd: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
@@ -120,18 +137,11 @@ pub struct AppState {
 // --- Tauri Commands ---
 
 #[tauri::command]
-pub fn some_command() -> String {
-    let _ = dotenv().ok();
-    let crawler_api_base_url: String =
-        env::var("CRAWLER_API_BASE_URL").expect("CRAWLER_API_BASE_URL must be set");
-    return crawler_api_base_url;
-}
-
-#[tauri::command]
 pub async fn get_mcp_data(
     state: State<'_, AppState>,
     search_term: Option<String>,
-) -> Result<Vec<MCPCard>, String> {
+    cursor_id: Option<i32>,
+) -> Result<MCPCardResponse, String> {
     dotenv().ok();
 
     let base_url: String = match env::var("CRAWLER_API_BASE_URL") {
@@ -143,16 +153,25 @@ pub async fn get_mcp_data(
         }
     };
 
+    // URL 구성에 커서 ID 추가
     let request_url = if let Some(term) = search_term {
         if term.is_empty() {
-            base_url.to_string()
+            if let Some(cursor) = cursor_id {
+                format!("{}?size=10&cursorId={}", base_url, cursor)
+            } else {
+                format!("{}?size=10", base_url)
+            }
         } else {
             let encoded_term = encode(&term);
             let search_url = format!("{}/search?name={}", base_url, encoded_term);
             search_url
         }
     } else {
-        base_url.to_string()
+        if let Some(cursor) = cursor_id {
+            format!("{}?size=10&cursorId={}", base_url, cursor)
+        } else {
+            format!("{}?size=10", base_url)
+        }
     };
 
     match state.client.get(&request_url).send().await {
@@ -196,7 +215,25 @@ pub async fn get_mcp_data(
                                                     card
                                                 );
                                             }
-                                            return Ok(cards);
+
+                                            // 페이지 정보 추출
+                                            let end_cursor = match data_wrapper.pageInfo.endCursor {
+                                                Some(Value::Number(n)) => {
+                                                    n.as_i64().map(|x| x as i32)
+                                                }
+                                                _ => None,
+                                            };
+
+                                            let response = MCPCardResponse {
+                                                cards,
+                                                pageInfo: PageInfoResponse {
+                                                    hasNextPage: data_wrapper.pageInfo.hasNextPage,
+                                                    endCursor: end_cursor,
+                                                    totalItems: data_wrapper.pageInfo.totalItems,
+                                                },
+                                            };
+
+                                            return Ok(response);
                                         }
                                         Err(e) => {
                                             // DataWrapper 파싱 실패 시 상세 로그
@@ -206,7 +243,14 @@ pub async fn get_mcp_data(
                                     }
                                 } else {
                                     println!("[get_mcp_data] API response.data is not an object or not found. Data: {:?}. Returning empty.", api_response.data);
-                                    return Ok(Vec::new());
+                                    return Ok(MCPCardResponse {
+                                        cards: Vec::new(),
+                                        pageInfo: PageInfoResponse {
+                                            hasNextPage: false,
+                                            endCursor: None,
+                                            totalItems: 0,
+                                        },
+                                    });
                                 }
                             }
                             Err(e) => {
@@ -619,4 +663,319 @@ pub async fn restart_claude_desktop(_app: AppHandle) -> Result<(), String> {
     );
 
     Ok(())
+}
+
+#[tauri::command]
+pub async fn get_installed_mcp_data(
+    state: State<'_, AppState>,
+    server_ids: Vec<i32>,
+    cursor_id: Option<i32>,
+) -> Result<MCPCardResponse, String> {
+    dotenv().ok();
+
+    let base_url: String = match env::var("CRAWLER_API_BASE_URL") {
+        Ok(url_val) => url_val,
+        Err(e) => {
+            let msg = format!(
+                "[get_installed_mcp_data] CRAWLER_API_BASE_URL not set: {}",
+                e
+            );
+            println!("{}", msg);
+            return Err(msg);
+        }
+    };
+
+    // Use the batch endpoint
+    let mut request_url = format!("{}/batch", base_url);
+
+    // Add cursorId query parameter if present
+    if let Some(cursor) = cursor_id {
+        request_url.push_str(&format!("?size=10&cursorId={}", cursor)); // Assuming default size 10, adjust if needed
+    } else {
+        request_url.push_str("?size=10"); // Default size if no cursor
+    }
+
+    // Create the request body
+    let request_body = json!({ "serverIds": server_ids });
+    println!(
+        "[get_installed_mcp_data] Requesting batch data for IDs: {:?}, URL: {}, Body: {}",
+        server_ids, request_url, request_body
+    );
+
+    // Send POST request
+    match state
+        .client
+        .post(&request_url)
+        .json(&request_body) // Send the body as JSON
+        .send()
+        .await
+    {
+        Ok(response) => {
+            let status = response.status();
+            println!(
+                "[get_installed_mcp_data] Response status for {}: {}",
+                request_url, status
+            );
+
+            if status.is_success() {
+                match response.text().await {
+                    // Read as text first for logging
+                    Ok(text_body) => {
+                        println!(
+                            "[get_installed_mcp_data] RAW API Response Body: {}",
+                            text_body
+                        );
+                        match serde_json::from_str::<ApiResponse>(&text_body) {
+                            // Parse outer ApiResponse
+                            Ok(api_response) => {
+                                if let Value::Object(data_obj) = &api_response.data {
+                                    println!("[get_installed_mcp_data] Attempting to parse data_obj into DataWrapper: {:?}", data_obj);
+                                    // Parse the inner data (which contains pageInfo and mcpServers) using DataWrapper
+                                    match serde_json::from_value::<DataWrapper>(Value::Object(
+                                        data_obj.clone(),
+                                    )) {
+                                        Ok(data_wrapper) => {
+                                            let cards: Vec<MCPCard> = data_wrapper
+                                                .mcpServers
+                                                .iter()
+                                                .map(|api_card| MCPCard {
+                                                    id: api_card.id,
+                                                    // Assuming the structure within mcpServers array is the same as in get_mcp_data
+                                                    title: api_card.mcpServers.name.clone(),
+                                                    description: api_card
+                                                        .mcpServers
+                                                        .description
+                                                        .clone(),
+                                                    url: api_card.url.clone(),
+                                                    stars: api_card.stars,
+                                                })
+                                                .collect();
+                                            println!(
+                                                "[get_installed_mcp_data] Successfully parsed {} cards.",
+                                                cards.len()
+                                            );
+
+                                            // Extract page info
+                                            let end_cursor = match data_wrapper.pageInfo.endCursor {
+                                                Some(Value::Number(n)) => {
+                                                    n.as_i64().map(|x| x as i32)
+                                                }
+                                                _ => None,
+                                            };
+
+                                            let response = MCPCardResponse {
+                                                cards,
+                                                pageInfo: PageInfoResponse {
+                                                    hasNextPage: data_wrapper.pageInfo.hasNextPage,
+                                                    endCursor: end_cursor,
+                                                    totalItems: data_wrapper.pageInfo.totalItems,
+                                                },
+                                            };
+
+                                            return Ok(response);
+                                        }
+                                        Err(e) => {
+                                            println!("[get_installed_mcp_data] Failed to parse data object into DataWrapper: {}. Data object was: {:?}", e, data_obj);
+                                            return Err(format!("[get_installed_mcp_data] Failed to parse data into DataWrapper: {}", e));
+                                        }
+                                    }
+                                } else {
+                                    println!("[get_installed_mcp_data] API response.data is not an object or not found. Data: {:?}. Returning empty.", api_response.data);
+                                    // Return empty response consistent with get_mcp_data
+                                    return Ok(MCPCardResponse {
+                                        cards: Vec::new(),
+                                        pageInfo: PageInfoResponse {
+                                            hasNextPage: false,
+                                            endCursor: None,
+                                            totalItems: 0,
+                                        },
+                                    });
+                                }
+                            }
+                            Err(e) => {
+                                let msg = format!("[get_installed_mcp_data] JSON parsing error for ApiResponse: {}. Body: {:.500}", e, text_body);
+                                println!("{}", msg);
+                                return Err(msg);
+                            }
+                        }
+                    }
+                    Err(e) => {
+                        let msg = format!(
+                            "[get_installed_mcp_data] Failed to read response text: {}",
+                            e
+                        );
+                        println!("{}", msg);
+                        return Err(msg);
+                    }
+                }
+            } else {
+                let error_body = response
+                    .text()
+                    .await
+                    .unwrap_or_else(|e| format!("Failed to read error body: {}", e));
+                let msg = format!(
+                    "[get_installed_mcp_data] Server error for {}: {}. Body: {:.500}",
+                    request_url, status, error_body
+                );
+                println!("{}", msg);
+                return Err(msg);
+            }
+        }
+        Err(e) => {
+            let msg = format!(
+                "[get_installed_mcp_data] Request error for {}: {}",
+                request_url, e
+            );
+            println!("{}", msg);
+            return Err(msg);
+        }
+    }
+}
+
+/// Reads the content of mcplink_desktop_config.json and returns it as a string.
+#[tauri::command]
+pub fn read_mcplink_config_content(app: AppHandle) -> Result<String, String> {
+    let config_path = match env::consts::OS {
+        "windows" => {
+            let appdata = app
+                .path()
+                .app_data_dir()
+                .map_err(|e| format!("Failed to get AppData directory: {}", e))?;
+            let claude_dir = appdata
+                .parent()
+                .ok_or("Failed to get parent of AppData")?
+                .join("Claude");
+            claude_dir.join("mcplink_desktop_config.json")
+        }
+        _ => return Err("Path resolution currently only supported on Windows".to_string()),
+    };
+
+    if !config_path.exists() {
+        // If the file doesn't exist, return an empty JSON object string or a specific error/signal
+        // For now, returning an empty JSON object string to be parsed by frontend
+        // Or, you could return an Err to be handled specifically by the frontend.
+        // For example: return Err("mcplink_config_not_found".to_string());
+        println!(
+            "mcplink_desktop_config.json not found at {:?}, returning empty JSON object string.",
+            config_path
+        );
+        return Ok("{}".to_string());
+    }
+
+    fs::read_to_string(config_path)
+        .map_err(|e| format!("Failed to read mcplink_desktop_config.json: {}", e))
+}
+
+#[tauri::command]
+pub async fn show_popup(app: AppHandle, tag: String) -> Result<(), String> {
+    // --- CLAUDE CODE 수정 시작 ---
+    // 알림 권한 상태 확인
+    let permission_state = match app.notification().permission_state() {
+        Ok(state) => state,
+        Err(e) => {
+            eprintln!("[Notification] Failed to get permission state: {}", e);
+            return Err(format!("Failed to get notification permission: {}", e));
+        }
+    };
+    
+    println!("[Notification] Current permission state: {:?}", permission_state);
+    
+    // 권한이 없는 경우 요청
+    use tauri_plugin_notification::PermissionState;
+    if permission_state != PermissionState::Granted {
+        println!("[Notification] Permission not granted, requesting...");
+        match app.notification().request_permission() {
+            Ok(new_state) => {
+                println!("[Notification] New permission state: {:?}", new_state);
+                if new_state != PermissionState::Granted {
+                    return Err("Notification permission was denied".to_string());
+                }
+            }
+            Err(e) => {
+                eprintln!("[Notification] Failed to request permission: {}", e);
+                return Err(format!("Failed to request notification permission: {}", e));
+            }
+        }
+    }
+    
+    // 알림 본문 생성 - 태그 정보 포함
+    let notification_body = format!("선택된 키워드: {}. 클릭하여 확인하세요.", tag);
+
+    // --- CLAUDE CODE 수정 시작 ---
+    // 알림 옵션 설정 - 간소화된 방식으로 알림 생성
+    let builder = app
+        .notification()
+        .builder()
+        .title("추천 확인")
+        .body(&notification_body)
+        .icon("icons/icon.png");
+    
+    // 알림 본문에 태그 정보를 포함시키는 것으로 대체 (이미 포함되어 있음)
+    println!("[Notification] 태그 정보를 알림 본문에 포함: {}", notification_body);
+    
+    // 알림 전송 및 결과 처리
+    match builder.show() {
+    // --- CLAUDE CODE 수정 끝 ---
+        Ok(_) => {
+            println!("[Notification Sent] Tag: {}, Body: {}", tag, notification_body);
+            // 알림이 제대로 전송되었는지 로그에 추가 정보 출력
+            if let Ok(permission_state) = app.notification().permission_state() {
+                println!("[Notification] Permission state: {:?}", permission_state);
+            }
+            Ok(())
+        }
+        Err(e) => {
+            eprintln!("[Notification Send Error] Tag: {}, Error: {}", tag, e);
+            Err(format!("Failed to send notification: {}", e))
+        }
+    }
+    // --- CLAUDE CODE 수정 끝 ---
+}
+
+// --- 설정 파일 존재 여부 확인 함수 수정 ---
+
+#[tauri::command]
+pub fn check_claude_config_exists(app: AppHandle) -> Result<bool, String> {
+    let app_data_dir = match app.path().app_data_dir() {
+        Ok(path) => path,
+        Err(e) => {
+            return Err(format!("Failed to get app data directory: {}", e));
+        }
+    };
+
+    let claude_dir = app_data_dir
+        .parent()
+        .unwrap_or(&app_data_dir)
+        .join("Claude");
+    let claude_config_path = claude_dir.join("claude_desktop_config.json");
+
+    println!(
+        "[check_claude_config_exists] 검사 경로: {:?}",
+        claude_config_path
+    );
+
+    Ok(claude_config_path.exists())
+}
+
+#[tauri::command]
+pub fn check_mcplink_config_exists(app: AppHandle) -> Result<bool, String> {
+    let app_data_dir = match app.path().app_data_dir() {
+        Ok(path) => path,
+        Err(e) => {
+            return Err(format!("Failed to get app data directory: {}", e));
+        }
+    };
+
+    let claude_dir = app_data_dir
+        .parent()
+        .unwrap_or(&app_data_dir)
+        .join("Claude");
+    let mcplink_config_path = claude_dir.join("mcplink_desktop_config.json");
+
+    println!(
+        "[check_mcplink_config_exists] 검사 경로: {:?}",
+        mcplink_config_path
+    );
+
+    Ok(mcplink_config_path.exists())
 }
