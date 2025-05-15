@@ -19,6 +19,18 @@ public final class Constants {
     // name+description 필드에 대한 검색(text) 인덱스
     public static final String IDX_MCP_SERVERS_SEARCH           = "idx_mcp_servers_search_text";
 
+    // Github
+    public static final String GITHUB_SEARCH_PATH               = "/search/repositories";
+    public static final String GITHUB_README_PATH               = "/repos/{owner}/{repo}/readme";
+    public static final String GITHUB_REPO_PATH                        = "/repos/{owner}/{repo}";
+    public static final String[] GITHUB_LANGUAGES               = { "typescript", "javascript", "python" };
+    public static final String[] GITHUB_LICENSES                = { "mit", "apache-2.0", "gpl-3.0" };
+
+    // Gemini
+    public static final String GEMINI_GENERATE_CONTENT_PATH     = "/v1beta/models/{model}:generateContent";
+    public static final String GEMINI_FALLBACK_SUMMARY_TEXT     = "This is a %s server. Please refer to the README available at %s. We apologize for the inconvenience.";
+    public static final String GEMINI_DEFAULT_FALLBACK_TEXT     = "This is a MCP server. We apologize for the inconvenience.";
+
     // 성공 메시지
     public static final String SUCCESS                          = "SUCCESS";
     public static final String MSG_SUCCESS_LIST                 = "전체 목록 조회에 성공했습니다";

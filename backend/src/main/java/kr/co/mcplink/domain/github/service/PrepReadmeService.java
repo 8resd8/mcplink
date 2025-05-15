@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import kr.co.mcplink.domain.github.dto.ParsedReadmeInfoDto;
+import kr.co.mcplink.global.annotation.ExcludeParamLog;
 import kr.co.mcplink.global.annotation.ExcludeResponseLog;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -19,6 +20,7 @@ import java.util.regex.Pattern;
 @RequiredArgsConstructor
 public class PrepReadmeService {
 
+    @ExcludeParamLog
     @ExcludeResponseLog
     public String decodeReadme(String rawReadme) {
         if (rawReadme == null) {
@@ -42,6 +44,8 @@ public class PrepReadmeService {
         }
     }
 
+    @ExcludeParamLog
+    @ExcludeResponseLog
     public ParsedReadmeInfoDto parseReadme(String prepReadme) {
         // 1. 마크다운/HTML 코드 블록 추출
         Pattern codeBlockPat = Pattern.compile(

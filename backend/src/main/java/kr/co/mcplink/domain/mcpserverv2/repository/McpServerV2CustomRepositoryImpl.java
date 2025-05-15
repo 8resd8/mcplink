@@ -5,6 +5,7 @@ import com.mongodb.client.MongoCollection;
 import com.mongodb.client.result.UpdateResult;
 import kr.co.mcplink.domain.mcpserverv2.entity.McpServerV2;
 import org.bson.Document;
+import org.bson.types.ObjectId;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.aggregation.Aggregation;
 import org.springframework.data.mongodb.core.aggregation.AggregationOperation;
@@ -160,7 +161,8 @@ public class McpServerV2CustomRepositoryImpl implements McpServerV2CustomReposit
         String description,
         List<String> tags
     ) {
-        Document filter = new Document("_id", id);
+        Document filter = new Document("_id", new ObjectId(id));
+
         Document set = new Document()
                 .append("mcpServers.description", description)
                 .append("tags", tags);
