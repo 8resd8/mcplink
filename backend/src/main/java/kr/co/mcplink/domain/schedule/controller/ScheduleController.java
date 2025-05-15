@@ -18,11 +18,13 @@ public class ScheduleController {
 
     @PostMapping("/enqueue/github")
     public void enqueueGithub(@RequestParam int queryNum) {
+
         enqueueService.enqueueGithub(queryNum);
     }
 
     @PostMapping("/prep/github")
     public void prepGithub() {
+
         dataPrepService.prepGithub();
     }
 }
