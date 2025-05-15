@@ -13,6 +13,8 @@ public interface GithubPendingQueueRepository extends MongoRepository<GithubPend
 
     boolean existsByName(String name);
 
+    long countByProcessedFalse();
+
 //    long countByProcessedTrue();
 
 //    long deleteByProcessedTrue();
