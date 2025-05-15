@@ -1,11 +1,11 @@
 // app/src-tauri/src/commands.rs
 
-use dotenvy::dotenv;
+// use dotenvy::dotenv; // env! 매크로 사용으로 런타임 .env 로드 불필요
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Map, Value};
 use std::collections::HashMap;
-use std::{env, fs, path::PathBuf, process::Command as StdCommand};
+use std::{fs, path::PathBuf, process::Command as StdCommand}; // Removed std::env as env! is used directly
 use tauri::{AppHandle, Manager, State};
 use tauri_plugin_notification::NotificationExt;
 use tokio::time::{sleep, Duration};
@@ -142,15 +142,8 @@ pub async fn get_mcp_data(
     search_term: Option<String>,
     cursor_id: Option<i32>,
 ) -> Result<MCPCardResponse, String> {
-    dotenv().ok();
-
-    let base_url: String = match env::var("CRAWLER_API_BASE_URL") {
-        Ok(url_val) => url_val,
-        Err(e) => {
-            let msg = format!("[get_mcp_data] CRAWLER_API_BASE_URL not set: {}", e);
-            return Err(msg);
-        }
-    };
+    const CRAWLER_API_BASE_URL_STR: &str = env!("CRAWLER_API_BASE_URL");
+    let base_url: String = CRAWLER_API_BASE_URL_STR.to_string();
 
     // Add cursor ID to URL configuration
     let request_url = if let Some(term) = search_term {
@@ -201,8 +194,8 @@ pub async fn get_mcp_data(
                                                     stars: api_card.stars,
                                                 })
                                                 .collect();
-                                            if let Some(card) = cards.first() {
-                                            }
+                                            // if let Some(card) = cards.first() { // This seems unused
+                                            // }
 
                                             // Extract page information
                                             let end_cursor = match data_wrapper.pageInfo.endCursor {
@@ -228,6 +221,7 @@ pub async fn get_mcp_data(
                                         }
                                     }
                                 } else {
+                                    // If data is not an object or missing, return empty response
                                     return Ok(MCPCardResponse {
                                         cards: Vec::new(),
                                         page_info: PageInfoResponse {
@@ -273,14 +267,8 @@ pub async fn get_mcp_detail_data(
     state: State<'_, AppState>,
     id: i32,
 ) -> Result<MCPCardDetail, String> {
-    dotenv().ok();
-    let base_url: String = match env::var("CRAWLER_API_BASE_URL") {
-        Ok(url_val) => url_val,
-        Err(e) => {
-            let msg = format!("[get_mcp_detail_data] CRAWLER_API_BASE_URL not set: {}", e);
-            return Err(msg);
-        }
-    };
+    const CRAWLER_API_BASE_URL_STR: &str = env!("CRAWLER_API_BASE_URL");
+    let base_url: String = CRAWLER_API_BASE_URL_STR.to_string();
     let request_url = format!("{}/{}", base_url, id);
 
     match state.client.get(&request_url).send().await {
@@ -355,7 +343,7 @@ pub async fn add_mcp_server_config(
     server_id: i64,
 ) -> Result<(), String> {
     // Generate config file path
-    let config_path = match env::consts::OS {
+    let config_path = match std::env::consts::OS { // Explicitly use std::env here for OS const
         "windows" => {
             // For Windows, %APPDATA%\Claude\claude_desktop_config.json
             let appdata = app
@@ -455,7 +443,7 @@ pub async fn add_mcp_server_config(
 #[tauri::command]
 pub async fn remove_mcp_server_config(app: AppHandle, server_name: String) -> Result<(), String> {
     // Generate config file path
-    let config_path = match env::consts::OS {
+    let config_path = match std::env::consts::OS { // Explicitly use std::env here for OS const
         "windows" => {
             let appdata = app
                 .path()
@@ -563,7 +551,7 @@ pub async fn restart_claude_desktop(_app: AppHandle) -> Result<(), String> {
     match kill_status.code() {
         Some(0) => {} // Success
         Some(128) => {} // No process found (considered success for this step)
-        Some(c) => {} // Other exit codes, log if needed
+        Some(_c) => {} // Other exit codes, log if needed (_c to avoid warning)
         None => {} // Process terminated by signal, log if needed
     }
 
@@ -575,12 +563,12 @@ pub async fn restart_claude_desktop(_app: AppHandle) -> Result<(), String> {
         .args(["/FI", "IMAGENAME eq claude.exe", "/NH"]) // /NH for no header
         .output()
         .map_err(|e| format!("Failed to execute tasklist: {}", e))?;
-    let running = String::from_utf8_lossy(&check.stdout);
+    let _running = String::from_utf8_lossy(&check.stdout); // _running to avoid warning
 
     // 4) Pre-create cache directory (prevent permission issues)
     let cache_dir: PathBuf = {
         let base =
-            env::var("LOCALAPPDATA").map_err(|e| format!("Failed to get LOCALAPPDATA: {}", e))?;
+            std::env::var("LOCALAPPDATA").map_err(|e| format!("Failed to get LOCALAPPDATA: {}", e))?; // std::env for runtime var
         let dir = PathBuf::from(&base).join("AnthropicClaude").join("Cache");
         fs::create_dir_all(&dir)
             .map_err(|e| format!("Failed to create cache dir {:?}: {}", dir, e))?;
@@ -591,7 +579,7 @@ pub async fn restart_claude_desktop(_app: AppHandle) -> Result<(), String> {
     // 5) Prepare executable path
     let claude_exe: PathBuf = {
         let base =
-            env::var("LOCALAPPDATA").map_err(|e| format!("Failed to get LOCALAPPDATA: {}", e))?;
+            std::env::var("LOCALAPPDATA").map_err(|e| format!("Failed to get LOCALAPPDATA: {}", e))?; // std::env for runtime var
         PathBuf::from(base)
             .join("AnthropicClaude")
             .join("Claude.exe")
@@ -601,7 +589,7 @@ pub async fn restart_claude_desktop(_app: AppHandle) -> Result<(), String> {
     }
 
     // 6) Pass only Electron runtime flags → prevent URL parsing errors
-    let child = StdCommand::new(&claude_exe)
+    let _child = StdCommand::new(&claude_exe) // _child to avoid warning
         .args([
             "--user-data-dir",
             &cache_dir_str,
@@ -620,18 +608,8 @@ pub async fn get_installed_mcp_data(
     server_ids: Vec<i32>,
     cursor_id: Option<i32>,
 ) -> Result<MCPCardResponse, String> {
-    dotenv().ok();
-
-    let base_url: String = match env::var("CRAWLER_API_BASE_URL") {
-        Ok(url_val) => url_val,
-        Err(e) => {
-            let msg = format!(
-                "[get_installed_mcp_data] CRAWLER_API_BASE_URL not set: {}",
-                e
-            );
-            return Err(msg);
-        }
-    };
+    const CRAWLER_API_BASE_URL_STR: &str = env!("CRAWLER_API_BASE_URL");
+    let base_url: String = CRAWLER_API_BASE_URL_STR.to_string();
 
     // Use the batch endpoint
     let mut request_url = format!("{}/batch", base_url);
@@ -706,6 +684,7 @@ pub async fn get_installed_mcp_data(
                                         }
                                     }
                                 } else {
+                                     // If data is not an object or missing, return empty response
                                     return Ok(MCPCardResponse {
                                         cards: Vec::new(),
                                         page_info: PageInfoResponse {
@@ -755,7 +734,7 @@ pub async fn get_installed_mcp_data(
 /// Reads the content of mcplink_desktop_config.json and returns it as a string.
 #[tauri::command]
 pub fn read_mcplink_config_content(app: AppHandle) -> Result<String, String> {
-    let config_path = match env::consts::OS {
+    let config_path = match std::env::consts::OS { // Explicitly use std::env here for OS const
         "windows" => {
             let appdata = app
                 .path()
@@ -826,8 +805,8 @@ pub async fn show_popup(app: AppHandle, tag: String) -> Result<(), String> {
     match builder.show() {
     // --- CLAUDE CODE END MODIFICATION ---
         Ok(_) => {
-            if let Ok(permission_state) = app.notification().permission_state() {
-            }
+            // if let Ok(permission_state) = app.notification().permission_state() { // Unused
+            // }
             Ok(())
         }
         Err(e) => {
