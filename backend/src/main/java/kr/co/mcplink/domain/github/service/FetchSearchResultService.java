@@ -2,6 +2,7 @@ package kr.co.mcplink.domain.github.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import kr.co.mcplink.domain.github.dto.GithubSearchResultDto;
+import kr.co.mcplink.global.common.Constants;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
@@ -16,10 +17,6 @@ import java.util.stream.StreamSupport;
 @Slf4j
 public class FetchSearchResultService {
 
-    private static final String SEARCH_PATH = "/search/repositories";
-    private static final String[] LANGUAGES = { "typescript", "javascript", "python" };
-    private static final String[] LICENSES  = { "mit", "apache-2.0", "gpl-3.0" };
-
     private final WebClient githubClient;
 
     public FetchSearchResultService(
@@ -33,13 +30,13 @@ public class FetchSearchResultService {
 
         return IntStream.rangeClosed(1, 10)
                 .mapToObj(page -> {
-                    String logUrl = SEARCH_PATH + "?q=" + query + "&sort=stars&order=desc&per_page=100&page=" + page;
+                    String logUrl = Constants.GITHUB_SEARCH_PATH + "?q=" + query + "&sort=stars&order=desc&per_page=100&page=" + page;
                     log.info("fetchSearchResult queryNum={} page={} → 요청 URL={}",
                             queryNum, page, logUrl);
 
                     return githubClient.get()
                             .uri(uriBuilder -> uriBuilder
-                                    .path(SEARCH_PATH)
+                                    .path(Constants.GITHUB_SEARCH_PATH)
                                     .queryParam("q", query)
                                     .queryParam("sort", "stars")
                                     .queryParam("order", "desc")
@@ -65,8 +62,8 @@ public class FetchSearchResultService {
 
     private String buildQuery(int queryNum) {
         int idx       = queryNum - 1;
-        String lang   = LANGUAGES[idx / 3];
-        String lic    = LICENSES[idx % 3];
+        String lang   = Constants.GITHUB_LANGUAGES[idx / 3];
+        String lic    = Constants.GITHUB_LICENSES[idx % 3];
         return String.format(
                 "mcp server language:%s license:%s stars:>5",
                 lang, lic
