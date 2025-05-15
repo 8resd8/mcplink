@@ -36,6 +36,9 @@ spring:
   github:
     token: ${github.token}
 
+  gemini:
+    api-key: ${gemini.api-key}
+
 server:
   http2:
     enabled: true

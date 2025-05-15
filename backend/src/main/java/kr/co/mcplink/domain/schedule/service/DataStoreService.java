@@ -4,6 +4,7 @@ import kr.co.mcplink.domain.github.dto.GithubMetaDataDto;
 import kr.co.mcplink.domain.github.dto.ParsedReadmeInfoDto;
 import kr.co.mcplink.domain.mcpserverv2.entity.McpServerV2;
 import kr.co.mcplink.domain.mcpserverv2.repository.McpServerV2Repository;
+import kr.co.mcplink.domain.mcpserverv2.repository.McpTagV2Repository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -12,6 +13,7 @@ import org.springframework.stereotype.Service;
 public class DataStoreService {
 
     private final McpServerV2Repository mcpServerV2Repository;
+    private final McpTagV2Repository mcpTagV2Repository;
 
     public String saveMcpServer(GithubMetaDataDto metaData, ParsedReadmeInfoDto parsedReadmeInfo) {
         McpServerV2 mcpServer = toMcpServerV2(metaData, parsedReadmeInfo);
@@ -56,4 +58,12 @@ public class DataStoreService {
                 )
                 .build();
     }
+
+//    public String saveMcpTag() {
+//
+//    }
+//
+//    private McpTagV2 toMcpTagV2() {
+//
+//    }
 }

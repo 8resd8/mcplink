@@ -27,4 +27,10 @@ public class ScheduleController {
 
         dataPrepService.prepGithub();
     }
+
+    @PostMapping("/prep/gemini")
+    public void prepGemini() {
+
+        dataPrepService.prepGemini();
+    }
 }
