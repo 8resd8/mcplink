@@ -27,7 +27,7 @@ class UserRepositoryTest {
 		String userName = "resd";
 		String nickname = "resd-super-resd";
 
-		User user = User.createUser(userName, nickname);
+		User user = User.createUser(userName, nickname, "email");
 
 		User savedUser = userRepository.save(user);
 

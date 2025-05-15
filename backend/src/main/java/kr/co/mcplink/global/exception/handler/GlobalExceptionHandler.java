@@ -12,6 +12,7 @@ import org.springframework.web.servlet.resource.NoResourceFoundException;
 import jakarta.servlet.http.HttpServletRequest;
 import kr.co.mcplink.global.common.ErrorResponse;
 import kr.co.mcplink.global.exception.CommentNotFoundException;
+import kr.co.mcplink.global.exception.JwtForbiddenException;
 import kr.co.mcplink.global.exception.PostNotFoundException;
 
 @RestControllerAdvice
@@ -59,6 +60,12 @@ public class GlobalExceptionHandler {
 	public ResponseEntity<ErrorResponse> handleNotFoundPostException(CommentNotFoundException ex,
 		HttpServletRequest request) {
 		return ErrorResponse.toResponseEntity(HttpStatus.NO_CONTENT, "댓글이 없습니다.", request.getRequestURI());
+	}
+
+	@ExceptionHandler
+	public ResponseEntity<ErrorResponse> handleNotFoundPostException(JwtForbiddenException ex,
+		HttpServletRequest request) {
+		return ErrorResponse.toResponseEntity(HttpStatus.FORBIDDEN, "접근이 제한된 경로입니다.", request.getRequestURI());
 	}
 
 }
