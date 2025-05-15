@@ -2,61 +2,40 @@ package kr.co.mcplink.domain.gemini.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import kr.co.mcplink.domain.gemini.client.GeminiApiClient;
 import kr.co.mcplink.domain.gemini.dto.GeminiRequestDto;
 import kr.co.mcplink.domain.gemini.dto.GeminiResponseDto;
-import kr.co.mcplink.domain.gemini.dto.ReadmeSummaryDto;
 import kr.co.mcplink.domain.mcpserverv2.entity.McpServerV2;
 import kr.co.mcplink.domain.mcpserverv2.repository.McpServerV2Repository;
+import kr.co.mcplink.global.annotation.ExcludeParamLog;
 import kr.co.mcplink.global.common.Constants;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import org.springframework.web.reactive.function.client.WebClient;
-import reactor.core.publisher.Mono;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.StreamSupport;
 
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class FetchSummaryService {
 
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
     private final McpServerV2Repository mcpServerV2Repository;
+    private final GeminiApiClient geminiClient;
 
-    @Value("${spring.gemini.api-key}")
-    private String geminiApiKey;
-
-    private final WebClient geminiClient;
-    private final String model = "gemini-2.0-flash";
-
-    public FetchSummaryService(
-            @Qualifier("geminiClient") WebClient geminiClient,
-            McpServerV2Repository mcpServerV2Repository
-    ) {
-        this.geminiClient = geminiClient;
-        this.mcpServerV2Repository = mcpServerV2Repository;
-    }
-
-    public ReadmeSummaryDto fetchSummary(String readmeContent) {
-        return fetchSummary(readmeContent, null);
-    }
-
-    public ReadmeSummaryDto fetchSummary(String readmeContent, String serverId) {
+    @ExcludeParamLog
+    public String fetchSummary(String readmeContent, String serverId) {
         try {
-            GeminiRequestDto request = createRequest(readmeContent);
-            GeminiResponseDto response = generateContent(request).block();
-            ReadmeSummaryDto result = toReadmeSummaryDto(response);
+            GeminiRequestDto request = createSummaryRequest(readmeContent);
+            GeminiResponseDto response = geminiClient.generateContent(request).block();
+            String result = extractSummary(response);
 
-            if (serverId != null && (result.summary() == null || result.summary().isEmpty() ||
-                    result.summary().startsWith("Failed to") || result.summary().startsWith("Error"))) {
+            if (serverId != null && (result == null || result.isEmpty() ||
+                    result.startsWith("Failed to") || result.startsWith("Error"))) {
                 return generateFallbackSummary(serverId);
             }
 
@@ -68,11 +47,11 @@ public class FetchSummaryService {
                 return generateFallbackSummary(serverId);
             }
 
-            return new ReadmeSummaryDto("Failed to generate summary", Collections.emptyList());
+            return "Failed to generate summary";
         }
     }
 
-    private ReadmeSummaryDto generateFallbackSummary(String serverId) {
+    private String generateFallbackSummary(String serverId) {
         try {
             Optional<McpServerV2> serverOpt = mcpServerV2Repository.findById(serverId);
 
@@ -81,49 +60,29 @@ public class FetchSummaryService {
                 String serverName = server.getDetail().getName();
                 String serverUrl = server.getUrl();
 
-                String fallbackSummary = String.format(
+                return String.format(
                         Constants.GEMINI_FALLBACK_SUMMARY_TEXT,
                         serverName,
                         serverUrl
                 );
-
-                return new ReadmeSummaryDto(fallbackSummary, Collections.emptyList());
             } else {
                 log.warn("Server not found for id: {}", serverId);
-                return new ReadmeSummaryDto(
-                        Constants.GEMINI_FALLBACK_SUMMARY_TEXT,
-                        Collections.emptyList()
-                );
+                return Constants.GEMINI_DEFAULT_FALLBACK_TEXT;
             }
         } catch (Exception e) {
             log.error("Error generating fallback summary for serverId {}: {}", serverId, e.getMessage());
-            return new ReadmeSummaryDto(
-                    Constants.GEMINI_DEFAULT_FALLBACK_TEXT,
-                    Collections.emptyList()
-            );
+            return Constants.GEMINI_DEFAULT_FALLBACK_TEXT;
         }
     }
 
-    private Mono<GeminiResponseDto> generateContent(GeminiRequestDto request) {
-        return geminiClient.post()
-                .uri(uriBuilder -> uriBuilder
-                        .path(Constants.GEMINI_GENERATE_CONTENT_PATH)
-                        .queryParam("key", geminiApiKey)
-                        .build(model))
-                .bodyValue(request)
-                .retrieve()
-                .bodyToMono(GeminiResponseDto.class)
-                .doOnError(e -> log.error("Error generating content: {}", e.getMessage()));
-    }
-
-    private GeminiRequestDto createRequest(String readmeContent) {
+    private GeminiRequestDto createSummaryRequest(String readmeContent) {
         String prompt = buildPrompt(readmeContent);
         return GeminiRequestDto.createRequest(prompt);
     }
 
     private String buildPrompt(String readmeContent) {
         return """
-        Analyze the following README content and extract a summary and related tags.
+        Analyze the following README content and extract a summary.
         
         For the summary:
         - Write 1-2 concise, clear sentences that explain what this MCP server implementation does
@@ -134,8 +93,7 @@ public class FetchSummaryService {
         
         Please respond ONLY with valid JSON in the following format:
         {
-          "summary": "Your concise functional description here",
-          "tags": ["tag1", "tag2", "tag3", ...]
+          "summary": "Your concise functional description here"
         }
         
         README content:
@@ -143,13 +101,13 @@ public class FetchSummaryService {
         """.formatted(readmeContent);
     }
 
-    private ReadmeSummaryDto toReadmeSummaryDto(GeminiResponseDto response) {
+    private String extractSummary(GeminiResponseDto response) {
         try {
             String generatedText = extractTextSafely(response);
-            return parseJsonResponse(generatedText);
+            return parseJsonForSummary(generatedText);
         } catch (Exception e) {
-            log.error("Error parsing response to ReadmeSummaryDto: ", e);
-            return new ReadmeSummaryDto("Error parsing response", Collections.emptyList());
+            log.error("Error parsing response to extract summary: ", e);
+            return "Error parsing response";
         }
     }
 
@@ -166,7 +124,7 @@ public class FetchSummaryService {
                 .orElse("");
     }
 
-    private ReadmeSummaryDto parseJsonResponse(String jsonText) {
+    private String parseJsonForSummary(String jsonText) {
         try {
             Pattern pattern = Pattern.compile("\\{[\\s\\S]*\\}", Pattern.DOTALL);
             Matcher matcher = pattern.matcher(jsonText);
@@ -175,26 +133,14 @@ public class FetchSummaryService {
                 String cleanedJson = matcher.group();
                 JsonNode root = objectMapper.readTree(cleanedJson);
 
-                String summary = root.has("summary") ? root.get("summary").asText() : "";
-
-                List<String> tags = new ArrayList<>();
-                if (root.has("tags") && root.get("tags").isArray()) {
-                    tags = StreamSupport.stream(root.get("tags").spliterator(), false)
-                            .map(JsonNode::asText)
-                            .toList();
-                }
-
-                return new ReadmeSummaryDto(summary, tags);
+                return root.has("summary") ? root.get("summary").asText() : "";
             }
 
             log.warn("Failed to extract JSON from response: {}", jsonText);
-            return new ReadmeSummaryDto(
-                    jsonText.length() > 100 ? jsonText.substring(0, 100) + "..." : jsonText,
-                    Collections.emptyList()
-            );
+            return jsonText.length() > 100 ? jsonText.substring(0, 100) + "..." : jsonText;
         } catch (Exception e) {
             log.error("Failed to parse JSON response: {}", jsonText, e);
-            return new ReadmeSummaryDto("Failed to parse response", Collections.emptyList());
+            return "Failed to parse response";
         }
     }
 }

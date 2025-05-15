@@ -1,7 +1,7 @@
 package kr.co.mcplink.domain.schedule.service;
 
-import kr.co.mcplink.domain.gemini.dto.ReadmeSummaryDto;
 import kr.co.mcplink.domain.gemini.service.FetchSummaryService;
+import kr.co.mcplink.domain.gemini.service.FetchTagService;
 import kr.co.mcplink.domain.github.dto.GithubMetaDataDto;
 import kr.co.mcplink.domain.github.dto.ParsedReadmeInfoDto;
 import kr.co.mcplink.domain.github.service.FetchMetaDataService;
@@ -26,6 +26,7 @@ public class DataPrepService {
     private final FetchReadmeService fetchReadmeService;
     private final FetchMetaDataService fetchMetaDataService;
     private final FetchSummaryService fetchSummaryService;
+    private final FetchTagService fetchTagService;
     private final PrepReadmeService prepReadmeService;
     private final EnQueueService enqueueService;
     private final GithubPendingQueueRepository githubRepository;
@@ -82,7 +83,8 @@ public class DataPrepService {
                     continue;
                 }
 
-                enqueueService.enqueueGemini(savedServerId, prepReadme);
+                String savedServerName = parsedReadmeInfo.name();
+                enqueueService.enqueueGemini(savedServerId, savedServerName, prepReadme);
                 log.info("Successfully processed and enqueued Gemini task for {}/{}", owner, repo);
             } catch (Exception e) {
                 log.error("Error processing Github item {} → {}", pendingItemId, e.getMessage(), e);
@@ -98,9 +100,10 @@ public class DataPrepService {
         }
 
         String pendingItemId = item.getId();
-//        geminiRepository.updateProcessedById(pendingItemId, true);
+        geminiRepository.updateProcessedById(pendingItemId, true);
 
         String serverId = item.getServerId();
+        String serverName = item.getServerName();
         String prepReadme = item.getPrepReadme();
 
         if (serverId == null || prepReadme == null || prepReadme.isEmpty()) {
@@ -109,22 +112,24 @@ public class DataPrepService {
         }
 
         try {
-            ReadmeSummaryDto readmeSummary = fetchSummaryService.fetchSummary(prepReadme);
+            String readmeSummary = fetchSummaryService.fetchSummary(prepReadme, serverId);
             if (readmeSummary == null) {
                 log.warn("Failed to generate summary for serverId → {}", serverId);
                 return;
             }
 
-            if (readmeSummary.summary() == null || readmeSummary.summary().isEmpty()) {
-                log.warn("Empty summary generated for serverId → {}", serverId);
+            log.info("Generated summary for serverId: {} → Summary: '{}'", serverId, readmeSummary);
+
+            List<String> generatedTags = fetchTagService.fetchTags(serverName);
+            if (generatedTags == null || generatedTags.isEmpty()) {
+                log.warn("Failed to generate tags for serverId → {}", serverId);
                 return;
             }
 
-            log.info("Generated summary for serverId: {} → Summary: '{}', Tags: {}",
-                    serverId, readmeSummary.summary(), readmeSummary.tags());
-
-            // data save
-
+            dataStoreService.updateSummary(serverId, readmeSummary, generatedTags);
+            for (String generatedTag : generatedTags) {
+                dataStoreService.saveMcpTag(generatedTag);
+            }
             log.info("Successfully processed for {}", serverId);
         } catch (Exception e) {
             log.error("Error processing Gemini item {} → {}", pendingItemId, e.getMessage(), e);

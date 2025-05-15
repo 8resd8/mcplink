@@ -24,6 +24,7 @@ public class GeminiPendingQueue extends BaseTimeMongoEntity {
 
     @Indexed(unique = true)
     private String serverId;
+    private String serverName;
     private String prepReadme;
 
     @Indexed
