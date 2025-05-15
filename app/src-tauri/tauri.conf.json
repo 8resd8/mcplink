@@ -14,12 +14,12 @@
     "windows": [
       {
         "title": "fe",
-        "width": 900,
-        "height": 600,
+        "width": 750,
+        "height": 550,
         "decorations": false,
         "transparent": false,
-        "minWidth": 700,
-        "minHeight": 500
+        "minWidth": 750,
+        "minHeight": 550
       }
     ],
     "security": {

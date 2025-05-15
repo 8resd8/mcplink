@@ -1,26 +1,26 @@
 <script lang="ts">
-  import { Star, Github, Info } from "lucide-svelte"
+  import { Star, Github } from "lucide-svelte"
   import { invoke } from "@tauri-apps/api/core"
   import { goto } from "$app/navigation"
   import { createEventDispatcher } from "svelte"
 
-  // 이벤트 디스패처 생성
+  // Create event dispatcher
   const dispatch = createEventDispatcher()
 
-  // 카드 컴포넌트에 필요한 props 정의
+  // Define props needed for the card component
   export let id: number
   export let title: string
   export let description: string
   export let url: string = "" // GitHub URL
-  export let stars: number = 0 // GitHub Stars 수
+  export let stars: number = 0 // GitHub Stars count
   export let installed = false // Prop to indicate if the MCP server is installed
-  export let onClick: (() => void) | undefined = undefined // 클릭 핸들러(선택적)
-  export let className: string = "" // 추가 CSS 클래스(선택적)
-  export let variant: "default" | "primary" | "accent" = "default" // 카드 스타일 변형
-  export let maxDescLength: number = 150 // 설명 최대 길이
+  export let onClick: (() => void) | undefined = undefined // Click handler (optional)
+  export let className: string = "" // Additional CSS class (optional)
+  export let variant: "default" | "primary" | "accent" = "default" // Card style variant
+  export let maxDescLength: number = 150 // Maximum description length
   export let mode = "" // 'installed' or other. Indicates current page context.
 
-  // 스타 수 포맷팅 (1000 이상이면 K로 표시)
+  // Format star count (display K if 1000 or more)
   function formatStars(count: number): string {
     if (count >= 1000) {
       return `${Math.round(count / 100) / 10}k`
@@ -28,35 +28,35 @@
     return count.toString()
   }
 
-  // 설명 텍스트 줄이기
+  // Truncate description text
   function truncateDescription(text: string, maxLength: number): string {
     if (text.length <= maxLength) return text
     return text.substring(0, maxLength) + "..."
   }
 
-  // 최종 표시할 설명
+  // Final description to display
   const displayDescription = truncateDescription(description, maxDescLength)
 
-  // GitHub 링크 열기 함수
+  // Function to open GitHub link
   async function openGitHub(urlToOpen: string) {
-    console.log("GitHub 링크 열기 시도:", urlToOpen)
+    console.log("Attempting to open GitHub link:", urlToOpen)
     if (!urlToOpen) return
 
-    // 프로토콜이 없는 경우 https:// 추가
+    // Add https:// if protocol is missing
     const finalUrl = urlToOpen.startsWith("http") ? urlToOpen : `https://${urlToOpen}`
-    console.log("최종 URL:", finalUrl)
+    console.log("Final URL:", finalUrl)
 
     try {
-      // 브라우저의 기본 window.open 메서드 사용
+      // Use browser's default window.open method
       window.open(finalUrl, "_blank")
     } catch (error) {
-      console.error("링크 열기 실패:", error)
-      // 실패 시 사용자에게 알림
-      alert(`링크를 열 수 없습니다. 수동으로 접속해 주세요: ${finalUrl}`)
+      console.error("Failed to open link:", error)
+      // Notify user on failure
+      alert(`Could not open the link. Please navigate manually: ${finalUrl}`)
     }
   }
 
-  // 상세 페이지로 이동하는 함수
+  // Function to navigate to detail page
   function goToDetail() {
     const params = new URLSearchParams({
       id: id.toString(),
@@ -65,10 +65,10 @@
       url: url || "",
       stars: stars.toString(),
       mode: mode === "installed" ? "edit" : "install",
-      referrer: window.location.pathname, // 현재 경로를 referrer로 저장
+      referrer: window.location.pathname, // Save current path as referrer
     })
 
-    console.log(`[mcp-card] 상세 페이지로 이동: ${window.location.pathname} → /detail`)
+    console.log(`[mcp-card] Navigating to detail page: ${window.location.pathname} → /detail`)
     window.location.href = `/detail?${params.toString()}`
   }
 
@@ -81,29 +81,29 @@
   async function handleComplete() {
     let errorMessage = ""
     try {
-      console.log(`[mcp-card] 삭제 시도: 서버 이름 '${title}', ID: ${id}`)
+      console.log(`[mcp-card] Attempting to delete: Server name '${title}', ID: ${id}`)
 
-      // 1. 백엔드에서 설정 제거
+      // 1. Remove config from backend
       await invoke("remove_mcp_server_config", {
         serverName: title,
       })
 
-      // 2. 삭제 성공 이벤트 발생 (GUI 업데이트 요청)
+      // 2. Dispatch 'deleted' event (request GUI update)
       console.log(`[mcp-card] Dispatching 'deleted' event for ID: ${id}`)
       dispatch("deleted", { id: id })
 
-      // 3. Claude Desktop 재시작 (이벤트 발생 후)
+      // 3. Restart Claude Desktop (after event dispatch)
       await invoke("restart_claude_desktop")
     } catch (err: any) {
-      // err 타입을 any 또는 Error로 명시
+      // Specify err type as any or Error
       errorMessage = `error occurred: ${err.message || err}`
       console.error(`[mcp-card] Error during removal or restart: ${errorMessage}`)
-      alert(`오류가 발생했습니다: ${errorMessage}`)
+      alert(`An error occurred: ${errorMessage}`)
     }
   }
 </script>
 
-<!-- 재사용 가능한 MCP 카드 컴포넌트 -->
+<!-- Reusable MCP card component -->
 {#if onClick}
   <button
     class="card card-border w-full shadow-sm {variant === 'default'
@@ -117,20 +117,20 @@
       <div class="flex justify-between items-start">
         <h2 class="card-title text-lg">{title}</h2>
         <div class="flex items-center gap-1 flex-shrink-0">
-          <!-- 스타 아이콘과 개수 -->
+          <!-- Star icon and count -->
           {#if stars > 0}
             <Star class="text-yellow-400" size={18} />
             <span>{formatStars(stars)}</span>
           {/if}
 
-          <!-- GitHub 링크 -->
+          <!-- GitHub link -->
           {#if url}
-            <!-- URL이 있는 경우: 클릭 가능한 링크 -->
+            <!-- If URL exists: clickable link -->
             <span on:click|stopPropagation={() => openGitHub(url)} class="ml-2 text-gray-600 hover:text-black focus:outline-none cursor-pointer">
               <Github size={18} />
             </span>
           {:else}
-            <!-- URL이 없는 경우: 비활성화된 상태로 표시 -->
+            <!-- If URL does not exist: display as disabled -->
             <span class="ml-2 text-gray-400 opacity-40">
               <Github size={18} />
             </span>
@@ -141,7 +141,7 @@
         <p class="text-sm overflow-hidden line-clamp-2 max-w-[85%]">{displayDescription}</p>
       </div>
       <div class="card-actions justify-end mt-1">
-        <span on:click|stopPropagation={goToDetail} class="btn btn-sm btn-primary cursor-pointer">상세보기</span>
+        <span on:click|stopPropagation={goToDetail} class="btn btn-sm btn-primary cursor-pointer">Details</span>
       </div>
     </div>
   </button>
@@ -151,20 +151,20 @@
       <div class="flex justify-between items-start">
         <h2 class="card-title text-lg">{title}</h2>
         <div class="flex items-center gap-1 flex-shrink-0">
-          <!-- 스타 아이콘과 개수 -->
+          <!-- Star icon and count -->
           {#if stars > 0}
             <Star class="text-yellow-400" size={18} />
             <span>{formatStars(stars)}</span>
           {/if}
 
-          <!-- GitHub 링크 -->
+          <!-- GitHub link -->
           {#if url}
-            <!-- URL이 있는 경우: 클릭 가능한 링크 -->
+            <!-- If URL exists: clickable link -->
             <button on:click={() => openGitHub(url)} class="ml-2 text-gray-600 hover:text-black focus:outline-none">
               <Github size={18} />
             </button>
           {:else}
-            <!-- URL이 없는 경우: 비활성화된 상태로 표시 -->
+            <!-- If URL does not exist: display as disabled -->
             <span class="ml-2 text-gray-400 opacity-40">
               <Github size={18} />
             </span>
@@ -176,12 +176,12 @@
       </div>
       <div class="card-actions justify-end mt-1">
         {#if mode === "installed"}
-          <button on:click={goToDetail} class="btn btn-sm btn-primary">수정</button>
-          <button on:click={handleComplete} class="btn btn-sm btn-primary">삭제</button>
+          <button on:click={goToDetail} class="btn btn-sm btn-primary">Edit</button>
+          <button on:click={handleComplete} class="btn btn-sm btn-primary">Delete</button>
         {:else if installed}
-          <button on:click={goToDetail} class="btn btn-sm btn-primary">설치됨</button>
+          <button on:click={goToDetail} class="btn btn-sm btn-primary">Installed</button>
         {:else}
-          <button on:click={goToDetail} class="btn btn-sm btn-primary">설치</button>
+          <button on:click={goToDetail} class="btn btn-sm btn-primary">Install</button>
         {/if}
       </div>
     </div>
