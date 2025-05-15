@@ -25,7 +25,7 @@
 
     try {
       await invoke("add_mcp_server_config", {
-        serverId: -1,2
+        serverId: -1,
         serverName: serverNameForEntry,
         serverConfig: configData,
       })
