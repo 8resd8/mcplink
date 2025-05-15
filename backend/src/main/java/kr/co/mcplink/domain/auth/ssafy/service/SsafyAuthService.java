@@ -86,6 +86,7 @@ public class SsafyAuthService {
 				SsafyTokenDto.class);
 			return response.getBody();
 		} catch (Exception e) {
+			log.error("SSAFY Access Token을 발급받는데 실패했습니다.");
 			throw new JwtForbiddenException("SSAFY Access Token을 발급받는데 실패했습니다.");
 		}
 		// return response.getBody();
