@@ -44,6 +44,6 @@ public class SsafyAuthController {
 			.build();
 
 		httpServletResponse.addHeader(HttpHeaders.SET_COOKIE, accessTokenCookie.toString());
-		httpServletResponse.sendRedirect("mcplink.co.kr");
+		httpServletResponse.sendRedirect("https://mcplink.co.kr");
 	}
 }
