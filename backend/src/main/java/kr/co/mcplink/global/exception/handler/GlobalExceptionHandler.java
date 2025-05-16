@@ -7,6 +7,7 @@ import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -74,5 +75,13 @@ public class GlobalExceptionHandler {
 		HttpServletRequest request) {
 		return ErrorResponse.toResponseEntity(HttpStatus.NOT_FOUND, "유저를 찾을 수 없습니다.", request.getRequestURI());
 	}
+
+	@ExceptionHandler
+	public ResponseEntity<ErrorResponse> handleHttpClientException(HttpClientErrorException ex,
+		HttpServletRequest request) {
+		return ErrorResponse.toResponseEntity(HttpStatus.UNAUTHORIZED, "SSAFY 통신 에러", request.getRequestURI());
+	}
+
+	
 
 }

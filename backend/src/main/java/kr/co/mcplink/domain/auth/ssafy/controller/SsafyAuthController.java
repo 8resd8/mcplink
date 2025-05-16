@@ -38,8 +38,9 @@ public class SsafyAuthController {
 		ResponseCookie accessTokenCookie = ResponseCookie.from("accessToken", response.accessToken())
 			.maxAge(TimeUnit.MILLISECONDS.toSeconds(response.accessExpiredAt()))
 			.path("/")
-			.secure(true)
+			// .secure(true)
 			.httpOnly(true)
+
 			.sameSite(Cookie.SameSite.STRICT.name())
 			.build();
 
