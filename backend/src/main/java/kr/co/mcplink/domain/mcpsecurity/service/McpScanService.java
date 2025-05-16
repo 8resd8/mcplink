@@ -21,7 +21,7 @@ public class McpScanService {
 	@Scheduled(cron = "0 0 * * * *")
 	public void triggerScan() {
 		List<McpScanResultDto> result = analysisService.scanSpecificServer();
-		
+
 		for (McpScanResultDto scanResult : result) {
 			if (!scanResult.scanSuccess()) {
 				log.error("파싱 패스, 실패 원인 (JSON): {}", scanResult.osvOutputJson());
@@ -34,7 +34,7 @@ public class McpScanService {
 			if (jsonStart != -1) {
 				output = output.substring(jsonStart);
 			}
-	
+
 			parsingService.processOsvResult(output, scanResult.mcpServerId());
 		}
 		

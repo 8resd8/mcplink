@@ -32,7 +32,8 @@
     },
     "fs": {},
     "os": {},
-    "notification": null
+    "notification": null,
+    "single-instance": null
   },
   "bundle": {
     "active": true,

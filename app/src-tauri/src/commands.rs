@@ -5,6 +5,7 @@ use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Map, Value};
 use std::collections::HashMap;
+use std::os::windows::process::CommandExt;
 use std::{env, fs, path::PathBuf, process::Command as StdCommand}; // env added for accessing environment variables at runtime
 use tauri::{AppHandle, Manager, State, Emitter};
 use tauri_plugin_notification::NotificationExt;
@@ -597,6 +598,7 @@ pub async fn restart_claude_desktop(_app: AppHandle) -> Result<(), String> {
             "/FI",
             "IMAGENAME eq claude.exe",
         ])
+        .creation_flags(0x08000000) // CREATE_NO_WINDOW 플래그 추가
         .status()
         .map_err(|e| format!("Failed to execute taskkill: {}", e))?;
     match kill_status.code() {
@@ -612,6 +614,7 @@ pub async fn restart_claude_desktop(_app: AppHandle) -> Result<(), String> {
     // 3) Confirm termination
     let check = StdCommand::new("tasklist")
         .args(["/FI", "IMAGENAME eq claude.exe", "/NH"]) // /NH for no header
+        .creation_flags(0x08000000) // Add CREATE_NO_WINDOW flag
         .output()
         .map_err(|e| format!("Failed to execute tasklist: {}", e))?;
     let _running = String::from_utf8_lossy(&check.stdout); // _running to avoid warning
@@ -647,6 +650,7 @@ pub async fn restart_claude_desktop(_app: AppHandle) -> Result<(), String> {
             "--disable-gpu-shader-disk-cache",
             "--disable-gpu",
         ])
+        .creation_flags(0x08000000) // CREATE_NO_WINDOW 플래그 추가
         .spawn()
         .map_err(|e| format!("Failed to start Claude Desktop: {}", e))?;
 
@@ -971,6 +975,7 @@ pub async fn show_popup(app: AppHandle, tag: String) -> Result<(), String> {
     }
 
     // Create notification body with the tag information
+
     let notification_body = format!("Selected keyword: {}. Click to confirm.", tag);
 
     // Create and display notification

@@ -1,6 +1,5 @@
 package kr.co.mcplink.domain.auth.ssafy.service;
 
-import java.nio.charset.StandardCharsets;
 import java.util.Optional;
 
 import org.springframework.http.HttpEntity;
@@ -12,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
@@ -72,9 +72,7 @@ public class SsafyAuthService {
 
 	private SsafyTokenDto requestAccessToken(String code) {
 		HttpHeaders headers = new HttpHeaders();
-
-		MediaType mediaType = new MediaType("application", "x-www-form-urlencoded", StandardCharsets.UTF_8);
-		headers.setContentType(mediaType);
+		headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
 
 		MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
 		params.add("grant_type", "authorization_code");
@@ -85,14 +83,12 @@ public class SsafyAuthService {
 
 		HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(params, headers);
 		try {
-			ResponseEntity<SsafyTokenDto> response = restTemplate.postForEntity(ssafyProperties.tokenUri(), request,
-				SsafyTokenDto.class);
+			ResponseEntity<SsafyTokenDto> response = restTemplate.postForEntity(
+				ssafyProperties.tokenUri(), request, SsafyTokenDto.class);
 			return response.getBody();
-		} catch (Exception e) {
-			log.error("SSAFY Access Token을 발급받는데 실패했습니다.");
-			throw new IllegalStateException("SSAFY Access Token을 발급받는데 실패했습니다.");
+		} catch (HttpClientErrorException e) {
+			throw new HttpClientErrorException(e.getStatusCode(), "SSAFY 서버와 통신 중 오류가 발생하여 Access Token을 발급받지 못했습니다.");
 		}
-		// return response.getBody();
 	}
 
 	private SsafyUserInfoDto requestUserInfo(String accessToken) {
