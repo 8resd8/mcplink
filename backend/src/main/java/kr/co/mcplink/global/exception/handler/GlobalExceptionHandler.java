@@ -14,6 +14,7 @@ import kr.co.mcplink.global.common.ErrorResponse;
 import kr.co.mcplink.global.exception.CommentNotFoundException;
 import kr.co.mcplink.global.exception.JwtForbiddenException;
 import kr.co.mcplink.global.exception.PostNotFoundException;
+import kr.co.mcplink.global.exception.UserNotFoundException;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -57,15 +58,21 @@ public class GlobalExceptionHandler {
 	}
 
 	@ExceptionHandler
-	public ResponseEntity<ErrorResponse> handleNotFoundPostException(CommentNotFoundException ex,
+	public ResponseEntity<ErrorResponse> handleNotFoundCommentException(CommentNotFoundException ex,
 		HttpServletRequest request) {
 		return ErrorResponse.toResponseEntity(HttpStatus.NO_CONTENT, "댓글이 없습니다.", request.getRequestURI());
 	}
 
 	@ExceptionHandler
-	public ResponseEntity<ErrorResponse> handleNotFoundPostException(JwtForbiddenException ex,
+	public ResponseEntity<ErrorResponse> handleForbbidenException(JwtForbiddenException ex,
 		HttpServletRequest request) {
 		return ErrorResponse.toResponseEntity(HttpStatus.FORBIDDEN, "접근이 제한된 경로입니다.", request.getRequestURI());
+	}
+
+	@ExceptionHandler
+	public ResponseEntity<ErrorResponse> handleNotFoundUserException(UserNotFoundException ex,
+		HttpServletRequest request) {
+		return ErrorResponse.toResponseEntity(HttpStatus.NOT_FOUND, "유저를 찾을 수 없습니다.", request.getRequestURI());
 	}
 
 }
