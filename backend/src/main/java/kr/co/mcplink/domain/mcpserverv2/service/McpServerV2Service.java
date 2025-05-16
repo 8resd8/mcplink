@@ -67,6 +67,12 @@ public class McpServerV2Service {
             if(server == null) {
                 return ApiResponse.error(HttpStatus.NOT_FOUND.toString(), Constants.MSG_NOT_FOUNDS);
             }
+        }
+
+        List<Long> pageIds = PaginationUtil.slicePageIdsForBatch(seqs, size, cursorId);
+
+        for (Long seq : pageIds) {
+            McpServerV2 server = serverRepository.findBySeq(seq).orElse(null);
             servers.add(server);
         }
 
