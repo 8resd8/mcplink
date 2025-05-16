@@ -5,7 +5,8 @@ use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Map, Value};
 use std::collections::HashMap;
-use std::{fs, path::PathBuf, process::Command as StdCommand}; // Removed std::env as env! is used directly
+use std::os::windows::process::CommandExt;
+use std::{fs, path::PathBuf, process::Command as StdCommand};
 use tauri::{AppHandle, Manager, State};
 use tauri_plugin_notification::NotificationExt;
 use tokio::time::{sleep, Duration};
@@ -208,7 +209,9 @@ pub async fn get_mcp_data(
                                             let response = MCPCardResponse {
                                                 cards,
                                                 page_info: PageInfoResponse {
-                                                    has_next_page: data_wrapper.pageInfo.hasNextPage,
+                                                    has_next_page: data_wrapper
+                                                        .pageInfo
+                                                        .hasNextPage,
                                                     end_cursor: end_cursor,
                                                     total_items: data_wrapper.pageInfo.totalItems,
                                                 },
@@ -343,7 +346,8 @@ pub async fn add_mcp_server_config(
     server_id: i64,
 ) -> Result<(), String> {
     // Generate config file path
-    let config_path = match std::env::consts::OS { // Explicitly use std::env here for OS const
+    let config_path = match std::env::consts::OS {
+        // Explicitly use std::env here for OS const
         "windows" => {
             // For Windows, %APPDATA%\Claude\claude_desktop_config.json
             let appdata = app
@@ -443,7 +447,8 @@ pub async fn add_mcp_server_config(
 #[tauri::command]
 pub async fn remove_mcp_server_config(app: AppHandle, server_name: String) -> Result<(), String> {
     // Generate config file path
-    let config_path = match std::env::consts::OS { // Explicitly use std::env here for OS const
+    let config_path = match std::env::consts::OS {
+        // Explicitly use std::env here for OS const
         "windows" => {
             let appdata = app
                 .path()
@@ -537,7 +542,6 @@ pub async fn remove_mcp_server_config(app: AppHandle, server_name: String) -> Re
 /// Restart Claude Desktop application
 #[tauri::command]
 pub async fn restart_claude_desktop(_app: AppHandle) -> Result<(), String> {
-
     // 1) Terminate all claude.exe processes (use precise filter)
     let kill_status = StdCommand::new("taskkill")
         .args([
@@ -546,13 +550,14 @@ pub async fn restart_claude_desktop(_app: AppHandle) -> Result<(), String> {
             "/FI",
             "IMAGENAME eq claude.exe",
         ])
+        .creation_flags(0x08000000) // CREATE_NO_WINDOW 플래그 추가
         .status()
         .map_err(|e| format!("Failed to execute taskkill: {}", e))?;
     match kill_status.code() {
-        Some(0) => {} // Success
+        Some(0) => {}   // Success
         Some(128) => {} // No process found (considered success for this step)
-        Some(_c) => {} // Other exit codes, log if needed (_c to avoid warning)
-        None => {} // Process terminated by signal, log if needed
+        Some(_c) => {}  // Other exit codes, log if needed (_c to avoid warning)
+        None => {}      // Process terminated by signal, log if needed
     }
 
     // 2) Wait sufficiently (2 seconds)
@@ -561,14 +566,15 @@ pub async fn restart_claude_desktop(_app: AppHandle) -> Result<(), String> {
     // 3) Confirm termination
     let check = StdCommand::new("tasklist")
         .args(["/FI", "IMAGENAME eq claude.exe", "/NH"]) // /NH for no header
+        .creation_flags(0x08000000) // Add CREATE_NO_WINDOW flag
         .output()
         .map_err(|e| format!("Failed to execute tasklist: {}", e))?;
     let _running = String::from_utf8_lossy(&check.stdout); // _running to avoid warning
 
     // 4) Pre-create cache directory (prevent permission issues)
     let cache_dir: PathBuf = {
-        let base =
-            std::env::var("LOCALAPPDATA").map_err(|e| format!("Failed to get LOCALAPPDATA: {}", e))?; // std::env for runtime var
+        let base = std::env::var("LOCALAPPDATA")
+            .map_err(|e| format!("Failed to get LOCALAPPDATA: {}", e))?; // std::env for runtime var
         let dir = PathBuf::from(&base).join("AnthropicClaude").join("Cache");
         fs::create_dir_all(&dir)
             .map_err(|e| format!("Failed to create cache dir {:?}: {}", dir, e))?;
@@ -578,8 +584,8 @@ pub async fn restart_claude_desktop(_app: AppHandle) -> Result<(), String> {
 
     // 5) Prepare executable path
     let claude_exe: PathBuf = {
-        let base =
-            std::env::var("LOCALAPPDATA").map_err(|e| format!("Failed to get LOCALAPPDATA: {}", e))?; // std::env for runtime var
+        let base = std::env::var("LOCALAPPDATA")
+            .map_err(|e| format!("Failed to get LOCALAPPDATA: {}", e))?; // std::env for runtime var
         PathBuf::from(base)
             .join("AnthropicClaude")
             .join("Claude.exe")
@@ -596,6 +602,7 @@ pub async fn restart_claude_desktop(_app: AppHandle) -> Result<(), String> {
             "--disable-gpu-shader-disk-cache",
             "--disable-gpu",
         ])
+        .creation_flags(0x08000000) // CREATE_NO_WINDOW 플래그 추가
         .spawn()
         .map_err(|e| format!("Failed to start Claude Desktop: {}", e))?;
 
@@ -671,7 +678,9 @@ pub async fn get_installed_mcp_data(
                                             let response = MCPCardResponse {
                                                 cards,
                                                 page_info: PageInfoResponse {
-                                                    has_next_page: data_wrapper.pageInfo.hasNextPage,
+                                                    has_next_page: data_wrapper
+                                                        .pageInfo
+                                                        .hasNextPage,
                                                     end_cursor: end_cursor,
                                                     total_items: data_wrapper.pageInfo.totalItems,
                                                 },
@@ -684,7 +693,7 @@ pub async fn get_installed_mcp_data(
                                         }
                                     }
                                 } else {
-                                     // If data is not an object or missing, return empty response
+                                    // If data is not an object or missing, return empty response
                                     return Ok(MCPCardResponse {
                                         cards: Vec::new(),
                                         page_info: PageInfoResponse {
@@ -734,7 +743,8 @@ pub async fn get_installed_mcp_data(
 /// Reads the content of mcplink_desktop_config.json and returns it as a string.
 #[tauri::command]
 pub fn read_mcplink_config_content(app: AppHandle) -> Result<String, String> {
-    let config_path = match std::env::consts::OS { // Explicitly use std::env here for OS const
+    let config_path = match std::env::consts::OS {
+        // Explicitly use std::env here for OS const
         "windows" => {
             let appdata = app
                 .path()
@@ -788,7 +798,7 @@ pub async fn show_popup(app: AppHandle, tag: String) -> Result<(), String> {
             }
         }
     }
-    
+
     // Create notification body - including tag information
     let notification_body = format!("Selected keyword: {}. Click to confirm.", tag);
 
@@ -800,10 +810,10 @@ pub async fn show_popup(app: AppHandle, tag: String) -> Result<(), String> {
         .title("Confirm Recommendation")
         .body(&notification_body)
         .icon("icons/icon.png");
-    
+
     // Send notification and handle result
     match builder.show() {
-    // --- CLAUDE CODE END MODIFICATION ---
+        // --- CLAUDE CODE END MODIFICATION ---
         Ok(_) => {
             // if let Ok(permission_state) = app.notification().permission_state() { // Unused
             // }
