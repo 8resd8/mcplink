@@ -15,6 +15,7 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import kr.co.mcplink.domain.user.entity.User;
 import kr.co.mcplink.domain.user.repository.UserRepository;
@@ -53,7 +54,11 @@ public class JwtAuthenticationFilter implements Filter {
 			return;
 		}
 
-		String jwt = extractJwtFromRequest(httpRequest);
+		// Bearer 검사
+		// String jwt = extractJwtFromAuthorization(httpRequest);
+
+		// Cookie 검사
+		String jwt = extractJwtFromCookie(httpRequest);
 		User authenticatedUser = null;
 
 		if (StringUtils.hasText(jwt) && jwtUtil.validateToken(jwt)) {
@@ -67,18 +72,36 @@ public class JwtAuthenticationFilter implements Filter {
 		}
 
 		// 보안 경로 검사
-		if (isSecurePathRequested(pathToCheck, httpMethod, jwtProperties.securePath()) && authenticatedUser == null) {
-			throw new JwtForbiddenException("로그인이 필요한 서비스입니다.");
-		}
+		boolean pathIsSecure = isPathMatch(pathToCheck, jwtProperties.securePath());
 
+		if (pathIsSecure) {
+			if (authenticatedUser == null) {
+				log.warn("접근 거부 (인증 필요): {}", pathToCheck);
+				throw new JwtForbiddenException("로그인이 필요한 서비스입니다.");
+			}
+		}
 		chain.doFilter(request, response);
 	}
 
-	private String extractJwtFromRequest(HttpServletRequest request) {
+	private String extractJwtFromAuthorization(HttpServletRequest request) {
 		String bearerToken = request.getHeader(HttpHeaders.AUTHORIZATION);
 		if (StringUtils.hasText(bearerToken) && bearerToken.startsWith("Bearer ")) {
 			return bearerToken.substring(7);
 		}
+		return null;
+	}
+
+	private String extractJwtFromCookie(HttpServletRequest request) {
+		Cookie[] cookies = request.getCookies();
+
+		if (cookies != null) {
+			for (Cookie cookie : cookies) {
+				if ("accessToken".equals(cookie.getName())) {
+					return cookie.getValue();
+				}
+			}
+		}
+
 		return null;
 	}
 
