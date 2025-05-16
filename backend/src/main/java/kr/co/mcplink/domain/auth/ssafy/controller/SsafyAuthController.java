@@ -1,9 +1,11 @@
 package kr.co.mcplink.domain.auth.ssafy.controller;
 
 import java.io.IOException;
+import java.util.concurrent.TimeUnit;
 
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import org.springframework.boot.web.server.Cookie;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseCookie;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -12,7 +14,6 @@ import org.springframework.web.bind.annotation.RestController;
 import jakarta.servlet.http.HttpServletResponse;
 import kr.co.mcplink.domain.auth.ssafy.dto.LoginResponse;
 import kr.co.mcplink.domain.auth.ssafy.service.SsafyAuthService;
-import kr.co.mcplink.global.common.ApiResponse;
 import lombok.RequiredArgsConstructor;
 
 @RestController
@@ -30,11 +31,19 @@ public class SsafyAuthController {
 	}
 
 	@GetMapping("/callback")
-	public ResponseEntity<ApiResponse<LoginResponse>> handleSsafyCallback(@RequestParam("code") String code) {
+	public void handleSsafyCallback(@RequestParam("code") String code,
+		HttpServletResponse httpServletResponse) throws IOException {
 		LoginResponse response = ssafyAuthService.processSsafyLogin(code);
 
-		return ResponseEntity.
-			status(HttpStatus.OK)
-			.body(ApiResponse.success(HttpStatus.OK.toString(), "SSAFY 로그인 성공", response));
+		ResponseCookie accessTokenCookie = ResponseCookie.from("accessToken", response.accessToken())
+			.maxAge(TimeUnit.MILLISECONDS.toSeconds(response.accessExpiredAt()))
+			.path("/")
+			.secure(true)
+			.httpOnly(true)
+			.sameSite(Cookie.SameSite.STRICT.name())
+			.build();
+
+		httpServletResponse.addHeader(HttpHeaders.SET_COOKIE, accessTokenCookie.toString());
+		httpServletResponse.sendRedirect("mcplink.co.kr");
 	}
 }
