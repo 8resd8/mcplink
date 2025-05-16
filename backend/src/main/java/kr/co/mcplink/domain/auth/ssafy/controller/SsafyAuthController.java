@@ -40,12 +40,11 @@ public class SsafyAuthController {
 			.path("/")
 			// .secure(true)
 			.httpOnly(true)
-
-			.sameSite(Cookie.SameSite.STRICT.name())
+			.sameSite("LAX")
 			.build();
 
 		httpServletResponse.addHeader(HttpHeaders.SET_COOKIE, accessTokenCookie.toString());
 		// httpServletResponse.sendRedirect("https://mcplink.co.kr");
-		httpServletResponse.sendRedirect("http://localhost:5500");
+		httpServletResponse.sendRedirect("http://localhost:5500?at=" + response.accessToken());
 	}
 }
