@@ -4,8 +4,8 @@ import java.util.Date;
 
 import javax.crypto.SecretKey;
 
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
@@ -15,6 +15,7 @@ import io.jsonwebtoken.UnsupportedJwtException;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import io.jsonwebtoken.security.SignatureException;
+import jakarta.servlet.http.HttpServletRequest;
 import kr.co.mcplink.domain.user.entity.User;
 import kr.co.mcplink.global.config.JwtProperties;
 import lombok.RequiredArgsConstructor;
@@ -56,6 +57,14 @@ public class JwtUtil {
 
 	public Long getUserIdFromToken(String token) {
 		return getClaims(token).get("userId", Long.class);
+	}
+
+	public String getResolveAccessToken(HttpServletRequest request) {
+		String bearerToken = request.getHeader("Authorization");
+		if (StringUtils.hasText(bearerToken) && bearerToken.startsWith("Bearer ")) {
+			return bearerToken.substring(7);
+		}
+		return null;
 	}
 
 	public boolean validateToken(String token) {

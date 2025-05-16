@@ -21,7 +21,8 @@ import kr.co.mcplink.domain.post.dto.PostDto;
 import kr.co.mcplink.domain.post.dto.request.CreatePostRequest;
 import kr.co.mcplink.domain.post.dto.request.UpdatePostRequest;
 import kr.co.mcplink.domain.post.service.PostService;
-import kr.co.mcplink.domain.user.repository.UserRepository;
+import kr.co.mcplink.domain.user.entity.User;
+import kr.co.mcplink.global.annotation.Login;
 import kr.co.mcplink.global.common.ApiResponse;
 import lombok.RequiredArgsConstructor;
 
@@ -31,12 +32,12 @@ import lombok.RequiredArgsConstructor;
 public class PostController {
 
 	private final PostService postService;
-	private final UserRepository userRepository;
 
 	// 현재 유저는 하드코딩
 	@PostMapping
-	public ResponseEntity<ApiResponse<Void>> createPost(@Valid @RequestBody CreatePostRequest request) {
-		postService.createPost(request, userRepository.findById(1L).get());
+	public ResponseEntity<ApiResponse<Void>> createPost(@Login User user,
+		@Valid @RequestBody CreatePostRequest request) {
+		postService.createPost(request, user);
 
 		return ResponseEntity
 			.status(HttpStatus.CREATED)
@@ -62,9 +63,9 @@ public class PostController {
 	}
 
 	@PutMapping("/{postId}")
-	public ResponseEntity<ApiResponse<PostDto>> updatePost(@PathVariable("postId") Long postId,
+	public ResponseEntity<ApiResponse<PostDto>> updatePost(@Login User user, @PathVariable("postId") Long postId,
 		@Valid @RequestBody UpdatePostRequest request) {
-		PostDto updatedPostDto = postService.updatePost(postId, request, userRepository.findById(1L).get());
+		PostDto updatedPostDto = postService.updatePost(postId, request, user);
 
 		return ResponseEntity
 			.status(HttpStatus.OK)
@@ -72,8 +73,8 @@ public class PostController {
 	}
 
 	@DeleteMapping("/{postId}")
-	public ResponseEntity<ApiResponse<Void>> deletePost(@PathVariable("postId") Long postId) {
-		postService.deletePost(postId, userRepository.findById(1L).get());
+	public ResponseEntity<ApiResponse<Void>> deletePost(@Login User user, @PathVariable("postId") Long postId) {
+		postService.deletePost(postId, user);
 
 		return ResponseEntity
 			.status(HttpStatus.NO_CONTENT)
