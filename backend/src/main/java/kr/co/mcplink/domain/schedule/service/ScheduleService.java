@@ -1,5 +1,6 @@
 package kr.co.mcplink.domain.schedule.service;
 
+import kr.co.mcplink.domain.mcpserverv2.repository.McpServerV2Repository;
 import kr.co.mcplink.domain.schedule.repository.GeminiPendingQueueRepository;
 import kr.co.mcplink.domain.schedule.repository.GithubPendingQueueRepository;
 import lombok.RequiredArgsConstructor;
@@ -9,6 +10,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 
 @Service
 @Slf4j
@@ -16,6 +18,7 @@ import java.time.format.DateTimeFormatter;
 public class ScheduleService {
 
     private final DataPrepService dataPrepService;
+    private final McpServerV2Repository mcpServerV2Repository;
     private final GithubPendingQueueRepository githubRepository;
     private final GeminiPendingQueueRepository geminiRepository;
 
@@ -91,6 +94,11 @@ public class ScheduleService {
                     long waitTime = (oldestExecution + 60000) - currentTime;
                     if (waitTime > 0) {
                         try {
+                            String sleepTimeStr = LocalDateTime.now(ZoneId.of("Asia/Seoul"))
+                                    .format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+                            log.info("⏰⏰⏰⏰⏰⏰⏰⏰⏰⏰⏰⏰ {} || Gemini sleep - batch: {} ⏰⏰⏰⏰⏰⏰⏰⏰⏰⏰⏰⏰",
+                                    sleepTimeStr, geminiBatchCount);
+
                             Thread.sleep(waitTime);
                         } catch (InterruptedException e) {
                             Thread.currentThread().interrupt();
@@ -99,7 +107,7 @@ public class ScheduleService {
                     }
                 }
 
-                dataPrepService.prepGemini();
+                dataPrepService.prepGemini(null);
                 geminiBatchCount++;
 
                 executionTimes[timeIndex] = System.currentTimeMillis();
@@ -111,6 +119,86 @@ public class ScheduleService {
                     log.info("✅✅✅✅✅✅✅✅✅✅✅✅ {} || Gemini batch: {}, pending: {} ✅✅✅✅✅✅✅✅✅✅✅✅",
                             currentTimeStr, geminiBatchCount, pendingGeminiTasksCount);
                 }
+            }
+
+            String finishTime = LocalDateTime.now(ZoneId.of("Asia/Seoul"))
+                    .format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+            log.info("☑️☑️☑️☑️☑️☑️☑️☑️☑️☑️☑️☑️ {} || Gemini total: {} ☑️☑️☑️☑️☑️☑️☑️☑️☑️☑️☑️☑️",
+                    finishTime, geminiBatchCount);
+        } catch (Exception e) {
+            String errorTime = LocalDateTime.now(ZoneId.of("Asia/Seoul"))
+                    .format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+            log.error("❌❌❌❌❌❌❌❌❌❌❌❌ {} || Gemini ERROR: {} ❌❌❌❌❌❌❌❌❌❌❌❌",
+                    errorTime, e.getMessage(), e);
+        }
+    }
+
+    public void updateData() {
+
+        int geminiBatchCount = 0;
+
+        List<String> updateIds = mcpServerV2Repository.findIdsByDetailDescriptionContaining("We apologize for the inconvenience");
+        String updateTime = LocalDateTime.now(ZoneId.of("Asia/Seoul"))
+                .format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+
+        if (!updateIds.isEmpty()) {
+            log.info("⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐ {} || Update List: {} ⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐",
+                    updateTime, updateIds);
+        } else {
+            log.info("⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐ {} || No List !! ⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐⭐",
+                    updateTime);
+        }
+
+        try {
+            long[] executionTimes = new long[5];
+            int timeIndex = 0;
+            int executionsInLastMinute = 0;
+
+            gemini:
+            for (String updateId : updateIds) {
+                long currentTime = System.currentTimeMillis();
+                executionsInLastMinute = 0;
+
+                for (int t = 0; t < 5; t++) {
+                    if (executionTimes[t] > 0 && currentTime - executionTimes[t] < 60000) {
+                        executionsInLastMinute++;
+                    }
+                }
+
+                if (executionsInLastMinute >= 5) {
+                    long oldestExecution = Long.MAX_VALUE;
+                    for (int t = 0; t < 5; t++) {
+                        if (executionTimes[t] > 0 && executionTimes[t] < oldestExecution) {
+                            oldestExecution = executionTimes[t];
+                        }
+                    }
+
+                    long waitTime = (oldestExecution + 60000) - currentTime;
+                    if (waitTime > 0) {
+                        try {
+                            String sleepTimeStr = LocalDateTime.now(ZoneId.of("Asia/Seoul"))
+                                    .format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+                            log.info("⏰⏰⏰⏰⏰⏰⏰⏰⏰⏰⏰⏰ {} || Gemini sleep - batch: {} ⏰⏰⏰⏰⏰⏰⏰⏰⏰⏰⏰⏰",
+                                    sleepTimeStr, geminiBatchCount);
+
+                            Thread.sleep(waitTime);
+                        } catch (InterruptedException e) {
+                            Thread.currentThread().interrupt();
+                            break gemini;
+                        }
+                    }
+                }
+
+                dataPrepService.prepGemini(updateId);
+                geminiBatchCount++;
+
+                executionTimes[timeIndex] = System.currentTimeMillis();
+                timeIndex = (timeIndex + 1) % 5;
+
+                String currentTimeStr = LocalDateTime.now(ZoneId.of("Asia/Seoul"))
+                        .format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+                log.info("✅✅✅✅✅✅✅✅✅✅✅✅ {} || Gemini batch: {}, updateId: {} ✅✅✅✅✅✅✅✅✅✅✅✅",
+                        currentTimeStr, geminiBatchCount, updateId);
             }
 
             String finishTime = LocalDateTime.now(ZoneId.of("Asia/Seoul"))

@@ -16,6 +16,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @Slf4j
@@ -97,13 +98,25 @@ public class DataPrepService {
         }
     }
 
-    public void prepGemini() {
-        GeminiPendingQueue item = geminiRepository.findTop1ByProcessedFalseOrderBySeqAsc();
-        if (item == null) {
+    public void prepGemini(String updateId) {
+        Optional<GeminiPendingQueue> itemOpt;
+
+        if (updateId != null && updateId.startsWith("{\"_id\":")) {
+            updateId = updateId.replaceAll("\\{\"_id\":\\s*\"([^\"]+)\"\\}", "$1");
+        }
+
+        if (updateId == null) {
+            itemOpt = geminiRepository.findTop1ByProcessedFalseOrderBySeqAsc();
+        } else {
+            itemOpt = geminiRepository.findByServerId(updateId);
+        }
+
+        if (itemOpt.isEmpty()) {
             log.info("No pending items in Gemini queue");
             return;
         }
 
+        GeminiPendingQueue item = itemOpt.get();
         String pendingItemId = item.getId();
         String serverId = item.getServerId();
         String serverName = item.getServerName();

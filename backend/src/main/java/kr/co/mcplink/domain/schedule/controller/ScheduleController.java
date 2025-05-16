@@ -33,12 +33,18 @@ public class ScheduleController {
     @PostMapping("/prep/gemini")
     public void prepGemini() {
 
-        dataPrepService.prepGemini();
+        dataPrepService.prepGemini(null);
     }
 
     @PostMapping("/prep/data")
     public void schedule() {
 
         scheduleService.prepData();
+    }
+
+    @PostMapping("/prep/data/update")
+    public void scheduleUpdate() {
+
+        scheduleService.updateData();
     }
 }
