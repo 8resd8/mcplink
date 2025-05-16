@@ -18,8 +18,8 @@ import org.springframework.stereotype.Service;
 
 import jakarta.annotation.PostConstruct;
 import kr.co.mcplink.domain.mcpsecurity.dto.McpScanResultDto;
-import kr.co.mcplink.domain.mcpserver.repository.McpServerRepository;
-import kr.co.mcplink.domain.mcpserver.entity.McpServer;
+import kr.co.mcplink.domain.mcpserverv2.entity.McpServerV2;
+import kr.co.mcplink.domain.mcpserverv2.repository.McpServerV2Repository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -43,7 +43,7 @@ public class McpAnalysisService {
 	@Value("${app.analysis.temp-dir}")
 	private String tempDirStr;
 
-	private final McpServerRepository serverRepository;
+	private final McpServerV2Repository serverRepository;
 
 	@PostConstruct
 	public void init() {
@@ -61,18 +61,19 @@ public class McpAnalysisService {
 	 * @return 모든 서버의 스캔 결과 리스트
 	 */
 	public List<McpScanResultDto> scanSpecificServer() {
-		List<McpServer> servers = serverRepository.findByOfficialFalse();
+		List<McpServerV2> servers = serverRepository.findByOfficialFalse();
+
 		if (servers.isEmpty()) {
 			log.error("오피셜이 false인게 없으면 안됨.");
 			throw new RuntimeException("No servers to scan");
 		}
 		List<McpScanResultDto> results = new ArrayList<>();
 
-		for (McpServer server : servers) {
+		for (McpServerV2 server : servers) {
 			String rawUrl = server.getUrl();
 			String cloneUrl = rawUrl.endsWith(".git") ? rawUrl : rawUrl + ".git";
 			String name = cloneUrl.substring(cloneUrl.lastIndexOf('/') + 1);
-			
+
 			if (name.endsWith(".git")) {
 				name = name.substring(0, name.length() - 4);
 			}
@@ -87,6 +88,7 @@ public class McpAnalysisService {
 				saveReport(reportOutputFile, result.osvOutputJson());
 			}
 			results.add(result);
+
 		}
 		return results;
 	}
@@ -138,6 +140,7 @@ public class McpAnalysisService {
 			cleanup(cloneDir); // 디렉토리 삭제
 		}
 
+		System.out.println("success = " + success);
 		// 실패
 		if (!success) {
 			log.error("'{}' OSV-Scanner 실행 실패, 결과: {}", cloneDir, osvJsonOutput);
@@ -187,7 +190,7 @@ public class McpAnalysisService {
 		} catch (IOException e) {
 			log.warn(".gitignore 삭제 실패: {}", targetDir.resolve(".gitignore"), e);
 		}
-		
+
 		return process.exitValue() == 0;
 	}
 
