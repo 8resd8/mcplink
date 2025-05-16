@@ -37,6 +37,7 @@ public class JwtUtil {
 			.claim("userId", user.getId())
 			.claim("name", user.getName())
 			.claim("role", user.getRole())
+			.claim("email", user.getEmail())
 			.issuedAt(now)
 			.expiration(expiryDate)
 			.signWith(getSigningKey())
@@ -52,7 +53,7 @@ public class JwtUtil {
 	}
 
 	public String getEmailFromToken(String token) {
-		return getClaims(token).getSubject();
+		return getClaims(token).get("email", String.class);
 	}
 
 	public Long getUserIdFromToken(String token) {
