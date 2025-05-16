@@ -18,8 +18,8 @@ import org.springframework.stereotype.Service;
 
 import jakarta.annotation.PostConstruct;
 import kr.co.mcplink.domain.mcpsecurity.dto.McpScanResultDto;
-import kr.co.mcplink.domain.mcpserverv2.entity.McpServerV2;
-import kr.co.mcplink.domain.mcpserverv2.repository.McpServerV2Repository;
+import kr.co.mcplink.domain.mcpserver.v2.entity.McpServerV2;
+import kr.co.mcplink.domain.mcpserver.v2.repository.McpServerV2Repository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 

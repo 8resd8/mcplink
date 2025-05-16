@@ -1,0 +1,50 @@
+package kr.co.mcplink.domain.schedule.v2.controller;
+
+import kr.co.mcplink.domain.schedule.v2.service.DataPrepService;
+import kr.co.mcplink.domain.schedule.v2.service.EnQueueService;
+import kr.co.mcplink.domain.schedule.v2.service.ScheduleService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+@RestController
+@RequestMapping("/test/schedule")
+@RequiredArgsConstructor
+public class ScheduleController {
+
+    private final EnQueueService enqueueService;
+    private final DataPrepService dataPrepService;
+    private final ScheduleService scheduleService;
+
+    @PostMapping("/enqueue/github")
+    public void enqueueGithub(@RequestParam int queryNum) {
+
+        enqueueService.enqueueGithub(queryNum);
+    }
+
+    @PostMapping("/prep/github")
+    public void prepGithub() {
+
+        dataPrepService.prepGithub();
+    }
+
+    @PostMapping("/prep/gemini")
+    public void prepGemini() {
+
+        dataPrepService.prepGemini(null);
+    }
+
+    @PostMapping("/prep/data")
+    public void schedule() {
+
+        scheduleService.prepData();
+    }
+
+    @PostMapping("/prep/data/update")
+    public void scheduleUpdate() {
+
+        scheduleService.updateData();
+    }
+}

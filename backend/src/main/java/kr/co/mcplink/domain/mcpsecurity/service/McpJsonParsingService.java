@@ -1,7 +1,6 @@
 package kr.co.mcplink.domain.mcpsecurity.service;
 
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -9,9 +8,8 @@ import kr.co.mcplink.domain.mcpsecurity.dto.osv.OsvPackageEntryDto;
 import kr.co.mcplink.domain.mcpsecurity.dto.osv.OsvResultDto;
 import kr.co.mcplink.domain.mcpsecurity.dto.osv.OsvScanOutputWrapperDto;
 import kr.co.mcplink.domain.mcpsecurity.dto.osv.OsvVulnerabilityDto;
-import kr.co.mcplink.domain.mcpserver.entity.SecurityRank;
-import kr.co.mcplink.domain.mcpserver.repository.McpServerRepository;
-import kr.co.mcplink.domain.mcpserverv2.repository.McpServerV2Repository;
+import kr.co.mcplink.domain.mcpserver.v1.entity.SecurityRank;
+import kr.co.mcplink.domain.mcpserver.v2.repository.McpServerV2Repository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
