@@ -24,9 +24,11 @@ import java.util.List;
 @EnableMongoAuditing 
 @EnableMongoRepositories(
     basePackages = {
-            "kr.co.mcplink.domain.mcpserver.repository",
-            "kr.co.mcplink.domain.mcpserverv2.repository",
-            "kr.co.mcplink.domain.schedule.repository"
+            "kr.co.mcplink.domain.mcpserver.v1.repository",
+            "kr.co.mcplink.domain.mcpserver.v2.repository",
+            "kr.co.mcplink.domain.mcpserver.v3.repository",
+            "kr.co.mcplink.domain.schedule.v2.repository",
+            "kr.co.mcplink.domain.schedule.v3.repository"
     }
 )
 public class MongoConfig {

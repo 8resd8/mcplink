@@ -1,8 +1,8 @@
 package kr.co.mcplink.global.util;
 
-import kr.co.mcplink.domain.mcpserver.dto.PageInfoDto;
-import kr.co.mcplink.domain.mcpserver.entity.McpServer;
-import kr.co.mcplink.domain.mcpserverv2.entity.McpServerV2;
+import kr.co.mcplink.domain.mcpserver.v1.dto.PageInfoDto;
+import kr.co.mcplink.domain.mcpserver.v1.entity.McpServer;
+import kr.co.mcplink.domain.mcpserver.v2.entity.McpServerV2;
 
 import java.util.List;
 
