@@ -42,5 +42,6 @@ public final class Constants {
     // 에러 메시지
     public static final String MSG_BAD_REQUEST                  = "잘못된 요청입니다. 요청 파라미터를 확인하세요.";
     public static final String MSG_NOT_FOUND                    = "해당 파일을 찾을 수 없습니다.";
+    public static final String MSG_NOT_FOUNDS                   = "요청한 파일 목록 중 일부 파일을 찾을 수 없습니다.";
     public static final String MSG_INTERNAL_ERROR               = "서버 처리 중 오류가 발생했습니다.";
 }
