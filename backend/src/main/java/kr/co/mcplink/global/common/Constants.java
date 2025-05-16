@@ -22,7 +22,7 @@ public final class Constants {
     // Github
     public static final String GITHUB_SEARCH_PATH               = "/search/repositories";
     public static final String GITHUB_README_PATH               = "/repos/{owner}/{repo}/readme";
-    public static final String GITHUB_REPO_PATH                        = "/repos/{owner}/{repo}";
+    public static final String GITHUB_REPO_PATH                 = "/repos/{owner}/{repo}";
     public static final String[] GITHUB_LANGUAGES               = { "typescript", "javascript", "python" };
     public static final String[] GITHUB_LICENSES                = { "mit", "apache-2.0", "gpl-3.0" };
 

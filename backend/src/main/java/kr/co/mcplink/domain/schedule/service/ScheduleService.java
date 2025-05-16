@@ -92,6 +92,10 @@ public class ScheduleService {
                     if (waitTime > 0) {
                         try {
                             Thread.sleep(waitTime);
+                            String sleepTimeStr = LocalDateTime.now(ZoneId.of("Asia/Seoul"))
+                                    .format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+                            log.info("⏰⏰⏰⏰⏰⏰⏰⏰⏰⏰⏰⏰ {} || Gemini sleep - batch: {} ⏰⏰⏰⏰⏰⏰⏰⏰⏰⏰⏰⏰",
+                                    sleepTimeStr, geminiBatchCount);
                         } catch (InterruptedException e) {
                             Thread.currentThread().interrupt();
                             break gemini;
