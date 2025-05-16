@@ -67,7 +67,7 @@ public class GlobalExceptionHandler {
 	@ExceptionHandler
 	public ResponseEntity<ErrorResponse> handleForbbidenException(JwtForbiddenException ex,
 		HttpServletRequest request) {
-		return ErrorResponse.toResponseEntity(HttpStatus.FORBIDDEN, "접근이 제한된 경로입니다.", request.getRequestURI());
+		return ErrorResponse.toResponseEntity(HttpStatus.FORBIDDEN, ex.getMessage(), request.getRequestURI());
 	}
 
 	@ExceptionHandler
