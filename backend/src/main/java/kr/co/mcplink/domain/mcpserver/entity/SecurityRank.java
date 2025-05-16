@@ -1,5 +1,8 @@
 package kr.co.mcplink.domain.mcpserver.entity;
 
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 public enum SecurityRank {
     UNRATED,
     LOW,
@@ -15,6 +18,7 @@ public enum SecurityRank {
         try {
             return SecurityRank.valueOf(severityString.trim().toUpperCase());
         } catch (IllegalArgumentException e) {
+            log.error("Invalid security rank: {}", severityString);
             return SecurityRank.UNRATED;
         }
     }

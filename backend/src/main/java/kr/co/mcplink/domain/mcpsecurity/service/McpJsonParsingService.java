@@ -11,6 +11,7 @@ import kr.co.mcplink.domain.mcpsecurity.dto.osv.OsvScanOutputWrapperDto;
 import kr.co.mcplink.domain.mcpsecurity.dto.osv.OsvVulnerabilityDto;
 import kr.co.mcplink.domain.mcpserver.entity.SecurityRank;
 import kr.co.mcplink.domain.mcpserver.repository.McpServerRepository;
+import kr.co.mcplink.domain.mcpserverv2.repository.McpServerV2Repository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -20,8 +21,9 @@ import lombok.extern.slf4j.Slf4j;
 public class McpJsonParsingService {
 
 	private final ObjectMapper objectMapper;
-	private final McpServerRepository serverRepository;
+	private final McpServerV2Repository serverRepository;
 
+	// @Transactional
 	public void processOsvResult(String osvOutputJson, String mcpServerId) {
 		// 결과가 비어있으면 LOW 단계
 		if (osvOutputJson.contains("\"results\": [],")) {
@@ -60,7 +62,7 @@ public class McpJsonParsingService {
 										riskSeverity);
 
 									// DB 반영
-									updateRepository(mcpServerId, SecurityRank.fromString(vulnerability.id()));
+									updateRepository(mcpServerId, SecurityRank.fromString(riskSeverity));
 								}
 							}
 						}
