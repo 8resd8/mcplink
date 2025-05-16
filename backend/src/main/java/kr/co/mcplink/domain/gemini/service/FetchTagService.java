@@ -69,6 +69,10 @@ public class FetchTagService {
             - Example: "gdrive" → include both "gdrive" and "google drive"
             - Example: "mcpGdrive" → include "gdrive" and "google drive" (exclude "mcp")
         6. Keep acronyms as is (e.g., "aws", "gcp")
+        7. Do not generate any single-character tags (like "a", "b", "c", "1", "2", "3")
+        8. For compound phrases, keep them intact including any single characters:
+            - Example: "what-a-wonderful" → include "what a wonderful" as a tag
+            - Example: "gpt-mcp-1" → include "gpt mcp 1" as a tag
         
         Please respond ONLY with valid JSON in the following format:
         {
