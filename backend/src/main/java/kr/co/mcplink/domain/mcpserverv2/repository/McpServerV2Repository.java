@@ -9,9 +9,8 @@ import org.springframework.data.mongodb.repository.Query;
 import org.springframework.data.mongodb.repository.Update;
 import org.springframework.stereotype.Repository;
 
-import java.util.*;
-import java.util.function.Function;
-import java.util.stream.Collectors;
+import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface McpServerV2Repository extends MongoRepository<McpServerV2, String>, McpServerV2CustomRepository {
@@ -23,20 +22,6 @@ public interface McpServerV2Repository extends MongoRepository<McpServerV2, Stri
     long countByName(String nameRegex);
 
     Optional<McpServerV2> findBySeq(Long seq);
-
-    @Query("{ 'seq': { $in: ?0 } }")
-    List<McpServerV2> findBySeqIn(Collection<Long> seqs);
-
-    default List<McpServerV2> findBySeqInOrder(List<Long> seqs) {
-        Map<Long, McpServerV2> map = findBySeqIn(seqs)
-                .stream()
-                .collect(Collectors.toMap(McpServerV2::getSeq, Function.identity()));
-
-        return seqs.stream()
-                .map(map::get)
-                .filter(Objects::nonNull)
-                .collect(Collectors.toList());
-    }
 
     boolean existsByUrl(String url);
 
@@ -51,6 +36,8 @@ public interface McpServerV2Repository extends MongoRepository<McpServerV2, Stri
      */
 
     List<McpServerV2> findByOfficialFalse();
+
+    List<McpServerV2> findByScannedFalse();
 
     @Query("{ '_id': ?0 }")
     @Update("{ '$set': { 'scanned': true } }")
