@@ -23,7 +23,6 @@
   const tabs = [
     { path: "/Installed-MCP", name: "Installed MCP", icon: Presentation, mainThemeColorVar: "--color-primary", mainContentColorVar: "--color-primary-content" },
     { path: "/MCP-list", name: "MCP List", icon: Cog, mainThemeColorVar: "--color-secondary", mainContentColorVar: "--color-secondary-content" },
-    { path: "/test", name: "Test", icon: Cog, mainThemeColorVar: "--color-neutral", mainContentColorVar: "--color-neutral-content" },
   ]
   const settingsTab = { path: "/settings", name: "Settings", icon: Settings, mainThemeColorVar: "--color-base-100", mainContentColorVar: "--color-base-content" }
 
@@ -32,11 +31,121 @@
   let currentPlatform: string = "unknown"
   let unlistenMoveToCenter: UnlistenFn | undefined
   let unlistenNavigateTo: UnlistenFn | undefined
+  let unlistenConfigFiles: UnlistenFn | undefined
 
   // --- Svelte reactive state ---
   let activeTabPath = "/"
   $: isFirstInstallPage = $page?.url?.pathname === "/first-install"
   $: isPopupPage = $page?.url?.pathname === "/popup"
+
+  // Notification activation handler - called when the app gains focus
+  // Handles notification clicks or automatic activation events
+  async function handleAppActivated() {
+    try {
+
+      
+      // Check for pending keywords from the backend and handle window activation
+      const response = await invoke<string | null>("check_and_mark_app_activated", {});
+
+      
+      // Extract keyword from the response
+      let keyword = null;
+      
+      // Handle differently based on data type (to accommodate various ways Rust's Option<String> is converted to JSON)
+      if (response && typeof response === 'object') {
+        if (response.hasOwnProperty('Some')) {
+          // Handle Rust's Option<String>::Some
+          keyword = response.Some;
+        } else if (response.hasOwnProperty('0')) {
+          // Handle if converted to an array
+          keyword = response[0];
+        }
+      } else if (response && typeof response === 'string' && response.trim() !== "") {
+        // If converted directly to a string
+        keyword = response;
+      }
+
+      
+      // If a keyword exists, navigate to the MCP list page
+      if (keyword) {
+        
+        // Additional action to ensure the app is actually activated
+        if (tauriWindow) {
+          // Also attempt to activate the window from the frontend (additional check after backend activation)
+          try {
+            await tauriWindow.show();
+            await tauriWindow.unminimize();
+            await tauriWindow.setFocus();
+            
+            // Add a short delay to ensure the window is definitely visible
+            await new Promise(resolve => setTimeout(resolve, 100));
+          } catch (e) {
+            console.error("[Notification] Frontend window activation failed:", e);
+          }
+        }
+        
+        // URL encode the keyword to include it as a query parameter
+        const targetUrl = `/MCP-list?keyword=${encodeURIComponent(keyword)}`;
+
+        
+        // Page navigation (goto is client-side routing between pages)
+        try {
+          
+          // 1. First, switch URL and update state
+          activeTabPath = "/MCP-list";
+          
+          // 2. Attempt to activate the app even if the window is already visible
+          if (tauriWindow) {
+            try {
+              // Additional attempt to bring window focus
+              await tauriWindow.show();
+              await tauriWindow.setFocus();
+              
+              // Bring the window to the top using always-on-top setting
+              await tauriWindow.setAlwaysOnTop(true);
+              
+              // Disable always-on-top after 5 seconds (to allow user to use other windows)
+              setTimeout(async () => {
+                try {
+                  await tauriWindow.setAlwaysOnTop(false);
+
+                } catch (e) {
+                  console.error("[Notification] Error removing always-on-top:", e);
+                }
+              }, 5000);
+            } catch (e) {
+              console.error("[Notification] Frontend focus error:", e);
+            }
+          }
+          
+          // 3. Handle uniformly whether URL navigation succeeds or fails
+          await Promise.race([
+            goto(targetUrl, {
+              replaceState: true,    // Replace the current URL
+              invalidateAll: true,   // Reload all data
+              noScroll: false        // Scroll to the top of the page
+            }),
+            // 1-second timeout (proceed even if navigation fails)
+            new Promise(resolve => setTimeout(resolve, 1000))
+          ]);
+          
+          // 4. Attempt to reactivate window regardless of page navigation
+          if (tauriWindow) {
+            await tauriWindow.setFocus();
+          }
+          
+        } catch (err) {
+          console.error("[Notification] Navigation error:", err);
+          
+          // Attempt to force a path change even if an error occurs
+          window.location.href = targetUrl;
+        }
+      } else {
+      }
+    } catch (err) {
+      console.error("[Notification] Error in app activation handler:", err);
+    }
+  }
 
   // --- Lifecycle and Subscriptions ---
   onMount(async () => {
@@ -47,7 +156,29 @@
         const osType: string = await getOsPlatform()
         currentPlatform = osType
         if (osType === "windows") {
-          // ... (Your existing config file checking logic)
+          // Check if config files exist on startup
+          try {
+            // Check claude_desktop_config.json
+            const claudeConfigExists = await invoke<boolean>("check_claude_config_exists");
+            
+            // Check mcplink_desktop_config.json
+            const mcplinkConfigExists = await invoke<boolean>("check_mcplink_config_exists");
+            
+            // Get current path
+            const currentPath = $page?.url?.pathname;
+            
+            // If any config file is missing and not already on first-install page
+            if ((!claudeConfigExists || !mcplinkConfigExists) && currentPath !== "/first-install") {
+              await goto("/first-install", { replaceState: true });
+              return;
+            } else if (claudeConfigExists && mcplinkConfigExists && currentPath === "/first-install") {
+              // If all config files exist but we're on first-install page, redirect to main page
+              await goto("/Installed-MCP", { replaceState: true });
+              return;
+            }
+          } catch (error) {
+            // Error checking config files
+          }
         }
       } catch (e) {
         console.error("[Layout] OS detection error:", e)
@@ -58,12 +189,59 @@
     if (typeof window !== "undefined" && "__TAURI__" in window) {
       try {
         tauriWindow = await getCurrentWindow()
+        
+        // Set up event listeners
         unlistenMoveToCenter = await listen("move-main-to-center", async () => {
           /* ... */
         })
+        
         unlistenNavigateTo = await listen("navigate-to", async (event) => {
           if (event.payload && typeof event.payload === "string") goto(event.payload as string)
         })
+        
+        // Set up window focus handling for notification processing
+        const windowEventUnlistener = await tauriWindow.onFocusChanged(({ payload: focused }) => {
+          if (focused) {
+            handleAppActivated();
+          }
+        });
+        
+        // Add this unlistener to onDestroy
+        onDestroy(() => {
+          if (windowEventUnlistener) windowEventUnlistener();
+        });
+        
+        // Initial check for pending notifications when app starts
+        handleAppActivated();
+        
+        // Start watching for config file changes
+        try {
+          // Start the config file watcher in the backend
+          await invoke("start_config_watch");
+          
+          // Listen for config files missing events
+          unlistenConfigFiles = await listen("config-files-missing", async (event) => {
+            try {
+              // Get the current path and ignore if already on first-install page
+              const currentPath = $page?.url?.pathname;
+              if (currentPath === "/first-install") return;
+              
+              // Extract which files are missing from the event payload
+              const { claudeConfigExists, mcplinkConfigExists } = event.payload;
+              
+              // If any config file is missing, redirect to first-install page
+              if (!claudeConfigExists || !mcplinkConfigExists) {
+                console.log("[Config Watch] Configuration files missing, redirecting to first-install");
+                await goto("/first-install", { replaceState: true });
+              }
+            } catch (error) {
+              console.error("[Config Watch] Failed to handle config files event:", error);
+            }
+          });
+        } catch (error) {
+          console.error("[Config Watch] Failed to start config watch:", error);
+        }
+        
       } catch (error) {
         console.error("[Layout] Error during Tauri initialization:", error)
       }
@@ -74,10 +252,13 @@
     if (browser) activeTabPath = value.url.pathname
   })
 
+  // Clean up all event listeners on component destruction
   onDestroy(() => {
-    unlistenMoveToCenter?.()
-    unlistenNavigateTo?.()
-  })
+    // Clean up Tauri event listeners
+    if (unlistenMoveToCenter) unlistenMoveToCenter();
+    if (unlistenNavigateTo) unlistenNavigateTo();
+    if (unlistenConfigFiles) unlistenConfigFiles();
+  });
 
   // --- Window control functions ---
   async function minimizeWindow() {

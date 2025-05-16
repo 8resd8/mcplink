@@ -1637,6 +1637,8 @@ version = "0.0.0"
 dependencies = [
  "axum",
  "dotenvy",
+ "lazy_static",
+ "notify-rust",
  "reqwest 0.11.27",
  "serde",
  "serde_json",

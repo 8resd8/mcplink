@@ -22,6 +22,7 @@
   // START: Added variables
   let searchTermFromQuery = "" // Variable to store the search term from the URL
   let isRecommendedSearch = false // State variable for recommended search
+  let debounceTimer: ReturnType<typeof setTimeout> | null = null; // Debounce timer
   // END: Added variables
 
   // Scroll event handler
@@ -221,26 +222,66 @@
   }
 </script>
 
-<div class="p-8">
-  <!-- Fixed header area - Set background color same as tab color -->
-  <div class="sticky top-0 z-10 pb-4">
-    <div class="flex justify-between items-center">
-      <p class="text-xl font-semibold">Search results ({pageInfo.total_items} MCPs)</p>
-      <div class="search-area-wrapper flex items-center ml-auto">
+<div class="pb-8">
+  <!-- Top header area (not fixed) - background color same as page background -->
+  <div class="pt-1 pb-2 border-b border-secondary-content/10">
+    <div class="flex flex-col sm:flex-row justify-between items-center px-8">
+      <h1 class="text-2xl font-bold">MCP List ({pageInfo.total_items})</h1>
+      
+      <!-- Search UI -->
+      <div class="relative w-full sm:w-64 mt-2 sm:mt-0">
         {#if isRecommendedSearch}
-          <span class="mr-2 text-yellow-500" title="Recommended Search">✨</span>
+          <span class="absolute left-[-20px] top-3 text-yellow-500" title="Recommended Search">✨</span>
         {/if}
-        <div class="search-component-wrapper w-72 rounded-[10px]">
-          {#key searchTermFromQuery}
-            <Search on:search={handleSearchEvent} initialValue={searchTermFromQuery} />
-          {/key}
-        </div>
+        
+        {#key searchTermFromQuery}
+          <input
+            type="text"
+            placeholder="Search MCPs..."
+            class="input input-bordered w-full pr-10"
+            bind:value={searchTermFromQuery}
+            on:input={() => {
+              // Clear recommendation status on user input
+              if (isRecommendedSearch) isRecommendedSearch = false;
+              
+              // Debounce handling
+              if (debounceTimer) clearTimeout(debounceTimer)
+              debounceTimer = setTimeout(() => {
+                searchAndDisplay(searchTermFromQuery);
+              }, 300)
+            }}
+            on:keydown={(e) => {
+              if (e.key === "Enter") {
+                if (debounceTimer) clearTimeout(debounceTimer);
+                searchAndDisplay(searchTermFromQuery);
+              }
+            }}
+          />
+        {/key}
+        
+        {#if loading && !mcpCards.length}
+          <span class="loading loading-spinner loading-xs absolute right-3 top-3"></span>
+        {:else}
+          <svg 
+            xmlns="http://www.w3.org/2000/svg" 
+            viewBox="0 0 24 24" 
+            fill="none" 
+            stroke="currentColor" 
+            stroke-width="2" 
+            stroke-linecap="round" 
+            stroke-linejoin="round" 
+            class="w-5 h-5 absolute right-3 top-3"
+          >
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+        {/if}
       </div>
     </div>
   </div>
 
   <!-- Content area -->
-  <div class="mt-2">
+  <div class="mt-3 px-8">
     {#if loading}
       <div class="flex justify-center items-center h-64">
         <span class="loading loading-spinner loading-lg text-primary"></span>
@@ -272,16 +313,6 @@
 </div>
 
 <style>
-  /* Match page background color with tab color (#ecfdf5) */
-  :global(body) {
-    background-color: #ecfdf5;
-  }
-
-  /* Remove blue line */
-  :global(.sticky) {
-    border-bottom: none !important;
-  }
-
   /* Customize scrollbar style */
   :global(::-webkit-scrollbar) {
     width: 8px;

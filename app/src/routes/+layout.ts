@@ -16,7 +16,6 @@ const DEFAULT_PATH_AFTER_INSTALL = "/Installed-MCP" // Default path after setup
 
 /** @type {import('./$types').LayoutLoad} */
 export const load: LayoutLoad = async ({ url }) => {
-  // Log current path (for debugging)
-  console.log(`[Layout Load] Navigating to: ${url.pathname}`)
+
   return {}
 }

@@ -1,13 +1,13 @@
 // app/src-tauri/src/commands.rs
 
-// use dotenvy::dotenv; // env! 매크로 사용으로 런타임 .env 로드 불필요
+use dotenvy::dotenv; // Used to load .env at runtime in development mode
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Map, Value};
 use std::collections::HashMap;
 use std::os::windows::process::CommandExt;
-use std::{fs, path::PathBuf, process::Command as StdCommand};
-use tauri::{AppHandle, Manager, State};
+use std::{env, fs, path::PathBuf, process::Command as StdCommand}; // env added for accessing environment variables at runtime
+use tauri::{AppHandle, Manager, State, Emitter};
 use tauri_plugin_notification::NotificationExt;
 use tokio::time::{sleep, Duration};
 use urlencoding::encode;
@@ -88,6 +88,26 @@ pub struct MCPCardResponse {
     pub page_info: PageInfoResponse,
 }
 
+// State struct for saving notification keywords
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct NotificationState {
+    pub pending_keyword: Option<String>,
+    pub timestamp: Option<i64>,
+    pub needs_activation: bool, // Whether app activation is needed
+}
+
+// Create mutex for notification state (global state management)
+lazy_static::lazy_static! {
+    static ref NOTIFICATION_STATE: std::sync::Mutex<NotificationState> = {
+
+        std::sync::Mutex::new(NotificationState {
+            pending_keyword: Some(" ".to_string()),
+            timestamp: Some(0),
+            needs_activation: false, // Initial state: activation not needed
+        })
+    };
+}
+
 // DetailApiResponse is now designed to parse the object obtained from `api_response_wrapper.data.get("mcpServer")`
 #[derive(Debug, Deserialize)]
 struct DetailApiResponse {
@@ -126,7 +146,7 @@ pub struct MCPServerConfig {
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct ClaudeDesktopConfig {
-    pub mcp_servers: Option<HashMap<String, MCPServerConfig>>,
+    pub mcpServers: Option<HashMap<String, MCPServerConfig>>,
     #[serde(flatten)]
     pub other: Map<String, Value>,
 }
@@ -143,8 +163,23 @@ pub async fn get_mcp_data(
     search_term: Option<String>,
     cursor_id: Option<i32>,
 ) -> Result<MCPCardResponse, String> {
-    const CRAWLER_API_BASE_URL_STR: &str = env!("CRAWLER_API_BASE_URL");
-    let base_url: String = CRAWLER_API_BASE_URL_STR.to_string();
+    // Load .env file in development mode (ignored if already loaded)
+    #[cfg(debug_assertions)]
+    let _ = dotenv();
+
+    // Get environment variables at runtime
+    let base_url: String = if cfg!(debug_assertions) {
+        // Development mode: get from environment variable
+        env::var("CRAWLER_API_BASE_URL").unwrap_or_else(|_| String::new())
+    } else {
+        // Deployment mode: include the value from .env file at compile time
+        env::var("CRAWLER_API_BASE_URL").unwrap_or_else(|_| include_str!("../../.env")
+            .lines()
+            .find(|line| line.starts_with("CRAWLER_API_BASE_URL="))
+            .and_then(|line| line.split('=').nth(1))
+            .unwrap_or("")
+            .to_string())
+    };
 
     // Add cursor ID to URL configuration
     let request_url = if let Some(term) = search_term {
@@ -195,8 +230,6 @@ pub async fn get_mcp_data(
                                                     stars: api_card.stars,
                                                 })
                                                 .collect();
-                                            // if let Some(card) = cards.first() { // This seems unused
-                                            // }
 
                                             // Extract page information
                                             let end_cursor = match data_wrapper.pageInfo.endCursor {
@@ -270,8 +303,23 @@ pub async fn get_mcp_detail_data(
     state: State<'_, AppState>,
     id: i32,
 ) -> Result<MCPCardDetail, String> {
-    const CRAWLER_API_BASE_URL_STR: &str = env!("CRAWLER_API_BASE_URL");
-    let base_url: String = CRAWLER_API_BASE_URL_STR.to_string();
+    // Load .env file in development mode (ignored if already loaded)
+    #[cfg(debug_assertions)]
+    let _ = dotenv();
+
+    // Get environment variables at runtime
+    let base_url: String = if cfg!(debug_assertions) {
+        // Development mode: get from environment variable
+        env::var("CRAWLER_API_BASE_URL").unwrap_or_else(|_| String::new())
+    } else {
+        // Deployment mode: include the value from .env file at compile time
+        env::var("CRAWLER_API_BASE_URL").unwrap_or_else(|_| include_str!("../../.env")
+            .lines()
+            .find(|line| line.starts_with("CRAWLER_API_BASE_URL="))
+            .and_then(|line| line.split('=').nth(1))
+            .unwrap_or("")
+            .to_string())
+    };
     let request_url = format!("{}/{}", base_url, id);
 
     match state.client.get(&request_url).send().await {
@@ -388,7 +436,7 @@ pub async fn add_mcp_server_config(
                     Ok(value) => {
                         if let Value::Object(map) = value {
                             ClaudeDesktopConfig {
-                                mcp_servers: None,
+                                mcpServers: None,
                                 other: map,
                             }
                         } else {
@@ -404,11 +452,11 @@ pub async fn add_mcp_server_config(
     };
 
     // Get or create MCP server map
-    let mut servers = config.mcp_servers.unwrap_or_default();
+    let mut servers = config.mcpServers.unwrap_or_default();
 
     // Add or update server configuration
     servers.insert(server_name.clone(), server_config);
-    config.mcp_servers = Some(servers);
+    config.mcpServers = Some(servers);
 
     // Write to config file
     let config_json = serde_json::to_string_pretty(&config)
@@ -484,18 +532,18 @@ pub async fn remove_mcp_server_config(app: AppHandle, server_name: String) -> Re
         Err(e) => return Err(format!("Failed to parse config file: {}", e)),
     };
 
-    if config.mcp_servers.is_none() {
+    if config.mcpServers.is_none() {
         return Err("No MCP servers are installed".to_string());
     }
 
-    let mut servers = config.mcp_servers.unwrap_or_default();
+    let mut servers = config.mcpServers.unwrap_or_default();
 
     if !servers.contains_key(&server_name) {
         return Err(format!("MCP server '{}' not found", server_name));
     }
 
     servers.remove(&server_name);
-    config.mcp_servers = Some(servers);
+    config.mcpServers = Some(servers);
 
     let config_json = serde_json::to_string_pretty(&config)
         .map_err(|e| format!("Failed to serialize config: {}", e))?;
@@ -614,9 +662,25 @@ pub async fn get_installed_mcp_data(
     state: State<'_, AppState>,
     server_ids: Vec<i32>,
     cursor_id: Option<i32>,
+    search_term: Option<String>,
 ) -> Result<MCPCardResponse, String> {
-    const CRAWLER_API_BASE_URL_STR: &str = env!("CRAWLER_API_BASE_URL");
-    let base_url: String = CRAWLER_API_BASE_URL_STR.to_string();
+    // Load .env file in development mode (ignored if already loaded)
+    #[cfg(debug_assertions)]
+    let _ = dotenv();
+
+    // Get environment variables at runtime
+    let base_url: String = if cfg!(debug_assertions) {
+        // Development mode: get from environment variable
+        env::var("CRAWLER_API_BASE_URL").unwrap_or_else(|_| String::new())
+    } else {
+        // Deployment mode: include the value from .env file at compile time
+        env::var("CRAWLER_API_BASE_URL").unwrap_or_else(|_| include_str!("../../.env")
+            .lines()
+            .find(|line| line.starts_with("CRAWLER_API_BASE_URL="))
+            .and_then(|line| line.split('=').nth(1))
+            .unwrap_or("")
+            .to_string())
+    };
 
     // Use the batch endpoint
     let mut request_url = format!("{}/batch", base_url);
@@ -654,7 +718,7 @@ pub async fn get_installed_mcp_data(
                                         data_obj.clone(),
                                     )) {
                                         Ok(data_wrapper) => {
-                                            let cards: Vec<MCPCard> = data_wrapper
+                                            let mut cards: Vec<MCPCard> = data_wrapper
                                                 .mcpServers
                                                 .iter()
                                                 .map(|api_card| MCPCard {
@@ -668,6 +732,27 @@ pub async fn get_installed_mcp_data(
                                                     stars: api_card.stars,
                                                 })
                                                 .collect();
+
+                                            // If there is a search term, filter locally
+                                            if let Some(term) = search_term {
+                                                if !term.is_empty() {
+                                                    let search_term_lower = term.to_lowercase();
+                                                    cards = cards
+                                                        .into_iter()
+                                                        .filter(|card| {
+                                                            // Check if the search term is included in the title or description
+                                                            card.title
+                                                                .to_lowercase()
+                                                                .contains(&search_term_lower)
+                                                                || card
+                                                                    .description
+                                                                    .to_lowercase()
+                                                                    .contains(&search_term_lower)
+                                                        })
+                                                        .collect();
+                                                }
+                                            }
+
                                             let end_cursor = match data_wrapper.pageInfo.endCursor {
                                                 Some(Value::Number(n)) => {
                                                     n.as_i64().map(|x| x as i32)
@@ -675,6 +760,7 @@ pub async fn get_installed_mcp_data(
                                                 _ => None,
                                             };
 
+                                            // Update total_items value with the number of filtered items
                                             let response = MCPCardResponse {
                                                 cards,
                                                 page_info: PageInfoResponse {
@@ -740,6 +826,110 @@ pub async fn get_installed_mcp_data(
     }
 }
 
+/// Function to directly search for locally installed MCP servers
+/// Reads the configuration file directly, filters, and returns the results
+#[tauri::command]
+pub async fn search_local_mcp_servers(
+    app: AppHandle,
+    search_term: String,
+) -> Result<Vec<LocalMCPServer>, String> {
+    // Prepare configuration file path
+    let claude_dir = match std::env::consts::OS {
+        "windows" => {
+            let appdata = app
+                .path()
+                .app_data_dir()
+                .map_err(|e| format!("Failed to get AppData directory: {}", e))?;
+            appdata.parent().unwrap_or(&appdata).join("Claude")
+        }
+        _ => {
+            return Err("Currently only supported on Windows".to_string());
+        }
+    };
+
+    // Claude Desktop configuration file path
+    let config_path = claude_dir.join("claude_desktop_config.json");
+    let mcplink_config_path = claude_dir.join("mcplink_desktop_config.json");
+
+    // Convert search term to lowercase
+    let search_term_lower = search_term.to_lowercase();
+
+    // Vector to store results
+    let mut results = Vec::new();
+
+    // Check if files exist
+    if !config_path.exists() || !mcplink_config_path.exists() {
+        return Ok(Vec::new()); // Return empty result
+    }
+
+    // 1. Read claude_desktop_config.json
+    let config_str = fs::read_to_string(&config_path)
+        .map_err(|e| format!("Failed to read claude config file: {}", e))?;
+
+    // 2. Parse configuration
+    let claude_config: ClaudeDesktopConfig = serde_json::from_str(&config_str)
+        .map_err(|e| format!("Failed to parse claude config file: {}", e))?;
+
+    // 3. Read mcplink_desktop_config.json
+    let mcplink_str = fs::read_to_string(&mcplink_config_path)
+        .map_err(|e| format!("Failed to read mcplink config file: {}", e))?;
+
+    // 4. Parse mcplink configuration
+    let mcplink_config: Map<String, Value> = serde_json::from_str(&mcplink_str)
+        .map_err(|e| format!("Failed to parse mcplink config file: {}", e))?;
+
+    // 5. Create ID-name mapping (reverse)
+    let mut name_to_id = HashMap::new();
+    for (id_str, name_val) in mcplink_config.iter() {
+        if let Value::String(name) = name_val {
+            // Skip fallback server with ID -1
+            if id_str != "-1" {
+                if let Ok(id) = id_str.parse::<i32>() {
+                    name_to_id.insert(name.clone(), id);
+                }
+            }
+        }
+    }
+
+    // 6. Check MCP server configuration
+    if let Some(servers) = &claude_config.mcpServers {
+        for (name, config) in servers.iter() {
+            // Skip fallback server named "MCPlink"
+            if name == "MCPlink" {
+                continue;
+            }
+
+            // If search term is empty, or if name or command contains the search term
+            if search_term.is_empty()
+                || name.to_lowercase().contains(&search_term_lower)
+                || config.command.to_lowercase().contains(&search_term_lower)
+            {
+                // Get ID
+                let server_id = name_to_id.get(name).cloned().unwrap_or(-1);
+
+                // Add to results
+                results.push(LocalMCPServer {
+                    id: server_id,
+                    name: name.clone(),
+                    command: config.command.clone(),
+                    args: config.args.clone(),
+                });
+            }
+        }
+    }
+
+    Ok(results)
+}
+
+/// Struct for local MCP server information
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LocalMCPServer {
+    pub id: i32,
+    pub name: String,
+    pub command: String,
+    pub args: Option<Vec<String>>,
+}
+
 /// Reads the content of mcplink_desktop_config.json and returns it as a string.
 #[tauri::command]
 pub fn read_mcplink_config_content(app: AppHandle) -> Result<String, String> {
@@ -773,58 +963,108 @@ pub fn read_mcplink_config_content(app: AppHandle) -> Result<String, String> {
 
 #[tauri::command]
 pub async fn show_popup(app: AppHandle, tag: String) -> Result<(), String> {
-    // --- CLAUDE CODE START MODIFICATION ---
-    // Check notification permission state
-    let permission_state = match app.notification().permission_state() {
-        Ok(state) => state,
-        Err(e) => {
-            eprintln!("[Notification] Failed to get permission state: {}", e);
-            return Err(format!("Failed to get notification permission: {}", e));
-        }
-    };
-
-    // Request permission if not granted
-    use tauri_plugin_notification::PermissionState;
-    if permission_state != PermissionState::Granted {
-        match app.notification().request_permission() {
-            Ok(new_state) => {
-                if new_state != PermissionState::Granted {
-                    return Err("Notification permission was denied".to_string());
-                }
-            }
-            Err(e) => {
-                eprintln!("[Notification] Failed to request permission: {}", e);
-                return Err(format!("Failed to request notification permission: {}", e));
-            }
-        }
+    // Clear any existing pending keyword first
+    if let Err(e) = clear_pending_notification_keyword() {
+        eprintln!("[Notification] Failed to clear previous keywords: {}", e);
     }
 
-    // Create notification body - including tag information
+    // Set the pending keyword in the backend state
+    if let Err(e) = set_pending_notification_keyword(tag.clone()) {
+        eprintln!("[Notification] Failed to set pending keyword: {}", e);
+        return Err(format!("Failed to set pending keyword: {}", e));
+    }
+
+    // Create notification body with the tag information
+
     let notification_body = format!("Selected keyword: {}. Click to confirm.", tag);
 
-    // --- CLAUDE CODE START MODIFICATION ---
-    // Set notification options - simplified way to create notification
+    // Create and display notification
+    // Add settings for a more prominent notification
     let builder = app
         .notification()
         .builder()
-        .title("Confirm Recommendation")
+        .title("키워드 추천 확인") // Korean title (more noticeable and clear)
         .body(&notification_body)
         .icon("icons/icon.png");
 
-    // Send notification and handle result
+    // Set notification priority (if supported by the system)
+    #[cfg(target_os = "windows")]
+    let builder = builder.sound("Default"); // Add sound effect on Windows
+
+    // Display notification
     match builder.show() {
-        // --- CLAUDE CODE END MODIFICATION ---
-        Ok(_) => {
-            // if let Ok(permission_state) = app.notification().permission_state() { // Unused
-            // }
-            Ok(())
-        }
+        Ok(_) => println!("[Notification] Enhanced notification sent successfully"),
         Err(e) => {
-            eprintln!("[Notification Send Error] Tag: {}, Error: {}", tag, e);
-            Err(format!("Failed to send notification: {}", e))
+            eprintln!("[Notification] Notification error: {}", e);
+            return Err(format!("Failed to show notification: {}", e));
         }
     }
-    // --- CLAUDE CODE END MODIFICATION ---
+
+    // Clone variables for the async task
+    let app_clone = app.clone();
+    let _tag_clone = tag.clone(); // _tag_clone to avoid warning when variable is not used
+
+    // Start the delayed check task - use a shorter delay (1 second)
+    tauri::async_runtime::spawn(async move {
+        // Give the user time to click the notification (reduced to 1 second)
+        tokio::time::sleep(tokio::time::Duration::from_millis(1000)).await;
+
+        // Check if the keyword is still pending (if the notification was not clicked)
+        let keyword_still_pending = match get_pending_notification_keyword() {
+            Ok(keyword) => !keyword.is_empty(),
+            Err(_) => false,
+        };
+
+        // If the keyword is still pending, force activate the app
+        if keyword_still_pending {
+            // Window activation (1): Check if the app window is already visible
+            if let Some(window) = app_clone.get_webview_window("main") {
+                // Check if the window is visible
+                let is_visible = window.is_visible().unwrap_or(false);
+
+                // If the window is not visible, show it
+                if !is_visible {
+                    if let Err(e) = window.show() {
+                        eprintln!("[Notification] Failed to show window: {}", e);
+                    }
+                }
+
+                // If the window is minimized, restore it
+                if window.is_minimized().unwrap_or(false) {
+                    if let Err(e) = window.unminimize() {
+                        eprintln!("[Notification] Failed to unminimize window: {}", e);
+                    }
+                }
+
+                // Set always on top and activate focus
+                if let Err(e) = window.set_always_on_top(true) {
+                    eprintln!(
+                        "[Notification] Failed to set window always on top: {}",
+                        e
+                    );
+                }
+
+                if let Err(e) = window.set_focus() {
+                    eprintln!("[Notification] Failed to set focus: {}", e);
+                }
+            }
+
+            // Window activation (2): Call the core activation function (this actually handles keyword processing and window activation)
+            match check_and_mark_app_activated(app_clone).await {
+                Ok(keyword_opt) => match keyword_opt {
+                    Some(k) => println!(
+                        "[Notification] Successfully activated app with keyword: {}",
+                        k
+                    ),
+                    None => println!("[Notification] App activated but no keyword was found"),
+                },
+                Err(e) => eprintln!("[Notification] Failed to activate app: {}", e),
+            }
+        } else {
+        }
+    });
+
+    Ok(())
 }
 
 // --- Modified function to check config file existence ---
@@ -863,4 +1103,517 @@ pub fn check_mcplink_config_exists(app: AppHandle) -> Result<bool, String> {
     let mcplink_config_path = claude_dir.join("mcplink_desktop_config.json");
 
     Ok(mcplink_config_path.exists())
+}
+
+/// Ensures config files exist with default values
+/// Creates them if they don't exist
+#[tauri::command]
+pub async fn ensure_config_files(app: AppHandle) -> Result<(), String> {
+    // Load .env file in development mode (ignored if already loaded)
+    #[cfg(debug_assertions)]
+    let _ = dotenv();
+    
+    // Get environment variables at runtime
+    let crawler_api_base_url = if cfg!(debug_assertions) {
+        // Development mode: get from environment variable
+        env::var("CRAWLER_API_BASE_URL").unwrap_or_else(|_| String::new())
+    } else {
+        // Deployment mode: include the value from .env file at compile time
+        env::var("CRAWLER_API_BASE_URL").unwrap_or_else(|_| include_str!("../../.env")
+            .lines()
+            .find(|line| line.starts_with("CRAWLER_API_BASE_URL="))
+            .and_then(|line| line.split('=').nth(1))
+            .unwrap_or("")
+            .to_string())
+    };
+    
+    let gui_be_api_base_url = if cfg!(debug_assertions) {
+        // Development mode: get from environment variable
+        env::var("GUI_BE_API_BASE_URL").unwrap_or_else(|_| String::new())
+    } else {
+        // Deployment mode: include the value from .env file at compile time
+        env::var("GUI_BE_API_BASE_URL").unwrap_or_else(|_| include_str!("../../.env")
+            .lines()
+            .find(|line| line.starts_with("GUI_BE_API_BASE_URL="))
+            .and_then(|line| line.split('=').nth(1))
+            .unwrap_or("")
+            .to_string())
+    };
+    
+    // Check if config files exist
+    let claude_config_exists = check_claude_config_exists(app.clone())?;
+    let mcplink_config_exists = check_mcplink_config_exists(app.clone())?;
+    
+    // Only create missing files if needed
+    if !claude_config_exists || !mcplink_config_exists {
+        // Set up fallback server
+        let server_name = "McpFallbackServer";
+        
+        // Create environment variables map
+        let mut env_map = Map::new();
+        
+        // Add environment variables only if they exist
+        if !crawler_api_base_url.is_empty() {
+            env_map.insert("CRAWLER_API_BASE_URL".to_string(), Value::String(crawler_api_base_url));
+        }
+        if !gui_be_api_base_url.is_empty() {
+            env_map.insert("GUI_BE_API_BASE_URL".to_string(), Value::String(gui_be_api_base_url));
+        }
+        env_map.insert("NODE_ENV".to_string(), Value::String("development".to_string()));
+        
+        let server_config = MCPServerConfig {
+            command: "node".to_string(),
+            args: Some(vec!["C:\\Users\\SSAFY\\Desktop\\0516\\S12P31A201\\mcp-server\\dist\\main.js".to_string()]),
+            cwd: Some("C:\\Users\\SSAFY\\Desktop\\0516\\S12P31A201\\mcp-server".to_string()),
+            env: Some(env_map),
+        };
+        
+        // Add the configuration - this will create both config files
+        add_mcp_server_config(app, server_name.to_string(), server_config, -1).await?
+    }
+    
+    Ok(())
+}
+
+/// Monitors both configuration files and emits an event if either is missing
+/// This function should be called when you want to start watching the config files
+#[tauri::command]
+pub async fn start_config_watch(app: AppHandle) -> Result<(), String> {
+    // We'll use a background task to periodically check the config files
+    let app_handle = app.clone();
+    
+    // Start a task that runs in the background
+    tauri::async_runtime::spawn(async move {
+        // Check every 3 seconds for config files
+        let mut interval = tokio::time::interval(tokio::time::Duration::from_secs(3));
+        
+        loop {
+            interval.tick().await; // Wait for the next interval
+            
+            // Check if config files exist
+            match check_claude_config_exists(app_handle.clone()) {
+                Ok(claude_exists) => {
+                    match check_mcplink_config_exists(app_handle.clone()) {
+                        Ok(mcplink_exists) => {
+                            // If either file is missing, emit an event
+                            if !claude_exists || !mcplink_exists {
+                                // Send an event to the frontend that config is missing
+                                use tauri::Manager;
+                                if let Some(window) = app_handle.get_webview_window("main") {
+                                    // Emit the event with the specific status of each file
+                                    // Using Emitter trait which is now in scope
+                                    let _ = window.emit("config-files-missing", json!({
+                                        "claudeConfigExists": claude_exists,
+                                        "mcplinkConfigExists": mcplink_exists
+                                    }));
+                                }
+                            }
+                        },
+                        Err(e) => eprintln!("Error checking mcplink config: {}", e),
+                    }
+                },
+                Err(e) => eprintln!("Error checking claude config: {}", e),
+            }
+        }
+    });
+    
+    Ok(())
+}
+
+/// Function to read the detailed settings of an installed MCP server
+#[tauri::command]
+pub fn read_mcp_server_config(
+    app: AppHandle,
+    server_name: String,
+) -> Result<MCPServerConfig, String> {
+    // Create Claude directory path
+    let claude_dir = match std::env::consts::OS {
+        "windows" => {
+            let appdata = app
+                .path()
+                .app_data_dir()
+                .map_err(|e| format!("Failed to get AppData directory: {}", e))?;
+            appdata.parent().unwrap_or(&appdata).join("Claude")
+        }
+        _ => {
+            return Err("Currently only supported on Windows".to_string());
+        }
+    };
+
+    // Claude Desktop configuration file path
+    let config_path = claude_dir.join("claude_desktop_config.json");
+
+    if !config_path.exists() {
+        return Err("Claude configuration file does not exist".to_string());
+    }
+
+    // Read configuration file
+    let config_str = fs::read_to_string(&config_path)
+        .map_err(|e| format!("Failed to read config file: {}", e))?;
+
+    // Parse configuration
+    let config: ClaudeDesktopConfig = serde_json::from_str(&config_str)
+        .map_err(|e| format!("Failed to parse config file: {}", e))?;
+
+    // Check MCP server configuration
+    let servers = config.mcpServers.unwrap_or_default();
+
+    // Get configuration by specific server name
+    if let Some(server_config) = servers.get(&server_name) {
+        Ok(server_config.clone())
+    } else {
+        Err(format!(
+            "MCP server '{}' not found in configuration",
+            server_name
+        ))
+    }
+}
+
+/// Function to check if a server name is installed
+#[tauri::command]
+pub fn is_mcp_server_installed(app: AppHandle, server_name: String) -> Result<bool, String> {
+    // Create Claude directory path
+    let claude_dir = match std::env::consts::OS {
+        "windows" => {
+            let appdata = app
+                .path()
+                .app_data_dir()
+                .map_err(|e| format!("Failed to get AppData directory: {}", e))?;
+            appdata.parent().unwrap_or(&appdata).join("Claude")
+        }
+        _ => {
+            return Err("Currently only supported on Windows".to_string());
+        }
+    };
+
+    // Claude Desktop configuration file path
+    let config_path = claude_dir.join("claude_desktop_config.json");
+
+    if !config_path.exists() {
+        return Ok(false);
+    }
+
+    // Read configuration file
+    let config_str = fs::read_to_string(&config_path)
+        .map_err(|e| format!("Failed to read config file: {}", e))?;
+
+    // Parse configuration
+    let config: ClaudeDesktopConfig = serde_json::from_str(&config_str)
+        .map_err(|e| format!("Failed to parse config file: {}", e))?;
+
+    // Check MCP server configuration
+    let servers = config.mcpServers.unwrap_or_default();
+
+    // Check configuration by specific server name
+    Ok(servers.contains_key(&server_name))
+}
+
+/// Function to return the current time as a Unix timestamp
+fn get_current_time() -> Result<i64, String> {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map_err(|e| format!("Failed to get current time: {}", e))
+        .map(|d| d.as_secs() as i64)
+}
+
+/// Function to set the pending notification keyword
+#[tauri::command]
+pub fn set_pending_notification_keyword(keyword: String) -> Result<(), String> {
+    let mut state = NOTIFICATION_STATE
+        .lock()
+        .map_err(|e| format!("Failed to lock notification state: {}", e))?;
+
+    // Current time (Unix timestamp)
+    let now = get_current_time()?;
+
+    // Update state
+    state.pending_keyword = Some(keyword.clone());
+    state.timestamp = Some(now);
+    state.needs_activation = true; // Setting a notification means app activation is needed
+
+    Ok(())
+}
+
+/// Function to get any pending notification keyword
+/// Returns the keyword if one exists and is not expired, or an empty string otherwise
+#[tauri::command]
+pub fn get_pending_notification_keyword() -> Result<String, String> {
+    // Acquire the lock on the notification state
+    let mut state = NOTIFICATION_STATE
+        .lock()
+        .map_err(|e| format!("Failed to lock notification state: {}", e))?;
+
+    // Check if we have both a keyword and a timestamp
+    if let (Some(keyword), Some(timestamp)) = (&state.pending_keyword, &state.timestamp) {
+        // Check if the keyword has expired
+        let now = get_current_time().unwrap_or(0);
+
+        // Auto-clear keywords that are more than 30 seconds old
+        const KEYWORD_TIMEOUT_SECS: i64 = 30;
+        if now - timestamp > KEYWORD_TIMEOUT_SECS {
+            // Clear the expired keyword
+            state.pending_keyword = None;
+            state.timestamp = None;
+            state.needs_activation = false;
+
+            return Ok("".to_string());
+        }
+
+        // If keyword exists and is not expired, return it
+        return Ok(keyword.clone());
+    }
+
+    // No keyword found - return empty string
+    // Limit logging to every few checks to prevent log spam
+    static mut COUNT: u32 = 0;
+    unsafe {
+        COUNT += 1;
+        if COUNT % 10 == 0 {}
+    }
+
+    Ok("".to_string())
+}
+
+/// Activates the app window and processes any pending notification keywords
+/// Returns the keyword that was processed, if any
+#[tauri::command]
+pub async fn check_and_mark_app_activated(app: AppHandle) -> Result<Option<String>, String> {
+    // Extract keyword and reset state in a separate scope to ensure MutexGuard is dropped
+    let keyword = {
+        // Get the notification state
+        let mut state = NOTIFICATION_STATE
+            .lock()
+            .map_err(|e| format!("Failed to lock notification state: {}", e))?;
+
+        // Extract the keyword if there is one
+        let keyword = state.pending_keyword.clone();
+
+        // Only reset state if we actually had a keyword
+        if keyword.is_some() {
+            // Reset notification state
+            state.pending_keyword = None;
+            state.timestamp = None;
+            state.needs_activation = false;
+        }
+
+        // Return the keyword (will be None if no keyword was present)
+        keyword
+
+        // MutexGuard is automatically dropped here when this scope ends
+    };
+
+    // Process the keyword if we have one
+    if let Some(ref _kw) = keyword { // _kw to avoid warning when variable is not used
+        // Get the main window and activate it with several different methods
+        if let Some(window) = app.get_webview_window("main") {
+            // Enhanced window activation sequence
+
+            // 1. Basic show operation
+            if let Err(e) = window.show() {
+                eprintln!("[NotificationState] Failed to show window: {}", e);
+            }
+
+            // 2. Restore if minimized
+            if let Err(e) = window.unminimize() {
+                eprintln!("[NotificationState] Failed to unminimize window: {}", e);
+            }
+
+            // 3. Set window to always on top
+            if let Err(e) = window.set_always_on_top(true) {
+                eprintln!(
+                    "[NotificationState] Failed to set window always on top: {}",
+                    e
+                );
+            }
+
+            // 4. Activate and set focus (try multiple times)
+            for _ in 0..3 {
+                if let Err(e) = window.set_focus() {
+                    eprintln!("[NotificationState] Focus attempt failed: {}", e);
+                }
+                tokio::time::sleep(tokio::time::Duration::from_millis(50)).await;
+            }
+
+            // 5. Request user attention to force focus (flashes taskbar on Windows)
+            if let Err(e) = window.request_user_attention(Some(tauri::UserAttentionType::Critical))
+            {
+                eprintln!(
+                    "[NotificationState] Failed to request user attention: {}",
+                    e
+                );
+            }
+
+            // 6. Try focusing again after a short delay (needed on some OS)
+            tokio::time::sleep(tokio::time::Duration::from_millis(200)).await;
+            if let Err(e) = window.set_focus() {
+                eprintln!("[NotificationState] Final focus attempt failed: {}", e);
+            }
+
+            // 7. Special measure: Windows-specific focus command - changed to a non-resizing method
+            #[cfg(target_os = "windows")]
+            {
+                // 1. First, use a simple approach to ensure the window is definitely shown
+                let _ = window.show();
+                let _ = window.unminimize();
+
+                // 2. Request focus multiple times
+                for _ in 0..5 {
+                    let _ = window.set_focus();
+                    tokio::time::sleep(tokio::time::Duration::from_millis(20)).await;
+                }
+
+                // 3. Request user attention (use Informational instead of Critical for less aggression)
+                let _ =
+                    window.request_user_attention(Some(tauri::UserAttentionType::Informational));
+
+                // 4. Use always-on-top property for topmost display
+                let _ = window.set_always_on_top(true);
+
+                // 5. Use Tauri's built-in window centering function
+                let _ = window.center();
+
+                // 6. Focus again
+                let _ = window.set_focus();
+            }
+
+            // 8. Set timer to automatically disable always-on-top state
+            // Automatically disable always on top after 5 seconds
+            let window_clone = window.clone();
+            tauri::async_runtime::spawn(async move {
+                // 5-second delay
+                tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
+
+                // Disable always on top state
+                if let Err(e) = window_clone.set_always_on_top(false) {
+                    eprintln!("[NotificationState] Failed to remove always-on-top: {}", e);
+                }
+            });
+        } else {
+            eprintln!("[NotificationState] Main window not found");
+        }
+
+        return Ok(keyword);
+    }
+
+    // No keyword was present
+    Ok(None)
+}
+
+/// Function to check if the app is active
+#[tauri::command]
+pub fn is_app_active(app: AppHandle) -> Result<bool, String> {
+    let window = app
+        .get_webview_window("main")
+        .ok_or_else(|| "Failed to get main window".to_string())?;
+
+    // Check if the window is visible
+    let is_visible = window.is_visible().unwrap_or(false);
+
+    Ok(is_visible)
+}
+
+/// Function to clear the pending notification keyword
+#[tauri::command]
+pub fn clear_pending_notification_keyword() -> Result<(), String> {
+    let mut state = NOTIFICATION_STATE
+        .lock()
+        .map_err(|e| format!("Failed to lock notification state: {}", e))?;
+
+    // Initialize state
+    state.pending_keyword = None;
+    state.timestamp = None;
+    state.needs_activation = false;
+
+    Ok(())
+}
+
+/// Function to reset MCP settings (excluding fallback server)
+#[tauri::command]
+pub fn reset_mcp_settings(app: AppHandle) -> Result<(), String> {
+    // Create Claude directory path
+    let claude_dir = match std::env::consts::OS {
+        "windows" => {
+            let appdata = app
+                .path()
+                .app_data_dir()
+                .map_err(|e| format!("Failed to get AppData directory: {}", e))?;
+            appdata.parent().unwrap_or(&appdata).join("Claude")
+        }
+        _ => {
+            return Err("Currently only supported on Windows".to_string());
+        }
+    };
+
+    // Configuration file paths
+    let claude_config_path = claude_dir.join("claude_desktop_config.json");
+    let mcplink_config_path = claude_dir.join("mcplink_desktop_config.json");
+
+    // 1. Process claude_desktop_config.json
+    if claude_config_path.exists() {
+        // Read configuration file
+        let config_str = fs::read_to_string(&claude_config_path)
+            .map_err(|e| format!("Failed to read claude config file: {}", e))?;
+
+        // Parse configuration
+        let mut config_value: Value = serde_json::from_str(&config_str)
+            .map_err(|e| format!("Failed to parse claude config file: {}", e))?;
+            
+        // Use general Value for more precise control
+        if let Value::Object(ref mut obj) = config_value {
+            // Find and process mcpServers (uppercase version)
+            if let Some(Value::Object(ref mut servers_map)) = obj.get_mut("mcpServers") {                
+                // Find fallback server
+                let fallback_server = servers_map.remove("McpFallbackServer")
+                    .or_else(|| servers_map.remove("MCPlink"));
+                
+                // Initialize map (remove all keys)
+                servers_map.clear();
+                
+                // If fallback server existed, add it back
+                if let Some(fallback) = fallback_server {
+                    servers_map.insert(String::from("McpFallbackServer"), fallback);
+                }
+            }
+            
+            // If lowercase mcp_servers value exists, remove it (to prevent creation)
+            obj.remove("mcp_servers");
+        }
+        
+        // Convert value back to ClaudeDesktopConfig
+        let config: ClaudeDesktopConfig = serde_json::from_value(config_value)
+            .map_err(|e| format!("Failed to convert value back to config: {}", e))?;
+
+        // Write modified configuration to file
+        let config_json = serde_json::to_string_pretty(&config)
+            .map_err(|e| format!("Failed to serialize claude config: {}", e))?;
+
+        fs::write(&claude_config_path, config_json)
+            .map_err(|e| format!("Failed to write claude config file: {}", e))?;
+    }
+
+    // 2. Process mcplink_desktop_config.json
+    if mcplink_config_path.exists() {
+        // Read configuration file
+        let mcplink_str = fs::read_to_string(&mcplink_config_path)
+            .map_err(|e| format!("Failed to read mcplink config file: {}", e))?;
+
+        // Parse configuration
+        let mcplink_config: Map<String, Value> = serde_json::from_str(&mcplink_str)
+            .map_err(|e| format!("Failed to parse mcplink config file: {}", e))?;
+
+        // Create a new map that only keeps the fallback server with ID -1
+        let mut new_mcplink_config = Map::new();
+        if let Some(fallback_value) = mcplink_config.get("-1") {
+            new_mcplink_config.insert("-1".to_string(), fallback_value.clone());
+        }
+
+        // Write modified configuration to file
+        let mcplink_json = serde_json::to_string_pretty(&new_mcplink_config)
+            .map_err(|e| format!("Failed to serialize mcplink config: {}", e))?;
+
+        fs::write(&mcplink_config_path, mcplink_json)
+            .map_err(|e| format!("Failed to write mcplink config file: {}", e))?;
+    }
+
+    Ok(())
 }

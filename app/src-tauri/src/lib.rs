@@ -12,7 +12,7 @@ use axum::{
 use reqwest::Client;
 use serde::Deserialize;
 use std::{env, net::SocketAddr, sync::Arc};
-use tauri::Emitter;
+use dotenvy::dotenv;
 use tauri::{
     menu::{MenuBuilder, MenuItemBuilder},
     tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
@@ -45,7 +45,7 @@ pub struct KeywordsPayload {
     keywords: Vec<String>,
 }
 
-// Axum 서버 상태를 위한 구조체
+// Struct for Axum server state
 #[derive(Clone)]
 pub struct RecommendationServerState {
     app_handle: Arc<Mutex<Option<AppHandle>>>,
@@ -74,6 +74,22 @@ async fn handle_recommendations(
 
     // Send notification using AppHandle
     if let Some(app_handle) = &*state.app_handle.lock().await {
+        
+        // Set the first keyword as pending keyword
+        if let Some(first_keyword) = payload.keywords.first() {
+            
+            // First, initialize app state (if previous data exists)
+            if let Err(e) = commands::clear_pending_notification_keyword() {
+                eprintln!("[Recommendation] Failed to clear previous keywords: {}", e);
+            }
+            
+            // Set pending notification keyword (for notification click handling)
+            if let Err(e) = commands::set_pending_notification_keyword(first_keyword.clone()) {
+                eprintln!("[Recommendation] Failed to set pending keyword: {}", e);
+            } else {
+            }
+        }
+        
         // Utilize existing notification logic
         let notification_body = format!("Selected keywords: {}. Click to check.", keywords_str);
 
@@ -85,8 +101,11 @@ async fn handle_recommendations(
             .icon("icons/icon.png");
 
         match builder.show() {
-            Ok(_) => {}   // println!("Notification sent successfully."), // Log removed
-            Err(_e) => {} // eprintln!("Failed to send notification: {}", e), // Log removed
+            Ok(_) => {
+            }
+            Err(e) => {
+                eprintln!("[Recommendation] Failed to send notification: {}", e);
+            }
         }
 
         // Use emit instead of emit_all - Explicitly use Emitter trait
@@ -95,7 +114,7 @@ async fn handle_recommendations(
             let _ = app_handle.emit("new-keywords", payload.keywords.clone());
         }
     } else {
-        // eprintln!("AppHandle not set, cannot send notification"); // Log removed
+        eprintln!("[Recommendation] AppHandle not set, cannot send notification");
     }
 
     StatusCode::OK
@@ -120,29 +139,32 @@ async fn handle_api_v1_request(
 
         // Attempt to display notification and log result
         match builder.show() {
-            Ok(_) => {}   // println!("Notification sent successfully for /api/v1."), // Log removed
-            Err(_e) => {} // eprintln!("Failed to send notification for /api/v1: {}", e), // Log removed
+            Ok(_) => {}
+            Err(_e) => {}
         }
     } else {
-        // eprintln!("AppHandle not set, cannot send notification for /api/v1"); // Log removed
     }
 
     StatusCode::OK
 }
 
 // Function to start Axum server
-pub async fn start_axum_server(
-    app_state: RecommendationServerState,
-) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+pub async fn start_axum_server(app_state: RecommendationServerState) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    // Load .env file in development mode (ignore if already loaded)
+    #[cfg(debug_assertions)]
+    let _ = dotenv();
+    
     // Get GUI API URL settings from environment variables
+    // Get environment variables at runtime (use default value)
     let gui_api_host = env::var("GUI_API_HOST").unwrap_or_else(|_| "0.0.0.0".to_string());
+    
+    // Get environment variables at runtime (use default value)
     let gui_api_port = env::var("GUI_API_PORT").unwrap_or_else(|_| "8082".to_string());
 
     let addr_str = format!("{}:{}", gui_api_host, gui_api_port);
     let addr: SocketAddr = match addr_str.parse() {
         Ok(addr) => addr,
         Err(e) => {
-            // eprintln!("[DEBUG] Failed to parse address: {}", e); // Log removed
             return Err(Box::new(e));
         }
     };
@@ -160,7 +182,6 @@ pub async fn start_axum_server(
     let listener = match tokio::net::TcpListener::bind(addr).await {
         Ok(listener) => listener,
         Err(e) => {
-            // eprintln!("[DEBUG] Failed to bind to {}: {}", addr, e); // Log removed
             return Err(Box::new(e));
         }
     };
@@ -169,13 +190,16 @@ pub async fn start_axum_server(
     match axum::serve(listener, app).await {
         Ok(_) => Ok(()),
         Err(e) => {
-            // eprintln!("[DEBUG] Axum server error: {}", e); // Log removed
             Err(Box::new(e))
         }
     }
 }
 
 pub fn run() {
+    // Load .env file in development mode (ignore if already loaded)
+    #[cfg(debug_assertions)]
+    let _ = dotenv();
+    
     // Create AppState (maintains client for API requests)
     let app_state = AppState {
         client: Client::new(),
@@ -282,10 +306,9 @@ pub fn run() {
 
             // Common function to extract tag
             fn extract_tag_from_body(body: &str) -> Option<String> {
-                // Extracts TAG from "선택된 키워드: TAG. 클릭하여 확인하세요." (Selected keywords: TAG. Click to check.)
-                if let Some(start) = body.find("선택된 키워드: ") {
-                    // Find the Korean part for tag extraction
-                    let start_idx = start + "선택된 키워드: ".len();
+                // Extracts TAG from "Selected keywords: TAG. Click to check."
+                if let Some(start) = body.find("Selected keywords: ") { // Find the English part for tag extraction
+                    let start_idx = start + "Selected keywords: ".len();
                     if let Some(end) = body[start_idx..].find(". ") {
                         let tag = body[start_idx..(start_idx + end)].to_string();
                         return Some(tag);
@@ -340,8 +363,8 @@ pub fn run() {
 
                 // Start Axum server
                 match start_axum_server(recommendation_server_state_clone).await {
-                    Ok(_) => {}   // println!("[DEBUG] Axum server completed successfully"), // Log removed
-                    Err(_e) => {} // eprintln!("[DEBUG] Error in Axum server: {:?}", e), // Log removed
+                    Ok(_) => {}
+                    Err(_e) => {}
                 }
             });
 
@@ -361,6 +384,17 @@ pub fn run() {
             commands::read_mcplink_config_content,
             commands::check_claude_config_exists,
             commands::check_mcplink_config_exists,
+            commands::read_mcp_server_config,
+            commands::is_mcp_server_installed,
+            commands::reset_mcp_settings,
+            commands::set_pending_notification_keyword,
+            commands::get_pending_notification_keyword,
+            commands::clear_pending_notification_keyword,
+            commands::check_and_mark_app_activated,
+            commands::is_app_active,
+            commands::search_local_mcp_servers,
+            commands::ensure_config_files,
+            commands::start_config_watch,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

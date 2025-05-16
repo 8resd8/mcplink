@@ -51,24 +51,6 @@
     // Local filtering (category, etc.)
     let results = [...mcpCards]
 
-    // Category filtering (simply implemented here by checking if title contains specific words)
-    // if (categoryFilter !== 'all') { // User removed this section
-    //   const filterTerms = {
-    //     'project': ['Project', 'Plan'],
-    //     'design': ['Design', 'Review'],
-    //     'code': ['Code', 'Refactor'],
-    //     'test': ['Test', 'Automation']
-    //   };
-
-    //   const terms = filterTerms[categoryFilter as keyof typeof filterTerms];
-    //   results = results.filter(card =>
-    //     terms.some(term =>
-    //       card.title.includes(term) ||
-    //       card.description.includes(term)
-    //     )
-    //   );
-    // } // User removed this section
-
     filteredCards = results
   }
 
