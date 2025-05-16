@@ -1,8 +1,17 @@
 {
-  "name": "mcp-fallback-server",
-  "version": "1.0.0",
+  "name": "@dw8k/mcp-fallback-server",
+  "version": "1.0.2",
   "description": "MCP fallback server that extracts keywords from prompts and triggers tool recommendations.",
   "main": "dist/main.js",
+  "bin": {
+    "mcp-fallback-server": "dist/main.js"
+  },
+  "files": [
+    "dist",
+    "LICENSE",
+    "README.md",
+    "package.json"
+  ],
   "scripts": {
     "build": "tsc",
     "start": "node dist/main.js",
@@ -38,5 +47,8 @@
     "ts-node": "^10.9.2",
     "tsx": "^4.19.4",
     "typescript": "^5.8.3"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }
