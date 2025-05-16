@@ -6,7 +6,8 @@ use axum::{
     middleware::{self, Next},            // Added middleware and Next
     response::Response,                  // Added Response
     routing::post,
-    Json, Router,
+    Json,
+    Router,
 };
 use reqwest::Client;
 use serde::Deserialize;
@@ -24,12 +25,15 @@ pub mod commands;
 use crate::commands::AppState;
 
 // POST request logging middleware function
-async fn log_post_requests(req: Request<axum::body::Body>, next: Next) -> Result<Response, StatusCode> {
+async fn log_post_requests(
+    req: Request<axum::body::Body>,
+    next: Next,
+) -> Result<Response, StatusCode> {
     if req.method() == Method::POST {
         let _uri = req.uri().clone(); // _uri to avoid warning, or log it
         let _headers = req.headers().clone(); // _headers to avoid warning, or log them
-        // Note: Logging the request body requires caution.
-        // Here, only URI and headers are (potentially) logged.
+                                              // Note: Logging the request body requires caution.
+                                              // Here, only URI and headers are (potentially) logged.
     }
     // Pass the request to the next handler or middleware
     Ok(next.run(req).await)
@@ -65,7 +69,6 @@ async fn handle_recommendations(
     AxumState(state): AxumState<RecommendationServerState>,
     Json(payload): Json<KeywordsPayload>,
 ) -> StatusCode {
-
     // Convert keywords to a comma-separated string
     let keywords_str = payload.keywords.join(", ");
 
@@ -82,7 +85,7 @@ async fn handle_recommendations(
             .icon("icons/icon.png");
 
         match builder.show() {
-            Ok(_) => {} // println!("Notification sent successfully."), // Log removed
+            Ok(_) => {}   // println!("Notification sent successfully."), // Log removed
             Err(_e) => {} // eprintln!("Failed to send notification: {}", e), // Log removed
         }
 
@@ -102,12 +105,11 @@ async fn handle_recommendations(
 async fn handle_api_v1_request(
     AxumState(state): AxumState<RecommendationServerState>,
 ) -> StatusCode {
-    
     // Send notification using AppHandle
     if let Some(app_handle) = &*state.app_handle.lock().await {
         // Set notification body
         let notification_body = String::from("New data received. (From /api/v1)");
-        
+
         // Create and display notification
         let builder = app_handle
             .notification()
@@ -115,23 +117,23 @@ async fn handle_api_v1_request(
             .title("API Notification") // Title in English
             .body(&notification_body)
             .icon("icons/icon.png");
-            
+
         // Attempt to display notification and log result
         match builder.show() {
-            Ok(_) => {} // println!("Notification sent successfully for /api/v1."), // Log removed
+            Ok(_) => {}   // println!("Notification sent successfully for /api/v1."), // Log removed
             Err(_e) => {} // eprintln!("Failed to send notification for /api/v1: {}", e), // Log removed
         }
     } else {
         // eprintln!("AppHandle not set, cannot send notification for /api/v1"); // Log removed
     }
-    
+
     StatusCode::OK
 }
 
 // Function to start Axum server
-pub async fn start_axum_server(app_state: RecommendationServerState) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-
-    
+pub async fn start_axum_server(
+    app_state: RecommendationServerState,
+) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     // Get GUI API URL settings from environment variables
     let gui_api_host = env::var("GUI_API_HOST").unwrap_or_else(|_| "0.0.0.0".to_string());
     let gui_api_port = env::var("GUI_API_PORT").unwrap_or_else(|_| "8082".to_string());
@@ -156,9 +158,7 @@ pub async fn start_axum_server(app_state: RecommendationServerState) -> Result<(
 
     // Attempt to bind TcpListener
     let listener = match tokio::net::TcpListener::bind(addr).await {
-        Ok(listener) => {
-            listener
-        },
+        Ok(listener) => listener,
         Err(e) => {
             // eprintln!("[DEBUG] Failed to bind to {}: {}", addr, e); // Log removed
             return Err(Box::new(e));
@@ -167,9 +167,7 @@ pub async fn start_axum_server(app_state: RecommendationServerState) -> Result<(
 
     // Start Axum server
     match axum::serve(listener, app).await {
-        Ok(_) => {
-            Ok(())
-        },
+        Ok(_) => Ok(()),
         Err(e) => {
             // eprintln!("[DEBUG] Axum server error: {}", e); // Log removed
             Err(Box::new(e))
@@ -194,6 +192,24 @@ pub fn run() {
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_notification::init()) // Initialize notification plugin
+        .plugin(tauri_plugin_single_instance::init(|app, argv, cwd| {
+            // 새로운 인스턴스가 실행됐을 때, 기존 창에 포커스
+            app.get_webview_window("main")
+                .expect("메인 창을 찾을 수 없습니다")
+                .set_focus()
+                .unwrap();
+
+            // 필요시 창 복원 및 전면으로 가져오기
+            #[cfg(target_os = "windows")]
+            {
+                use tauri::Manager;
+                if let Some(window) = app.get_webview_window("main") {
+                    let _ = window.unminimize();
+                    let _ = window.show();
+                    let _ = window.set_focus();
+                }
+            }
+        }))
         .setup(|app| {
             // Create menu items
             let open_item = MenuItemBuilder::with_id("open", "Open").build(app)?;
@@ -267,7 +283,8 @@ pub fn run() {
             // Common function to extract tag
             fn extract_tag_from_body(body: &str) -> Option<String> {
                 // Extracts TAG from "선택된 키워드: TAG. 클릭하여 확인하세요." (Selected keywords: TAG. Click to check.)
-                if let Some(start) = body.find("선택된 키워드: ") { // Find the Korean part for tag extraction
+                if let Some(start) = body.find("선택된 키워드: ") {
+                    // Find the Korean part for tag extraction
                     let start_idx = start + "선택된 키워드: ".len();
                     if let Some(end) = body[start_idx..].find(". ") {
                         let tag = body[start_idx..(start_idx + end)].to_string();
@@ -279,7 +296,6 @@ pub fn run() {
 
             // Notification handler function
             fn handle_notification(body: &str, app_handle: &tauri::AppHandle) {
-
                 // Get main window
                 if let Some(window) = app_handle.get_webview_window("main") {
                     // 1. Activate window (process in the same order)
@@ -314,10 +330,9 @@ pub fn run() {
 
             // --- Start of Axum server startup code addition ---
             let app_handle_for_axum = app.handle().clone();
-            
+
             // Set AppHandle and start Axum server
             tauri::async_runtime::spawn(async move {
-                
                 // Set AppHandle
                 recommendation_server_state_clone
                     .set_app_handle(app_handle_for_axum)
@@ -325,11 +340,11 @@ pub fn run() {
 
                 // Start Axum server
                 match start_axum_server(recommendation_server_state_clone).await {
-                    Ok(_) => {} // println!("[DEBUG] Axum server completed successfully"), // Log removed
+                    Ok(_) => {}   // println!("[DEBUG] Axum server completed successfully"), // Log removed
                     Err(_e) => {} // eprintln!("[DEBUG] Error in Axum server: {:?}", e), // Log removed
                 }
             });
-            
+
             // --- End of Axum server startup code addition ---
 
             Ok(())
