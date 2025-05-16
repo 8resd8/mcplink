@@ -12,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -57,11 +58,25 @@ public class McpServerV2Service {
         return ApiResponse.success(HttpStatus.OK.toString(), Constants.MSG_SUCCESS_SEARCH, response);
     }
 
-    public ApiResponse<McpBatchResponse> findServersByIds(List<Long> serverIds, Integer size, Long cursorId) {
-        List<Long> pageIds = PaginationUtil.slicePageIdsForBatch(serverIds, size, cursorId);
-        List<McpServerV2> servers = serverRepository.findBySeqInOrder(pageIds);
+    public ApiResponse<McpBatchResponse> findServersByIds(List<Long> seqs, Integer size, Long cursorId) {
+        List<McpServerV2> servers = new ArrayList<>();
 
-        PageInfoDto pageInfo = PaginationUtil.buildPageInfoForBatch(serverIds, size, cursorId);
+        for (Long seq : seqs) {
+            McpServerV2 server = serverRepository.findBySeq(seq).orElse(null);
+
+            if(server == null) {
+                return ApiResponse.error(HttpStatus.NOT_FOUND.toString(), Constants.MSG_NOT_FOUNDS);
+            }
+        }
+
+        List<Long> pageIds = PaginationUtil.slicePageIdsForBatch(seqs, size, cursorId);
+
+        for (Long seq : pageIds) {
+            McpServerV2 server = serverRepository.findBySeq(seq).orElse(null);
+            servers.add(server);
+        }
+
+        PageInfoDto pageInfo = PaginationUtil.buildPageInfoForBatch(seqs, size, cursorId);
 
         List<McpSummaryDataDto> mcpServers = servers.stream()
                 .map(this::toSummaryDataDto)
@@ -79,10 +94,7 @@ public class McpServerV2Service {
             return ApiResponse.error(HttpStatus.NOT_FOUND.toString(), Constants.MSG_NOT_FOUND);
         }
 
-        long updated = serverRepository.findAndIncrementViewsBySeq(seq);
-        if (updated != 1) {
-            // Exception 추가 예정
-        }
+        serverRepository.findAndIncrementViewsBySeq(seq);
 
         McpDetailDataDto mcpServer = toDetailDataDto(server);
         McpDetailResponse response = new McpDetailResponse(mcpServer);

@@ -46,7 +46,7 @@ public class PaginationUtil {
         long startCursor = (startIndex < totalItems) ? items.get(startIndex) : 0L;
         int endIndex = (int) Math.min(totalItems, startIndex + size);
         long endCursor   = (endIndex > startIndex) ? items.get(endIndex - 1) : 0L;
-        boolean hasNext = (totalItems - endIndex) >= size;
+        boolean hasNext = endIndex < totalItems;
 
         return PageInfoDto.builder()
                 .startCursor(startCursor)

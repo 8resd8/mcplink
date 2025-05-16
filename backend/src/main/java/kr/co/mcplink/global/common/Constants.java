@@ -22,14 +22,15 @@ public final class Constants {
     // Github
     public static final String GITHUB_SEARCH_PATH               = "/search/repositories";
     public static final String GITHUB_README_PATH               = "/repos/{owner}/{repo}/readme";
-    public static final String GITHUB_REPO_PATH                        = "/repos/{owner}/{repo}";
+    public static final String GITHUB_REPO_PATH                 = "/repos/{owner}/{repo}";
     public static final String[] GITHUB_LANGUAGES               = { "typescript", "javascript", "python" };
     public static final String[] GITHUB_LICENSES                = { "mit", "apache-2.0", "gpl-3.0" };
 
     // Gemini
     public static final String GEMINI_GENERATE_CONTENT_PATH     = "/v1beta/models/{model}:generateContent";
-    public static final String GEMINI_FALLBACK_SUMMARY_TEXT     = "This is a %s server. Please refer to the README available at %s. We apologize for the inconvenience.";
-    public static final String GEMINI_DEFAULT_FALLBACK_TEXT     = "This is a MCP server. We apologize for the inconvenience.";
+    public static final String DESCRIPTION_NOT_YET_GENERATED    = "Generating description using AI. Please refer to the README available at %s. We apologize for the inconvenience.";
+    public static final String GEMINI_FALLBACK_SUMMARY_TEXT     = "Failed to generate summary using AI. Please refer to the README available at %s. We apologize for the inconvenience.";
+    public static final String GEMINI_DEFAULT_FALLBACK_TEXT     = "Failed to generate summary using AI. We apologize for the inconvenience.";
 
     // 성공 메시지
     public static final String SUCCESS                          = "SUCCESS";
@@ -42,5 +43,6 @@ public final class Constants {
     // 에러 메시지
     public static final String MSG_BAD_REQUEST                  = "잘못된 요청입니다. 요청 파라미터를 확인하세요.";
     public static final String MSG_NOT_FOUND                    = "해당 파일을 찾을 수 없습니다.";
+    public static final String MSG_NOT_FOUNDS                   = "요청한 파일 목록 중 일부 파일을 찾을 수 없습니다.";
     public static final String MSG_INTERNAL_ERROR               = "서버 처리 중 오류가 발생했습니다.";
 }
