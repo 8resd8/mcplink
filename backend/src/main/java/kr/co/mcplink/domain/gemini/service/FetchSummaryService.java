@@ -57,12 +57,10 @@ public class FetchSummaryService {
 
             if (serverOpt.isPresent()) {
                 McpServerV2 server = serverOpt.get();
-                String serverName = server.getDetail().getName();
                 String serverUrl = server.getUrl();
 
                 return String.format(
                         Constants.GEMINI_FALLBACK_SUMMARY_TEXT,
-                        serverName,
                         serverUrl
                 );
             } else {

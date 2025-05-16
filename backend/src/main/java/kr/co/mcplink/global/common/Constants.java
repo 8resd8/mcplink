@@ -28,8 +28,9 @@ public final class Constants {
 
     // Gemini
     public static final String GEMINI_GENERATE_CONTENT_PATH     = "/v1beta/models/{model}:generateContent";
-    public static final String GEMINI_FALLBACK_SUMMARY_TEXT     = "This is a %s server. Please refer to the README available at %s. We apologize for the inconvenience.";
-    public static final String GEMINI_DEFAULT_FALLBACK_TEXT     = "This is a MCP server. We apologize for the inconvenience.";
+    public static final String DESCRIPTION_NOT_YET_GENERATED    = "Generating description using AI. Please refer to the README available at %s. We apologize for the inconvenience.";
+    public static final String GEMINI_FALLBACK_SUMMARY_TEXT     = "Failed to generate summary using AI. Please refer to the README available at %s. We apologize for the inconvenience.";
+    public static final String GEMINI_DEFAULT_FALLBACK_TEXT     = "Failed to generate summary using AI. We apologize for the inconvenience.";
 
     // 성공 메시지
     public static final String SUCCESS                          = "SUCCESS";

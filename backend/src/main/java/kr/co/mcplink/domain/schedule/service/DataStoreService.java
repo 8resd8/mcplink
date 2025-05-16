@@ -6,6 +6,7 @@ import kr.co.mcplink.domain.mcpserverv2.entity.McpServerV2;
 import kr.co.mcplink.domain.mcpserverv2.entity.McpTagV2;
 import kr.co.mcplink.domain.mcpserverv2.repository.McpServerV2Repository;
 import kr.co.mcplink.domain.mcpserverv2.repository.McpTagV2Repository;
+import kr.co.mcplink.global.common.Constants;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DuplicateKeyException;
@@ -59,6 +60,8 @@ public class DataStoreService {
             prepUrl = rawUrl.substring(0, rawUrl.length() - 4);
         }
 
+        String pendingSummary = generatePendingSummary(prepUrl);
+
         return McpServerV2.builder()
                 .url(prepUrl)
                 .stars(m.stars())
@@ -68,12 +71,21 @@ public class DataStoreService {
                 .detail(
                         McpServerV2.McpServerDetail.builder()
                                 .name(p.name())
+                                .description(pendingSummary)
                                 .command(p.command())
                                 .args(p.args())
                                 .env(p.env())
                                 .build()
                 )
                 .build();
+    }
+
+    private String generatePendingSummary(String serverUrl) {
+
+        return String.format(
+                Constants.DESCRIPTION_NOT_YET_GENERATED,
+                serverUrl
+        );
     }
 
     public void updateSummary(String serverId, String summary, List<String> tags) {
