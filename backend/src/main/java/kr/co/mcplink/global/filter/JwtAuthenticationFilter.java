@@ -59,6 +59,7 @@ public class JwtAuthenticationFilter implements Filter {
 
 		// Cookie 검사
 		String jwt = extractJwtFromCookie(httpRequest);
+		log.info("1. 쿠키 검사 후 jwt: {}", jwt);
 		User authenticatedUser = null;
 
 		if (StringUtils.hasText(jwt) && jwtUtil.validateToken(jwt)) {
@@ -70,6 +71,8 @@ public class JwtAuthenticationFilter implements Filter {
 				httpRequest.setAttribute("user", authenticatedUser);
 			}
 		}
+		
+		log.info("2. 유저 확인: {}", authenticatedUser);
 
 		// 보안 경로 검사
 		boolean pathIsSecure = isPathMatch(pathToCheck, jwtProperties.securePath());
@@ -80,6 +83,8 @@ public class JwtAuthenticationFilter implements Filter {
 				throw new JwtForbiddenException("로그인이 필요한 서비스입니다.");
 			}
 		}
+		
+		log.info("3. 통과 성공");
 		chain.doFilter(request, response);
 	}
 
