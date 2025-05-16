@@ -40,6 +40,9 @@ public interface McpServerV2Repository extends MongoRepository<McpServerV2, Stri
 
     boolean existsByUrl(String url);
 
+    @Query(value = "{'mcpServers.description': {$regex: ?0, $options: 'i'}}", fields = "{'_id': { $toString: '$_id' }}")
+    List<String> findIdsByDetailDescriptionContaining(String text);
+
     @Update("{ '$inc': { 'views': 1 } }")
     long findAndIncrementViewsBySeq(Long seq);
 
