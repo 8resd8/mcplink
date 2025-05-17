@@ -14,6 +14,7 @@ import kr.co.mcplink.domain.schedule.v3.repository.GithubPendingQueueV3Repositor
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 
 import java.util.List;
 import java.util.Optional;
@@ -47,29 +48,33 @@ public class DataPrepV3Service {
                 String owner = item.getOwner();
                 String repo = item.getRepo();
                 if (owner == null || repo == null) {
-                    log.warn("Invalid Github pending item → {}", pendingItemId);
+                    log.warn("☢️☢️☢️☢️☢️ Invalid Github pending item → {} ☢️☢️☢️☢️☢️", pendingItemId);
                     githubRepository.updateProcessedById(pendingItemId, true);
                     continue;
                 }
 
-                String rawReadme = fetchReadmeService.fetchReadme(owner, repo);
+                String rawReadme;
+                try {
+                    rawReadme = fetchReadmeService.fetchReadme(owner, repo);
+                } catch (WebClientResponseException.Forbidden e) {
+                    log.error("☢️☢️☢️☢️☢️ 403 Forbidden error for {}/{} ☢️☢️☢️☢️☢️", owner, repo);
+                    continue;
+                }
+
                 if (rawReadme == null) {
-                    log.warn("No README fetched for {}/{} → skip", owner, repo);
-                    githubRepository.updateProcessedById(pendingItemId, true);
+                    log.warn("☢️☢️☢️☢️☢️ No README fetched for {}/{} ☢️☢️☢️☢️☢️", owner, repo);
                     continue;
                 }
 
                 String prepReadme = prepReadmeService.decodeReadme(rawReadme);
                 if (prepReadme == null) {
-                    log.warn("Failed to decode README for {}/{} → skip", owner, repo);
-                    githubRepository.updateProcessedById(pendingItemId, true);
+                    log.warn("☢️☢️☢️☢️☢️ Failed to decode README for {}/{} ☢️☢️☢️☢️☢️", owner, repo);
                     continue;
                 }
 
                 ParsedReadmeInfoDto parsedReadmeInfo = prepReadmeService.parseReadme(prepReadme);
                 if (parsedReadmeInfo == null) {
-                    log.warn("README parsing failed for {}/{} → skip", owner, repo);
-                    githubRepository.updateProcessedById(pendingItemId, true);
+                    log.warn("☢️☢️☢️☢️☢️ README parsing failed for {}/{} ☢️☢️☢️☢️☢️", owner, repo);
                     continue;
                 }
 
@@ -77,14 +82,13 @@ public class DataPrepV3Service {
 
                 GithubMetaDataDto metaData = fetchMetaDataService.fetchMetaData(owner, repo);
                 if (metaData == null) {
-                    log.warn("Metadata not found for {}/{} → skip", owner, repo);
-                    githubRepository.updateProcessedById(pendingItemId, true);
+                    log.warn("☢️☢️☢️☢️☢️ Metadata not found for {}/{} ☢️☢️☢️☢️☢️", owner, repo);
                     continue;
                 }
 
                 String savedServerId = dataStoreService.saveMcpServer(metaData, parsedReadmeInfo);
                 if (savedServerId == null) {
-                    log.warn("McpServer not found for {}/{} → skip", owner, repo);
+                    log.warn("☢️☢️☢️☢️☢️ McpServer not found for {}/{} ☢️☢️☢️☢️☢️", owner, repo);
                     continue;
                 }
 
@@ -93,7 +97,7 @@ public class DataPrepV3Service {
                 enqueueService.enqueueGemini(savedServerId, savedServerName, prepReadme);
                 log.info("Successfully processed and enqueued Gemini task for {}/{}", owner, repo);
             } catch (Exception e) {
-                log.error("Error processing Github item {} → {}", pendingItemId, e.getMessage(), e);
+                log.error("☢️☢️☢️☢️☢️ Error processing Github item {} → {} ☢️☢️☢️☢️☢️", pendingItemId, e.getMessage(), e);
             }
         }
     }
@@ -123,15 +127,22 @@ public class DataPrepV3Service {
         String prepReadme = item.getPrepReadme();
 
         if (serverId == null || prepReadme == null || prepReadme.isEmpty()) {
-            log.warn("Invalid Gemini pending item → {}", pendingItemId);
+            log.warn("☢️☢️☢️☢️☢️ Invalid Gemini pending item → {} ☢️☢️☢️☢️☢️", pendingItemId);
             geminiRepository.updateProcessedById(pendingItemId, true);
             return;
         }
 
         try {
-            String readmeSummary = fetchSummaryService.fetchSummary(prepReadme, serverId);
+            String readmeSummary;
+            try {
+                readmeSummary = fetchSummaryService.fetchSummary(prepReadme, serverId);
+            } catch (WebClientResponseException.Forbidden e) {
+                log.error("☢️☢️☢️☢️☢️ 403 Forbidden error for serverId → {} ☢️☢️☢️☢️☢️", serverId);
+                return;
+            }
+
             if (readmeSummary == null) {
-                log.warn("Failed to generate summary for serverId → {}", serverId);
+                log.warn("☢️☢️☢️☢️☢️ Failed to generate summary for serverId → {} ☢️☢️☢️☢️☢️", serverId);
                 return;
             }
 
@@ -139,7 +150,7 @@ public class DataPrepV3Service {
 
             List<String> generatedTags = fetchTagService.fetchTags(serverName);
             if (generatedTags == null || generatedTags.isEmpty()) {
-                log.warn("Failed to generate tags for serverId → {}", serverId);
+                log.warn("☢️☢️☢️☢️☢️ Failed to generate tags for serverId → {} ☢️☢️☢️☢️☢️", serverId);
                 return;
             }
 
@@ -150,7 +161,7 @@ public class DataPrepV3Service {
             geminiRepository.updateProcessedById(pendingItemId, true);
             log.info("Successfully processed for {}", serverId);
         } catch (Exception e) {
-            log.error("Error processing Gemini item {} → {}", pendingItemId, e.getMessage(), e);
+            log.error("☢️☢️☢️☢️☢️ Error processing Gemini item {} → {} ☢️☢️☢️☢️☢️", pendingItemId, e.getMessage(), e);
         }
     }
 }
