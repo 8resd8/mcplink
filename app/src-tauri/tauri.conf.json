@@ -33,7 +33,8 @@
     "fs": {},
     "os": {},
     "notification": null,
-    "single-instance": null
+    "single-instance": null,
+    "dialog": null
   },
   "bundle": {
     "active": true,

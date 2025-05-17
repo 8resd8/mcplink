@@ -10,6 +10,8 @@
   import { getCurrentWindow, UserAttentionType } from "@tauri-apps/api/window"
   import { platform as getOsPlatform } from "@tauri-apps/plugin-os"
   import { invoke } from "@tauri-apps/api/core"
+  import Toast from "$lib/components/toast.svelte"
+  import toastStore from "$lib/stores/toast"
 
   // --- Configuration for app appearance ---
   // Background class for the title bar and the tab bar area.
@@ -32,6 +34,7 @@
   let unlistenMoveToCenter: UnlistenFn | undefined
   let unlistenNavigateTo: UnlistenFn | undefined
   let unlistenConfigFiles: UnlistenFn | undefined
+  let unlistenFocusChange: UnlistenFn | undefined
 
   // --- Svelte reactive state ---
   let activeTabPath = "/"
@@ -192,55 +195,30 @@
         
         // Set up event listeners
         unlistenMoveToCenter = await listen("move-main-to-center", async () => {
-          // Only move window to center when explicitly requested (e.g., from popup)
-          // This prevents auto-centering when app starts
-          if (tauriWindow) {
-            try {
-              await tauriWindow.center();
-            } catch (e) {
-              console.error("Failed to center window:", e);
-            }
-          }
+          // This event should not be triggered anymore
+          // We no longer automatically center the window
+          console.log("move-main-to-center event received but ignored to prevent auto-centering");
         })
         
         unlistenNavigateTo = await listen("navigate-to", async (event) => {
           if (event.payload && typeof event.payload === "string") goto(event.payload as string)
         })
         
-        // Only handle notifications when window is focused, but don't auto-center the window
-        let isFirstFocus = true;
+        // Focus event listener that completely ignores all focus events
+        // This prevents the window from auto-centering when focused
         const windowEventUnlistener = await tauriWindow.onFocusChanged(({ payload: focused }) => {
+          // Simply do nothing when window gains focus
           if (focused) {
-            // Skip the first focus event which occurs when the app starts
-            if (isFirstFocus) {
-              isFirstFocus = false;
-              return;
-            }
-            
-            // Only check for pending notifications without repositioning the window
-            try {
-              invoke<string | null>("check_and_mark_app_activated", {}).then(response => {
-                // Handle notification if there's a keyword, but don't auto-center or change window position
-                if (response && (
-                  (typeof response === 'object' && (response.hasOwnProperty('Some') || response.hasOwnProperty('0'))) ||
-                  (typeof response === 'string' && response.trim() !== "")
-                )) {
-                  // Process notification without window repositioning
-                  console.log("Notification received while window was already active");
-                }
-              });
-            } catch (e) {
-              console.error("Error checking for notifications:", e);
-            }
+            console.log("Window focused event ignored to prevent auto-centering");
           }
         });
         
-        // Add this unlistener to onDestroy
-        onDestroy(() => {
-          if (windowEventUnlistener) windowEventUnlistener();
-        });
+        // Store unlisten function for cleanup in a variable for later use
+        if (windowEventUnlistener) {
+          unlistenFocusChange = windowEventUnlistener;
+        }
         
-        // Skip initial auto-centering when app starts
+        // Do NOT call handleAppActivated at start - this prevents auto-centering
         // handleAppActivated();
         
         // Start watching for config file changes
@@ -287,6 +265,7 @@
     if (unlistenMoveToCenter) unlistenMoveToCenter();
     if (unlistenNavigateTo) unlistenNavigateTo();
     if (unlistenConfigFiles) unlistenConfigFiles();
+    if (unlistenFocusChange) unlistenFocusChange();
   });
 
   // --- Window control functions ---
@@ -388,6 +367,15 @@
   >
     <slot />
   </main>
+  
+  <!-- Global Toast Notifications -->
+  <Toast 
+    bind:show={$toastStore.show}
+    message={$toastStore.message}
+    type={$toastStore.type}
+    duration={$toastStore.duration}
+    position={$toastStore.position}
+  />
 </div>
 
 <style>

@@ -2,7 +2,11 @@
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
   "description": "Capability for the main window",
-  "windows": ["main", "notification-*", "popup"],
+  "windows": [
+    "main",
+    "notification-*",
+    "popup"
+  ],
   "permissions": [
     "core:default",
     "opener:default",
@@ -25,17 +29,35 @@
     "process:default",
     "core:window:allow-set-title",
     "notification:default",
+    "dialog:default",
+    "dialog:allow-message",
+    "dialog:allow-confirm",
     {
       "identifier": "fs:scope",
-      "allow": [{ "path": "$APPDATA" }, { "path": "$APPDATA/**" }]
+      "allow": [
+        {
+          "path": "$APPDATA"
+        },
+        {
+          "path": "$APPDATA/**"
+        }
+      ]
     },
     {
       "identifier": "fs:allow-read-file",
-      "allow": [{ "path": "$APPDATA/**" }]
+      "allow": [
+        {
+          "path": "$APPDATA/**"
+        }
+      ]
     },
     {
       "identifier": "fs:allow-write-file",
-      "allow": [{ "path": "$APPDATA/**" }]
+      "allow": [
+        {
+          "path": "$APPDATA/**"
+        }
+      ]
     }
   ]
 }

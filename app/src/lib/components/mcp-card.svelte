@@ -3,9 +3,14 @@
   import { invoke } from "@tauri-apps/api/core"
   import { goto } from "$app/navigation"
   import { createEventDispatcher } from "svelte"
+  import ConfirmModal from "./confirm-modal.svelte"
+  import { showSuccess, showError } from "$lib/stores/toast"
 
   // Create event dispatcher
   const dispatch = createEventDispatcher()
+  
+  // Modal state
+  let showDeleteModal = false
 
   // Define props needed for the card component
   export let id: number
@@ -78,28 +83,40 @@
     env?: Record<string, any> | null // Corresponds to serde_json::Map<String, Value>
   }
 
-  async function handleComplete() {
+  // Show delete modal
+  function openDeleteModal() {
+    showDeleteModal = true;
+  }
+  
+  // Handle delete confirmation
+  async function handleDeleteConfirm() {
+    // User clicked "Yes" - proceed with deletion
     let errorMessage = ""
     try {
-
-
       // 1. Remove config from backend
       await invoke("remove_mcp_server_config", {
         serverName: title,
       })
 
       // 2. Dispatch 'deleted' event (request GUI update)
-
       dispatch("deleted", { id: id })
 
       // 3. Restart Claude Desktop (after event dispatch)
       await invoke("restart_claude_desktop")
+      
+      // Show success toast notification
+      showSuccess("MCP successfully deleted", 3000, "bottom-center")
     } catch (err: any) {
       // Specify err type as any or Error
       errorMessage = `error occurred: ${err.message || err}`
       console.error(`[mcp-card] Error during removal or restart: ${errorMessage}`)
-      alert(`An error occurred: ${errorMessage}`)
+      showError(`Error: ${errorMessage}`, 5000, "bottom-center")
     }
+  }
+  
+  // Use original handler as a trigger for the modal
+  function handleComplete() {
+    openDeleteModal();
   }
 </script>
 
@@ -187,3 +204,17 @@
     </div>
   </div>
 {/if}
+
+<!-- Delete confirmation modal -->
+<ConfirmModal
+  isOpen={showDeleteModal}
+  title="Delete MCP Server"
+  message={`For quick application,
+  Claude will restart with the deletion
+Would you like to delete?`}
+  type="warning"
+  okLabel="Delete"
+  cancelLabel="Cancel"
+  on:confirm={handleDeleteConfirm}
+  on:cancel={() => showDeleteModal = false}
+/>
