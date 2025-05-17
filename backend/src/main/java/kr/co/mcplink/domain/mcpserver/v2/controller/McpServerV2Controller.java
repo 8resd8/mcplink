@@ -1,5 +1,6 @@
 package kr.co.mcplink.domain.mcpserver.v2.controller;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
 import kr.co.mcplink.domain.mcpserver.v1.dto.request.McpBatchRequest;
 import kr.co.mcplink.domain.mcpserver.v1.dto.response.*;
 import kr.co.mcplink.domain.mcpserver.v2.service.McpServerV2Service;
@@ -12,6 +13,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/v2/mcp/servers")
 @RequiredArgsConstructor
+@Tag(name = "McpServer API v2", description = "⚠️ Use McpServer API v3 ⚠️")
 public class McpServerV2Controller {
 
     private final McpServerV2Service mcpServerService;
