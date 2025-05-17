@@ -27,7 +27,7 @@ public interface McpServerV3Repository extends MongoRepository<McpServerV3, Stri
     @Query(value = "{'mcpServers.description': {$regex: ?0, $options: 'i'}}", fields = "{'_id': { $toString: '$_id' }}")
     List<String> findIdsByDetailDescriptionContaining(String text);
 
-    @Update("{ '$inc': { 'views': 1, 'updated_at': new Date() } }")
+    @Update("{ '$inc': { 'views': 1 }, '$set': { 'updated_at': new Date() } }")
     long findAndIncrementViewsBySeq(Long seq);
 
     /*
