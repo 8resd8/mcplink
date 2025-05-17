@@ -183,11 +183,11 @@
 <div class="container mx-auto pb-4">
   <!-- Top header area (not fixed) - background color same as page background -->
   <div class="pt-1 pb-2 border-b border-primary-content/10">
-    <div class="flex flex-col sm:flex-row justify-between items-center px-4">
-      <h1 class="text-2xl font-bold">Installed MCP Servers ({searchTerm.trim() ? $installedServers.length : ($pageInfo ? $pageInfo.total_items : 0)})</h1>
+    <div class="flex flex-col sm:flex-row justify-between items-center w-full px-4">
+      <h1 class="text-2xl font-bold text-center sm:text-left sm:mr-auto">Installed MCP Servers ({searchTerm.trim() ? $installedServers.length : ($pageInfo ? $pageInfo.total_items : 0)})</h1>
       
       <!-- Search UI -->
-      <div class="relative w-full sm:w-64 mt-2 sm:mt-0">
+      <div class="relative w-full max-w-xs mx-auto sm:mx-0 sm:w-64 mt-2 sm:mt-0 sm:ml-auto">
         <input
           type="text"
           bind:value={searchTerm}
