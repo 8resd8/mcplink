@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Star, Github } from "lucide-svelte"
+  import { Star, Github, ShieldCheck, ShieldX } from "lucide-svelte"
   import { invoke } from "@tauri-apps/api/core"
   import { goto } from "$app/navigation"
   import { createEventDispatcher } from "svelte"
@@ -19,6 +19,7 @@
   export let url: string = "" // GitHub URL
   export let stars: number = 0 // GitHub Stars count
   export let installed = false // Prop to indicate if the MCP server is installed
+  export let scanned: boolean | undefined = undefined // Security scan status
   export let onClick: (() => void) | undefined = undefined // Click handler (optional)
   export let className: string = "" // Additional CSS class (optional)
   export let variant: "default" | "primary" | "accent" = "default" // Card style variant
@@ -121,89 +122,62 @@
 </script>
 
 <!-- Reusable MCP card component -->
-{#if onClick}
-  <button
-    class="card card-border w-full shadow-sm {variant === 'default'
-      ? 'bg-base-100'
-      : variant === 'primary'
-        ? 'bg-primary text-primary-content'
-        : 'bg-accent text-accent-content'} {className} text-left"
-    on:click={onClick}
-  >
-    <div class="card-body h-[160px] flex flex-col">
-      <div class="flex justify-between items-start">
+<div class="card card-border w-full shadow-sm {variant === 'default' ? 'bg-base-100' : variant === 'primary' ? 'bg-primary text-primary-content' : 'bg-accent text-accent-content'} {className} {onClick ? 'cursor-pointer' : ''}" on:click={onClick}>
+  <div class="card-body h-[160px] flex flex-col">
+    <div class="flex justify-between items-start">
+      <div class="flex items-center gap-2">
         <h2 class="card-title text-lg">{title}</h2>
-        <div class="flex items-center gap-1 flex-shrink-0">
-          <!-- Star icon and count -->
-          {#if stars > 0}
-            <Star class="text-yellow-400" size={18} />
-            <span>{formatStars(stars)}</span>
-          {/if}
-
-          <!-- GitHub link -->
-          {#if url}
-            <!-- If URL exists: clickable link -->
-            <span on:click|stopPropagation={() => openGitHub(url)} class="ml-2 text-gray-600 hover:text-black focus:outline-none cursor-pointer">
-              <Github size={18} />
+        <!-- Security scan status icon -->
+        {#if scanned !== undefined}
+          {#if scanned === true}
+            <span class="tooltip" data-tip="Security checked">
+              <ShieldCheck class="text-info" size={18} />
             </span>
           {:else}
-            <!-- If URL does not exist: display as disabled -->
-            <span class="ml-2 text-gray-400 opacity-40">
-              <Github size={18} />
+            <span class="tooltip" data-tip="Security not checked">
+              <ShieldX class="text-warning" size={18} />
             </span>
           {/if}
-        </div>
+        {/if}
       </div>
-      <div class="w-full">
-        <p class="text-sm overflow-hidden line-clamp-2 max-w-[85%]">{displayDescription}</p>
-      </div>
-      <div class="card-actions justify-end mt-1">
-        <span on:click|stopPropagation={goToDetail} class="btn btn-sm btn-primary cursor-pointer">Details</span>
-      </div>
-    </div>
-  </button>
-{:else}
-  <div class="card card-border w-full shadow-sm {variant === 'default' ? 'bg-base-100' : variant === 'primary' ? 'bg-primary text-primary-content' : 'bg-accent text-accent-content'} {className}">
-    <div class="card-body h-[160px] flex flex-col">
-      <div class="flex justify-between items-start">
-        <h2 class="card-title text-lg">{title}</h2>
-        <div class="flex items-center gap-1 flex-shrink-0">
-          <!-- Star icon and count -->
-          {#if stars > 0}
-            <Star class="text-yellow-400" size={18} />
-            <span>{formatStars(stars)}</span>
-          {/if}
+      <div class="flex items-center gap-1 flex-shrink-0">
+        <!-- Star icon and count -->
+        {#if stars > 0}
+          <Star class="text-yellow-400" size={18} />
+          <span>{formatStars(stars)}</span>
+        {/if}
 
-          <!-- GitHub link -->
-          {#if url}
-            <!-- If URL exists: clickable link -->
-            <button on:click={() => openGitHub(url)} class="ml-2 text-gray-600 hover:text-black focus:outline-none">
-              <Github size={18} />
-            </button>
-          {:else}
-            <!-- If URL does not exist: display as disabled -->
-            <span class="ml-2 text-gray-400 opacity-40">
-              <Github size={18} />
-            </span>
-          {/if}
-        </div>
-      </div>
-      <div class="w-full">
-        <p class="text-sm overflow-hidden line-clamp-2 max-w-[85%]">{displayDescription}</p>
-      </div>
-      <div class="card-actions justify-end mt-1">
-        {#if mode === "installed"}
-          <button on:click={goToDetail} class="btn btn-sm btn-primary">Edit</button>
-          <button on:click={handleComplete} class="btn btn-sm btn-primary">Delete</button>
-        {:else if installed}
-          <button on:click={goToDetail} class="btn btn-sm btn-primary">Installed</button>
+        <!-- GitHub link -->
+        {#if url}
+          <!-- If URL exists: clickable link -->
+          <button on:click={() => openGitHub(url)} class="ml-2 text-gray-600 hover:text-black focus:outline-none">
+            <span class="tooltip" data-tip="Visit GitHub">
+            <Github size={18} />
+          </span>
+          </button>
         {:else}
-          <button on:click={goToDetail} class="btn btn-sm btn-primary">Install</button>
+          <!-- If URL does not exist: display as disabled -->
+          <span class="ml-2 text-gray-400 opacity-40">
+            <Github size={18} />
+          </span>
         {/if}
       </div>
     </div>
+    <div class="w-full">
+      <p class="text-sm overflow-hidden line-clamp-2 max-w-[85%]">{displayDescription}</p>
+    </div>
+    <div class="card-actions justify-end mt-1">
+      {#if mode === "installed"}
+        <button on:click={goToDetail} class="btn btn-sm btn-primary">Edit</button>
+        <button on:click={handleComplete} class="btn btn-sm btn-primary">Delete</button>
+      {:else if installed}
+        <button on:click={goToDetail} class="btn btn-sm btn-primary">Installed</button>
+      {:else}
+        <button on:click={goToDetail} class="btn btn-sm btn-primary">Install</button>
+      {/if}
+    </div>
   </div>
-{/if}
+</div>
 
 <!-- Delete confirmation modal -->
 <ConfirmModal

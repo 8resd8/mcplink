@@ -7,6 +7,7 @@ export interface MCPCard {
   url: string // GitHub repository URL
   stars: number // GitHub stars count
   installed?: boolean // Installation status (optional property added)
+  scanned?: boolean // Security scan status (v2+ API)
 }
 
 export interface PageInfo {
@@ -25,6 +26,7 @@ export interface MCPCardDetail extends MCPCard {
   args?: string[]
   env?: Record<string, any>
   command?: string
+  // scanned is already included from MCPCard
 }
 
 /**

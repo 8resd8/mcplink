@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from "svelte"
-  import { Star, Github, ArrowLeft } from "lucide-svelte"
+  import { Star, Github, ArrowLeft, ShieldCheck, ShieldX } from "lucide-svelte"
   import { fetchMCPCardDetail } from "$lib/data/mcp-api"
   import { invoke } from "@tauri-apps/api/core"
   import { goto } from "$app/navigation"
@@ -17,6 +17,7 @@
   let description: string = ""
   let url: string = ""
   let stars: number = 0
+  let scanned: boolean | undefined = undefined
   // Detailed settings binding
   let args: string[] = []
   let env: Record<string, any> = {}
@@ -92,6 +93,7 @@
       description = detail.description || description
       url = detail.url || url
       stars = detail.stars || stars
+      scanned = detail.scanned
 
       // Update detailed settings - do not show fields if they are not present in the data received from the crawler server
       if (detail.args) args = detail.args
@@ -130,6 +132,7 @@
       loading = false
     }
   }
+
 
   onMount(() => {
     // Get parameters from URL
@@ -170,10 +173,11 @@
       error = "Invalid access: ID is missing."
       loading = false
     }
+    
   })
 </script>
 
-<div class="p-8 max-w-5xl mx-auto">
+<div class="p-8 max-w-5xl mx-auto min-h-screen">
   <div class="bg-white rounded-lg shadow-sm p-6 relative">
     <!-- Back button -->
     <button class="absolute top-4 right-4 btn btn-sm btn-ghost gap-1" on:click={goBack}>
@@ -185,13 +189,29 @@
     <div class="mb-8 border-b pb-4">
       <div class="flex items-center gap-3">
         <h1 class="text-2xl font-bold">{title}</h1>
+        
+        <!-- Security scan status icon -->
+        {#if scanned !== undefined}
+          {#if scanned === true}
+            <span class="tooltip" data-tip="Security checked">
+              <ShieldCheck class="text-info" size={20} />
+            </span>
+          {:else}
+            <span class="tooltip" data-tip="Not security checked">
+              <ShieldX class="text-warning" size={20} />
+            </span>
+          {/if}
+        {/if}
+        
         <div class="flex items-center gap-1">
           <Star class="text-yellow-400 fill-yellow-400" size={22} />
           <span class="text-gray-600 font-medium">{stars > 0 ? formatStars(stars) : "0"}</span>
         </div>
         {#if url && url.includes("github.com")}
-          <button on:click={() => openGitHub(url)} class="text-gray-500 hover:text-gray-700 transition-colors" title="Open GitHub repository">
-            <Github size={20} />
+          <button on:click={() => openGitHub(url)} class="text-gray-500 hover:text-gray-700 transition-colors">
+            <span class="tooltip" data-tip="Visit GitHub">
+              <Github size={20} />
+            </span>
           </button>
         {/if}
       </div>
