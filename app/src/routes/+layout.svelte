@@ -192,17 +192,46 @@
         
         // Set up event listeners
         unlistenMoveToCenter = await listen("move-main-to-center", async () => {
-          /* ... */
+          // Only move window to center when explicitly requested (e.g., from popup)
+          // This prevents auto-centering when app starts
+          if (tauriWindow) {
+            try {
+              await tauriWindow.center();
+            } catch (e) {
+              console.error("Failed to center window:", e);
+            }
+          }
         })
         
         unlistenNavigateTo = await listen("navigate-to", async (event) => {
           if (event.payload && typeof event.payload === "string") goto(event.payload as string)
         })
         
-        // Set up window focus handling for notification processing
+        // Only handle notifications when window is focused, but don't auto-center the window
+        let isFirstFocus = true;
         const windowEventUnlistener = await tauriWindow.onFocusChanged(({ payload: focused }) => {
           if (focused) {
-            handleAppActivated();
+            // Skip the first focus event which occurs when the app starts
+            if (isFirstFocus) {
+              isFirstFocus = false;
+              return;
+            }
+            
+            // Only check for pending notifications without repositioning the window
+            try {
+              invoke<string | null>("check_and_mark_app_activated", {}).then(response => {
+                // Handle notification if there's a keyword, but don't auto-center or change window position
+                if (response && (
+                  (typeof response === 'object' && (response.hasOwnProperty('Some') || response.hasOwnProperty('0'))) ||
+                  (typeof response === 'string' && response.trim() !== "")
+                )) {
+                  // Process notification without window repositioning
+                  console.log("Notification received while window was already active");
+                }
+              });
+            } catch (e) {
+              console.error("Error checking for notifications:", e);
+            }
           }
         });
         
@@ -211,8 +240,8 @@
           if (windowEventUnlistener) windowEventUnlistener();
         });
         
-        // Initial check for pending notifications when app starts
-        handleAppActivated();
+        // Skip initial auto-centering when app starts
+        // handleAppActivated();
         
         // Start watching for config file changes
         try {
@@ -290,7 +319,8 @@
 <div class="flex flex-col h-screen overflow-hidden">
   <!-- Top Area: Title Bar and Tab Bar container, with 'accent' background -->
   {#if !isPopupPage}
-    <div class="{topAreaBackgroundClass} {topAreaContentColorClass} fixed top-0 left-0 right-0 z-50">
+    <!-- This is now a non-fixed element that takes up space in the flow -->
+    <div class="{topAreaBackgroundClass} {topAreaContentColorClass}">
       <!-- Title Bar -->
       <div class="h-8 flex items-center text-xs select-none" data-tauri-drag-region>
         <div class="p-2">
@@ -347,13 +377,13 @@
 
   <!-- Main Content Area -->
   <!-- This area's background and text color change based on the active tab. -->
-  <!-- It's pushed down by the height of the title bar and tab bar. -->
+  <!-- Now it sits below the tabbar naturally in the document flow -->
   <main
-    class="flex-1 overflow-auto p-4"
+    class="flex-1 overflow-y-auto overflow-x-hidden p-4 custom-scrollbar"
     style="
       background-color: {isFirstInstallPage || isPopupPage ? 'var(--color-base-100)' : activeMainAreaBackgroundColor};
       color: {isFirstInstallPage || isPopupPage ? 'var(--color-base-content)' : activeMainAreaContentColor};
-      padding-top: {!isPopupPage && !isFirstInstallPage ? 'calc(2rem + 2.75rem + 1rem)' : !isPopupPage && isFirstInstallPage ? '2rem + 1rem' : '1rem'}; /* Titlebar + Tab bar + desired top padding */
+      padding-top: {isPopupPage ? '1rem' : '1rem'}; /* Only add minimal padding since we no longer need to accommodate fixed headers */
     "
   >
     <slot />
@@ -365,6 +395,25 @@
     font-weight: 500;
     /* Ensure consistent color from parent if not overridden by inline styles */
     color: inherit;
+  }
+  /* Custom scrollbar styles to make them more contained within the main content */
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+    margin-top: 8px; /* Add some space at the top to prevent overlap with tabs */
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 4px;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #555;
   }
   /* Add any other global styles or adjustments here */
 </style>

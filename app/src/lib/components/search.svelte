@@ -8,6 +8,8 @@
 
   // START: Add initialValue prop
   export let initialValue: string = ""
+  export let placeholder: string = "MCP name or keyword search..."
+  export let customClass: string = "input input-bordered rounded-[10px]"
   // END: Add initialValue prop
 
   // Search value
@@ -49,8 +51,8 @@
   }
 </script>
 
-<label class="input input-bordered rounded-[10px] flex items-center">
-  <input type="search" class="grow" placeholder="MCP name or keyword search..." bind:value={searchValue} on:input={debouncedSearch} on:keydown={handleKeyDown} />
+<label class="{customClass} flex items-center">
+  <input type="search" class="grow" placeholder="{placeholder}" bind:value={searchValue} on:input={debouncedSearch} on:keydown={handleKeyDown} />
 </label>
 
 <style>

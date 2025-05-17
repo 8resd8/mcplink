@@ -222,42 +222,24 @@
   }
 </script>
 
-<div class="pb-8">
+<div class="container mx-auto pb-8">
   <!-- Top header area (not fixed) - background color same as page background -->
-  <div class="pt-1 pb-2 border-b border-secondary-content/10">
-    <div class="flex flex-col sm:flex-row justify-between items-center px-8">
-      <h1 class="text-2xl font-bold">MCP List ({pageInfo.total_items})</h1>
+  <div class="pt-1 pb-2 border-b border-primary-content/10">
+    <div class="flex flex-col sm:flex-row justify-between items-center w-full px-4">
+      <h1 class="text-2xl font-bold text-center sm:text-left sm:mr-auto">MCP List ({pageInfo.total_items})</h1>
       
       <!-- Search UI -->
-      <div class="relative w-full sm:w-64 mt-2 sm:mt-0">
+      <div class="relative w-full max-w-xs mx-auto sm:mx-0 sm:w-64 mt-2 sm:mt-0 sm:ml-auto">
         {#if isRecommendedSearch}
           <span class="absolute left-[-20px] top-3 text-yellow-500" title="Recommended Search">✨</span>
         {/if}
         
-        {#key searchTermFromQuery}
-          <input
-            type="text"
-            placeholder="Search MCPs..."
-            class="input input-bordered w-full pr-10"
-            bind:value={searchTermFromQuery}
-            on:input={() => {
-              // Clear recommendation status on user input
-              if (isRecommendedSearch) isRecommendedSearch = false;
-              
-              // Debounce handling
-              if (debounceTimer) clearTimeout(debounceTimer)
-              debounceTimer = setTimeout(() => {
-                searchAndDisplay(searchTermFromQuery);
-              }, 300)
-            }}
-            on:keydown={(e) => {
-              if (e.key === "Enter") {
-                if (debounceTimer) clearTimeout(debounceTimer);
-                searchAndDisplay(searchTermFromQuery);
-              }
-            }}
-          />
-        {/key}
+        <Search 
+          initialValue={searchTermFromQuery}
+          placeholder="Search MCPs..."
+          customClass="input input-bordered w-full pr-10"
+          on:search={(event) => handleSearchEvent(event)} 
+        />
         
         {#if loading && !mcpCards.length}
           <span class="loading loading-spinner loading-xs absolute right-3 top-3"></span>
@@ -281,7 +263,7 @@
   </div>
 
   <!-- Content area -->
-  <div class="mt-3 px-8">
+  <div class="mt-3 px-4">
     {#if loading}
       <div class="flex justify-center items-center h-64">
         <span class="loading loading-spinner loading-lg text-primary"></span>
@@ -329,5 +311,10 @@
 
   :global(::-webkit-scrollbar-thumb:hover) {
     background: #555;
+  }
+  
+  /* Container style */
+  .container {
+    max-width: 1200px; /* Match with Installed-MCP page */
   }
 </style>
