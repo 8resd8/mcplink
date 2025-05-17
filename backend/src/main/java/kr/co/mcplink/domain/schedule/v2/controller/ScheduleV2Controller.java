@@ -24,9 +24,9 @@ public class ScheduleV2Controller {
     @Deprecated
     @Operation(deprecated = true)
     @PostMapping("/enqueue/github")
-    public void enqueueGithub(@RequestParam int queryNum) {
+    public void enqueueGithub(@RequestParam int queryNum1, @RequestParam int queryNum2) {
 
-        enqueueService.enqueueGithub(queryNum);
+        enqueueService.enqueueGithub(queryNum1, queryNum2);
     }
 
     @Deprecated

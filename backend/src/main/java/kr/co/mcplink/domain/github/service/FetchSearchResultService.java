@@ -25,14 +25,15 @@ public class FetchSearchResultService {
         this.githubClient = githubClient;
     }
 
-    public List<GithubSearchResultDto> fetchSearchResult(int queryNum) {
-        String query = buildQuery(queryNum);
+    public List<GithubSearchResultDto> fetchSearchResult(int queryNum1, Integer queryNum2) {
+        int subNum = (queryNum2 == null) ? 1 : queryNum2;
+        String query = buildQuery(queryNum1, subNum);
 
         return IntStream.rangeClosed(1, 10)
                 .mapToObj(page -> {
                     String logUrl = Constants.GITHUB_SEARCH_PATH + "?q=" + query + "&sort=stars&order=desc&per_page=100&page=" + page;
-                    log.info("fetchSearchResult queryNum={} page={} → 요청 URL={}",
-                            queryNum, page, logUrl);
+                    log.info("fetchSearchResult queryNum1={} queryNum2={} page={} → 요청 URL={}",
+                            queryNum1, subNum, page, logUrl);
 
                     return githubClient.get()
                             .uri(uriBuilder -> uriBuilder
@@ -60,13 +61,24 @@ public class FetchSearchResultService {
                 .collect(Collectors.toList());
     }
 
-    private String buildQuery(int queryNum) {
+    private String buildQuery(int queryNum, int subNum) {
         int idx       = queryNum - 1;
         String lang   = Constants.GITHUB_LANGUAGES[idx / 3];
         String lic    = Constants.GITHUB_LICENSES[idx % 3];
+
+        String starsCondition = switch (subNum) {
+            case 1 -> "stars:>5";
+            case 2 -> "stars:1..5";
+            case 3 -> "stars:0";
+            default -> {
+                log.warn("Invalid subNum provided: {}. Defaulting to stars:>5", subNum);
+                yield "stars:>5";
+            }
+        };
+
         return String.format(
-                "mcp server language:%s license:%s stars:>5",
-                lang, lic
+                "mcp server language:%s license:%s %s",
+                lang, lic, starsCondition
         );
     }
 }

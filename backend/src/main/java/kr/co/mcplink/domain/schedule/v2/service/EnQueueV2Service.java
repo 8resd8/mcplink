@@ -20,8 +20,8 @@ public class EnQueueV2Service {
     private final GithubPendingQueueRepository githubRepository;
     private final GeminiPendingQueueRepository geminiRepository;
 
-    public void enqueueGithub(int queryNum) {
-        List<GithubSearchResultDto> results = fetchSearchResultService.fetchSearchResult(queryNum);
+    public void enqueueGithub(int queryNum1, int queryNum2) {
+        List<GithubSearchResultDto> results = fetchSearchResultService.fetchSearchResult(queryNum1, queryNum2);
         for (GithubSearchResultDto dto : results) {
             String owner = dto.owner();
             String repo  = dto.repo();
