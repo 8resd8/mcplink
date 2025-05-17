@@ -3,6 +3,7 @@ package kr.co.mcplink.global.util;
 import kr.co.mcplink.domain.mcpserver.v1.dto.PageInfoDto;
 import kr.co.mcplink.domain.mcpserver.v1.entity.McpServer;
 import kr.co.mcplink.domain.mcpserver.v2.entity.McpServerV2;
+import kr.co.mcplink.domain.mcpserver.v3.entity.McpServerV3;
 
 import java.util.List;
 
@@ -22,6 +23,19 @@ public class PaginationUtil {
     }
 
     public static PageInfoDto buildPageInfoV2(List<McpServerV2> items, long totalItems, long remaining) {
+        long startCursor = items.isEmpty() ? 0 : items.get(0).getSeq();
+        long endCursor   = items.isEmpty() ? 0 : items.get(items.size() - 1).getSeq();
+        boolean hasNext  = remaining > 0;
+
+        return PageInfoDto.builder()
+                .startCursor(startCursor)
+                .endCursor(endCursor)
+                .hasNextPage(hasNext)
+                .totalItems(totalItems)
+                .build();
+    }
+
+    public static PageInfoDto buildPageInfoV3(List<McpServerV3> items, long totalItems, long remaining) {
         long startCursor = items.isEmpty() ? 0 : items.get(0).getSeq();
         long endCursor   = items.isEmpty() ? 0 : items.get(items.size() - 1).getSeq();
         boolean hasNext  = remaining > 0;
