@@ -2,6 +2,7 @@ package kr.co.mcplink.global.config;
 
 import kr.co.mcplink.global.annotation.AutoIndex;
 import kr.co.mcplink.global.annotation.AutoIndexV2;
+import kr.co.mcplink.global.annotation.AutoIndexV3;
 import kr.co.mcplink.global.common.Constants;
 import kr.co.mcplink.global.util.IndexUtil;
 import org.springframework.context.ApplicationListener;
@@ -54,19 +55,27 @@ public class IndexConfig
 
                 Map<String, Integer> sortFields2 = new LinkedHashMap<>();
                 sortFields2.put("stars", -1);
-                sortFields2.put("seq",   1);
+                sortFields2.put("seq", 1);
                 indexUtil.createCompoundIndex(
                         collection,
                         Constants.IDX_MCP_SERVERS_SORT,
                         sortFields2
                 );
 
-//                indexUtil.createTextIndexV2(
-//                        collection,
-//                        Constants.IDX_MCP_SERVERS_SEARCH,
-//                        "mcpServers.name",
-//                        "mcpServers.description"
-//                );
+            }
+
+            AutoIndexV3 ann3 = clazz.getAnnotation(AutoIndexV3.class);
+            if (ann3 != null) {
+                String collection = ann3.collection();
+
+                Map<String, Integer> sortFields3 = new LinkedHashMap<>();
+                sortFields3.put("stars", -1);
+                sortFields3.put("seq", 1);
+                indexUtil.createCompoundIndex(
+                        collection,
+                        Constants.IDX_MCP_SERVERS_SORT,
+                        sortFields3
+                );
             }
         });
     }
