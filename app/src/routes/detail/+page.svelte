@@ -5,10 +5,15 @@
   import { invoke } from "@tauri-apps/api/core"
   import { goto } from "$app/navigation"
   import { page } from "$app/stores"
+  import ConfirmModal from "$lib/components/confirm-modal.svelte"
+  import { showSuccess, showError } from "$lib/stores/toast"
 
   // Get MCP information from URL
   let id: number = 0
   let title: string = ""
+  
+  // Modal state
+  let showConfirmModal = false
   let description: string = ""
   let url: string = ""
   let stars: number = 0
@@ -315,40 +320,11 @@
 
     <!-- Bottom button area -->
     <div class="mt-8 flex justify-end gap-2 border-t pt-4">
-      <button class="btn btn-sm btn-outline" on:click={goBack}>Cancel</button>
       <button
         class="btn btn-sm btn-primary"
         on:click={() => {
-          // Configure server settings with the current input values
-          const serverConfig = {
-            command: command || "",
-            args: args || [],
-            env: env || {},
-            cwd: null,
-          }
-          
-          // Installation or save operation
-          invoke("add_mcp_server_config", {
-            serverId: id,
-            serverName: title,
-            serverConfig: serverConfig,
-          })
-            .then(() => {
-              // Restart Claude Desktop
-              return invoke("restart_claude_desktop")
-            })
-            .then(() => {
-              if (mode === "edit") {
-                alert("MCP configuration has been updated!")
-              } else {
-                alert("MCP has been installed!")
-              }
-              goBack() // Automatically go back to previous page
-            })
-            .catch((err) => {
-              alert(`Error during MCP ${mode === "edit" ? "update" : "installation"}: ${err}`)
-              console.error(`MCP ${mode === "edit" ? "update" : "installation"} error:`, err)
-            })
+          // Open confirmation modal
+          showConfirmModal = true;
         }}
         disabled={loading || !!error}
       >
@@ -357,3 +333,52 @@
     </div>
   </div>
 </div>
+
+<!-- Confirmation modal -->
+<ConfirmModal
+isOpen={showConfirmModal}
+  title={mode === "edit" ? "Update MCP Configuration" : "Install MCP Server"}
+  message={mode === "edit" 
+    ? `For quick application,
+    Claude will restart with the update.
+    Would you like to update?`
+    : `For quick application,
+    Claude will restart with the installation.
+    Would you like to install?`
+  }
+  type="warning"
+  okLabel={mode === "edit" ? "Update" : "Install"}
+  cancelLabel="Cancel"
+  on:confirm={async () => {
+    // Configure server settings
+    const serverConfig = {
+      command: command || "",
+      args: args || [],
+      env: env || {},
+      cwd: null,
+    };
+    
+    try {
+      // Installation or save operation
+      await invoke("add_mcp_server_config", {
+        serverId: id,
+        serverName: title,
+        serverConfig: serverConfig,
+      });
+      
+      // Restart Claude Desktop
+      await invoke("restart_claude_desktop");
+      
+      if (mode === "edit") {
+        showSuccess("MCP configuration has been updated!", 3000, "bottom-center");
+      } else {
+        showSuccess("MCP has been installed!", 3000, "bottom-center");
+      }
+      goBack(); // Automatically go back to previous page
+    } catch (err) {
+      showError(`Error during MCP ${mode === "edit" ? "update" : "installation"}: ${err}`, 5000, "bottom-center");
+      console.error(`MCP ${mode === "edit" ? "update" : "installation"} error:`, err);
+    }
+  }}
+  on:cancel={() => showConfirmModal = false}
+/>

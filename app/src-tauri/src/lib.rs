@@ -216,6 +216,7 @@ pub fn run() {
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_notification::init()) // Initialize notification plugin
+        .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_single_instance::init(|app, argv, cwd| {
             // 새로운 인스턴스가 실행됐을 때, 기존 창에 포커스
             app.get_webview_window("main")
