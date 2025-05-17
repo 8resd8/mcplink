@@ -14,7 +14,7 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
-public class EnQueueService {
+public class EnQueueV2Service {
 
     private final FetchSearchResultService fetchSearchResultService;
     private final GithubPendingQueueRepository githubRepository;

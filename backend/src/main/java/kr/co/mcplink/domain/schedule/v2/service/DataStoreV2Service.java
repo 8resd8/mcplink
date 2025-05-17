@@ -17,7 +17,7 @@ import java.util.List;
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class DataStoreService {
+public class DataStoreV2Service {
 
     private final McpServerV2Repository mcpServerV2Repository;
     private final McpTagV2Repository mcpTagV2Repository;
