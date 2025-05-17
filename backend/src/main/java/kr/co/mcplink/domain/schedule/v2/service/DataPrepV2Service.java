@@ -21,15 +21,15 @@ import java.util.Optional;
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class DataPrepService {
+public class DataPrepV2Service {
 
-    private final DataStoreService dataStoreService;
+    private final DataStoreV2Service dataStoreService;
     private final FetchReadmeService fetchReadmeService;
     private final FetchMetaDataService fetchMetaDataService;
     private final FetchSummaryService fetchSummaryService;
     private final FetchTagService fetchTagService;
     private final PrepReadmeService prepReadmeService;
-    private final EnQueueService enqueueService;
+    private final EnQueueV2Service enqueueService;
     private final GithubPendingQueueRepository githubRepository;
     private final GeminiPendingQueueRepository geminiRepository;
 

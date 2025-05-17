@@ -44,6 +44,10 @@ server:
   servlet:
     context-path: /api
 
+springdoc:
+  swagger-ui:
+    tags-sorter: alpha
+
 app:
   analysis:
     temp-dir: ${app.analysis.temp-dir}

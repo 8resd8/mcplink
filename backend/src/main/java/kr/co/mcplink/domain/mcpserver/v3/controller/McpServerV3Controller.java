@@ -1,9 +1,9 @@
-package kr.co.mcplink.domain.mcpserver.v2.controller;
+package kr.co.mcplink.domain.mcpserver.v3.controller;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
 import kr.co.mcplink.domain.mcpserver.v1.dto.request.McpBatchRequest;
 import kr.co.mcplink.domain.mcpserver.v1.dto.response.*;
-import kr.co.mcplink.domain.mcpserver.v2.service.McpServerV2Service;
+import kr.co.mcplink.domain.mcpserver.v3.service.McpServerV3Service;
 import kr.co.mcplink.global.common.ApiResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -11,12 +11,12 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/v2/mcp/servers")
+@RequestMapping("/v3/mcp/servers")
 @RequiredArgsConstructor
-@Tag(name = "McpServer API v2", description = "⚠️ Use McpServer API v3 ⚠️")
-public class McpServerV2Controller {
+@Tag(name = "McpServer API v3")
+public class McpServerV3Controller {
 
-    private final McpServerV2Service mcpServerService;
+    private final McpServerV3Service mcpServerService;
 
     @GetMapping
     public ApiResponse<McpListResponse> getAllServers(

@@ -15,9 +15,9 @@ import java.util.List;
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class ScheduleService {
+public class ScheduleV2Service {
 
-    private final DataPrepService dataPrepService;
+    private final DataPrepV2Service dataPrepService;
     private final McpServerV2Repository mcpServerV2Repository;
     private final GithubPendingQueueRepository githubRepository;
     private final GeminiPendingQueueRepository geminiRepository;

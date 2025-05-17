@@ -1,11 +1,11 @@
-package kr.co.mcplink.domain.schedule.v2.service;
+package kr.co.mcplink.domain.schedule.v3.service;
 
 import kr.co.mcplink.domain.github.dto.GithubMetaDataDto;
 import kr.co.mcplink.domain.github.dto.ParsedReadmeInfoDto;
-import kr.co.mcplink.domain.mcpserver.v2.entity.McpServerV2;
-import kr.co.mcplink.domain.mcpserver.v2.entity.McpTagV2;
-import kr.co.mcplink.domain.mcpserver.v2.repository.McpServerV2Repository;
-import kr.co.mcplink.domain.mcpserver.v2.repository.McpTagV2Repository;
+import kr.co.mcplink.domain.mcpserver.v3.entity.McpServerV3;
+import kr.co.mcplink.domain.mcpserver.v3.entity.McpTagV3;
+import kr.co.mcplink.domain.mcpserver.v3.repository.McpServerV3Repository;
+import kr.co.mcplink.domain.mcpserver.v3.repository.McpTagV3Repository;
 import kr.co.mcplink.global.common.Constants;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -17,26 +17,26 @@ import java.util.List;
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class DataStoreService {
+public class DataStoreV3Service {
 
-    private final McpServerV2Repository mcpServerV2Repository;
-    private final McpTagV2Repository mcpTagV2Repository;
+    private final McpServerV3Repository mcpServerV3Repository;
+    private final McpTagV3Repository mcpTagV3Repository;
 
     public String saveMcpServer(GithubMetaDataDto metaData, ParsedReadmeInfoDto parsedReadmeInfo) {
         try {
-            McpServerV2 mcpServer = toMcpServerV2(metaData, parsedReadmeInfo);
+            McpServerV3 mcpServer = toMcpServerV3(metaData, parsedReadmeInfo);
 
             if (mcpServer == null) {
                 log.warn("Failed to create McpServer from metadata → invalid data");
                 return null;
             }
 
-            if (mcpServerV2Repository.existsByUrl(mcpServer.getUrl())) {
+            if (mcpServerV3Repository.existsByUrl(mcpServer.getUrl())) {
                 log.warn("McpServer already exists with URL: {} → skip", mcpServer.getUrl());
                 return null;
             }
 
-            McpServerV2 savedMcpServer = mcpServerV2Repository.save(mcpServer);
+            McpServerV3 savedMcpServer = mcpServerV3Repository.save(mcpServer);
             log.info("Successfully saved new McpServer with URL: {} → ID: {}", mcpServer.getUrl(), savedMcpServer.getId());
             return savedMcpServer.getId();
         } catch (Exception e) {
@@ -48,49 +48,9 @@ public class DataStoreService {
         }
     }
 
-    private McpServerV2 toMcpServerV2(GithubMetaDataDto m, ParsedReadmeInfoDto p) {
-        if (m.url() == null || m.stars() == 0 || p.name() == null || p.command() == null || p.args() == null) {
-            return null;
-        }
-
-        String rawUrl = m.url();
-        String prepUrl = rawUrl;
-
-        if (rawUrl.endsWith(".git")) {
-            prepUrl = rawUrl.substring(0, rawUrl.length() - 4);
-        }
-
-        String pendingSummary = generatePendingSummary(prepUrl);
-
-        return McpServerV2.builder()
-                .url(prepUrl)
-                .stars(m.stars())
-                .official(m.official())
-                .scanned(m.scanned())
-                .securityRank(m.securityRank())
-                .detail(
-                        McpServerV2.McpServerDetail.builder()
-                                .name(p.name())
-                                .description(pendingSummary)
-                                .command(p.command())
-                                .args(p.args())
-                                .env(p.env())
-                                .build()
-                )
-                .build();
-    }
-
-    private String generatePendingSummary(String serverUrl) {
-
-        return String.format(
-                Constants.DESCRIPTION_NOT_YET_GENERATED,
-                serverUrl
-        );
-    }
-
     public void updateSummary(String serverId, String summary, List<String> tags) {
         try {
-            long updatedCount = mcpServerV2Repository.updateSummary(serverId, summary, tags);
+            long updatedCount = mcpServerV3Repository.updateSummary(serverId, summary, tags);
 
             if (updatedCount > 0) {
                 log.info("Updated summary and tags for server: {} → success", serverId);
@@ -107,16 +67,16 @@ public class DataStoreService {
 
     public void saveMcpTag(String tag) {
         try {
-            if (mcpTagV2Repository.existsByTag(tag)) {
+            if (mcpTagV3Repository.existsByTag(tag)) {
                 log.debug("Tag already exists: {} → skip", tag);
                 return;
             }
 
-            McpTagV2 mcpTag = McpTagV2.builder()
+            McpTagV3 mcpTag = McpTagV3.builder()
                     .tag(tag)
                     .build();
 
-            mcpTagV2Repository.save(mcpTag);
+            mcpTagV3Repository.save(mcpTag);
             log.info("Saved new tag: {} → success", tag);
         } catch (DuplicateKeyException e) {
             log.debug("Tag already exists (concurrent insert): {} → skip", tag);
@@ -126,5 +86,45 @@ public class DataStoreService {
                     e.getClass().getSimpleName(),
                     e.getMessage());
         }
+    }
+
+    private McpServerV3 toMcpServerV3(GithubMetaDataDto m, ParsedReadmeInfoDto p) {
+        if (m.url() == null || m.stars() == 0 || p.name() == null || p.command() == null || p.args() == null) {
+            return null;
+        }
+
+        String rawUrl = m.url();
+        String prepUrl = rawUrl;
+
+        if (rawUrl.endsWith(".git")) {
+            prepUrl = rawUrl.substring(0, rawUrl.length() - 4);
+        }
+
+        String pendingSummary = generatePendingSummary(prepUrl);
+
+        return McpServerV3.builder()
+                .url(prepUrl)
+                .stars(m.stars())
+                .official(m.official())
+                .scanned(m.scanned())
+                .securityRank(m.securityRank())
+                .detail(
+                        McpServerV3.McpServerDetail.builder()
+                                .name(p.name())
+                                .description(pendingSummary)
+                                .command(p.command())
+                                .args(p.args())
+                                .env(p.env())
+                                .build()
+                )
+                .build();
+    }
+
+    private String generatePendingSummary(String serverUrl) {
+
+        return String.format(
+                Constants.DESCRIPTION_NOT_YET_GENERATED,
+                serverUrl
+        );
     }
 }
