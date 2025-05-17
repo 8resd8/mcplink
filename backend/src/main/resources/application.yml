@@ -39,6 +39,11 @@ spring:
   gemini:
     api-key: ${gemini.api-key}
 
+mongodb:
+  atlas:
+    uri: mongodb+srv://${mongodb.atlas.username}:${mongodb.atlas.password}@${mongodb.atlas.cluster}.mongodb.net/?retryWrites=true&w=majority&appName=${mongodb.atlas.app-name}
+    database: ${mongodb.atlas.database}
+
 server:
   http2:
     enabled: true
