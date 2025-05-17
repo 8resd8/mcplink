@@ -30,8 +30,7 @@ import java.util.List;
 @Configuration
 @EnableMongoRepositories(
         basePackages = {
-//                "kr.co.mcplink.domain.mcpserver.v3.repository",
-//                "kr.co.mcplink.domain.schedule.v3.repository"
+                "kr.co.mcplink.domain.mcpserver.kr.repository"
         },
         mongoTemplateRef = "atlasMongoTemplate"
 )
