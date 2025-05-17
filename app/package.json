@@ -32,7 +32,6 @@
     "zod": "^3.24.3"
   },
   "devDependencies": {
-    "@catppuccin/daisyui": "^2.1.1",
     "@sveltejs/adapter-static": "^3.0.8",
     "@sveltejs/kit": "^2.20.7",
     "@sveltejs/vite-plugin-svelte": "^5.0.3",

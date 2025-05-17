@@ -236,7 +236,7 @@
         
         <Search 
           initialValue={searchTermFromQuery}
-          placeholder="Search MCPs..."
+          placeholder="Search servers..."
           customClass="input input-bordered w-full pr-10"
           on:search={(event) => handleSearchEvent(event)} 
         />
