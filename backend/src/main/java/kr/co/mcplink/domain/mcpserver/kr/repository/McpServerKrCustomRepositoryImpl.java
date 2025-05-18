@@ -4,9 +4,9 @@ import com.mongodb.client.MongoCollection;
 import com.mongodb.client.result.UpdateResult;
 import kr.co.mcplink.domain.mcpserver.v3.entity.McpServerV3;
 import kr.co.mcplink.global.common.Constants;
-import lombok.RequiredArgsConstructor;
 import org.bson.Document;
 import org.bson.types.ObjectId;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.aggregation.Aggregation;
 import org.springframework.data.mongodb.core.aggregation.AggregationOperation;
@@ -19,10 +19,13 @@ import java.util.Date;
 import java.util.List;
 
 @Repository
-@RequiredArgsConstructor
 public class McpServerKrCustomRepositoryImpl implements McpServerKrCustomRepository {
 
     private final MongoTemplate mongoTemplate;
+
+    public McpServerKrCustomRepositoryImpl(@Qualifier("atlasMongoTemplate") MongoTemplate mongoTemplate) {
+        this.mongoTemplate = mongoTemplate;
+    }
 
     @Override
     public long countRemaining(Long cursor) {
@@ -134,6 +137,7 @@ public class McpServerKrCustomRepositoryImpl implements McpServerKrCustomReposit
                         .append("text",
                                 new Document("query", name)
                                         .append("path", Arrays.asList("mcpServers.name", "mcpServers.description"))
+                                        .append("synonyms", Constants.COLLECTION_SYNONYM_MAPPING)
                         )
         );
     }

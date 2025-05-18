@@ -21,5 +21,10 @@ public class SynonymMapping {
 
     @Id
     private String id;
+
+    @Builder.Default
+    private String mappingType = "explicit";
+
+    private List<String> input;
     private List<String> synonyms;
 }
