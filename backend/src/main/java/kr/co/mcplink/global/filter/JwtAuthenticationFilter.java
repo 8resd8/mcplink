@@ -55,7 +55,8 @@ public class JwtAuthenticationFilter implements Filter {
 		}
 
 		// Bearer 검사
-		// String jwt = extractJwtFromAuthorization(httpRequest);
+		String jwtFromAuthorization = extractJwtFromAuthorization(httpRequest);
+		log.info("0. Bearer 검사 후 jwt: {}", jwtFromAuthorization);
 
 		// Cookie 검사
 		String jwt = extractJwtFromCookie(httpRequest);
@@ -98,6 +99,7 @@ public class JwtAuthenticationFilter implements Filter {
 
 	private String extractJwtFromCookie(HttpServletRequest request) {
 		Cookie[] cookies = request.getCookies();
+		log.info("cookieSize: {}", cookies == null ? 0 : cookies.length);
 
 		if (cookies != null) {
 			for (Cookie cookie : cookies) {
