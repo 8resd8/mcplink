@@ -1,11 +1,13 @@
 <img src="images/logo.png" width="150" alt="200"/>
 
-<div> 
+<div>
 
 # Mcplink
+
 > 데스크탑에서 MCP 서버를 원클릭으로 설치·관리할 수 있는 GUI 애플리케이션
 
 ## Contents
+
 1. [기획 의도](#기획-의도)
 2. [주요 기능](#주요-기능)
 3. [서비스 화면](#실제-서비스-화면)
@@ -17,28 +19,23 @@
 9. [프로젝트 팀원 & 역할](#프로젝트-팀원-&-역할)
 
 ## 기획 의도
+
 > 2024년 10월 Anthropic Claude에서 표준으로 내놓은 MCP Server 설치하는 데 많은 번거로움이 있었음
-> 서버를 확인하고 설치, 삭제하는 번거로움, 불편함을 줄이고자 만든 데스크탑 애플리케이션 
+> 서버를 확인하고 설치, 삭제하는 번거로움, 불편함을 줄이고자 만든 데스크탑 애플리케이션
 
 ## 주요 기능
 
 - **로컬 MCP 목록 조회**: 호스트 시스템에 설치된 MCP 인스턴스를 스캔하여 메타데이터 기반 목록을 출력
 
-
 - **osv-scanner 라이브러리 검사**: mcp 실제 코드를 확인해 스캔하여 취약점이 있는 라이브러리를 사용할 경우 위험도 표시
-
 
 - **서버 등록 MCP 전체 조회**: MCP 서버에서 정합성 검사를 거친 MCP 전체 목록을 정렬된 형태로 제공
 
-
 - **클로드 데스크탑 앱 연동 설치 지원**: GUI 기반의 클로드 데스크탑 앱과 연동되어, MCP를 원클릭으로 설치하고 자동 등록
-
 
 - **MCP 삭제 및 수정 기능**: 설치한 MCP 설정을 수정, 삭제
 
-
 - **백그라운드 서비스 지원**: 데스크탑 앱이 최소화되거나 종료되어도 MCP 관리 기능은 백그라운드에서 지속적으로 동작
-
 
 - **OAuth 연동**: SSAFY 계정 기반의 OAuth 2.0 인증을 통해 보안성 있는 사용자 인증 및 세션 처리를 지원
 
@@ -47,23 +44,21 @@
 <details>
   <summary>&nbsp;&nbsp;주요 화면</summary>
 
-|               **로그인**                |           **회원 가입 (이메일 인증)**           |
-|:------------------------------------:|:--------------------------------------:|
-|    ![로그인 화면](images/screen/1.png)    |    ![회원 가입 화면](images/screen/2.png)    |
-|               **프롤로그**               |               **캐릭터 선택**               |
-|     ![프롤로그](images/screen/3.png)     |     ![캐릭터 선택](images/screen/4.png)     |
-|              **메인 화면**               |               **마을 화면**                |
-|    ![메인 화면](images/screen/6N.png)    |     ![마을 화면](images/screen/7.png)      |
-|             **탄소 배출 퀴즈**             |               **퀴즈 결과**                |
-|   ![탄소 배출 퀴즈](images/screen/8.png)   | ![퀴즈 결과 및 캐릭터 변화](images/screen/9.png) |
-|             **일일 체크리스트**             |          **커스텀 체크리스트 AI 검증**           |
-|  ![기본 체크리스트](images/screen/11N.png)  |  ![커스텀 체크리스트](images/screen/12N.png)   |
+|                **로그인**                 |           **회원 가입 (이메일 인증)**            |
+| :---------------------------------------: | :----------------------------------------------: |
+|    ![로그인 화면](images/screen/1.png)    |      ![회원 가입 화면](images/screen/2.png)      |
+|               **프롤로그**                |                 **캐릭터 선택**                  |
+|     ![프롤로그](images/screen/3.png)      |       ![캐릭터 선택](images/screen/4.png)        |
+|               **메인 화면**               |                  **마을 화면**                   |
+|    ![메인 화면](images/screen/6N.png)     |        ![마을 화면](images/screen/7.png)         |
+|            **탄소 배출 퀴즈**             |                  **퀴즈 결과**                   |
+|  ![탄소 배출 퀴즈](images/screen/8.png)   | ![퀴즈 결과 및 캐릭터 변화](images/screen/9.png) |
+|            **일일 체크리스트**            |          **커스텀 체크리스트 AI 검증**           |
+| ![기본 체크리스트](images/screen/11N.png) |   ![커스텀 체크리스트](images/screen/12N.png)    |
+
 </details>
 
-
-
 ## [API 설계](https://www.notion.so/1e013cd52d71807b9c9bc8c4ae14e31f?pvs=25)
-
 
 ## 🛠️ 프로젝트 아키텍쳐
 
@@ -74,13 +69,12 @@
 # 트러블 슈팅 및 문제 해결 경험
 
 - **MongoDB 설치**: EC2 서버, Docker 활용한 설치 방법
-    - [MongoDB](https://www.notion.so/EC2-MongoDB-1e513cd52d7180828330cf40b78fa515?pvs=4)
 
+  - [MongoDB](https://www.notion.so/EC2-MongoDB-1e513cd52d7180828330cf40b78fa515?pvs=4)
 
 - **Linux, Vim, Docker**: 실제로 자주 사용한 명령어
-    - [서버 명령어](https://www.notion.so/Linux-vim-docker-1eb13cd52d7180a297c8ff4f14a56632?pvs=4)
+  - [서버 명령어](https://www.notion.so/Linux-vim-docker-1eb13cd52d7180a297c8ff4f14a56632?pvs=4)
 
-    
 # 기술 스택
 
   <div>
@@ -147,6 +141,7 @@
 ## 김성현
 
 ## 김현우
+
 - 전체 인프라 담당
 - GitHub Actions 기반 정적 페이지 EC2 자동 배포
 - GitLab Jenkins 기반 CI/CD 자동 배포
@@ -160,3 +155,9 @@
 ## 오승원
 
 ## 오완진
+
+- Spring Boot와 MongoDB 기반의 백엔드 및 외부 API 연동 담당
+- MCP Server 대상 크롤링, 메타데이터 저장과 API 제공을 위한 CRUD 로직 구현
+- 한글 검색을 위한 MongoDB Atlas 연동, 인덱스 구성과 쿼리 최적화
+- GitHub API를 활용한 MCP Server 레포지토리 크롤링, 필터링 및 메타데이터 수집
+- Gemini API를 활용한 README 요약 및 관련 태그 자동 생성
