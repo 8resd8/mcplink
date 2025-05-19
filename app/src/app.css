@@ -1,10 +1,13 @@
 @import "tailwindcss";
 
 @plugin "daisyui" {
+  base: true;
+  styled: true;
+  utils: true;
+  rtl: false;
+  logs: true;
   themes: pastel --default;
 }
-
-@plugin "./catppuccinTheme.ts";
 
 @font-face {
   font-family: "Pretendard Variable";

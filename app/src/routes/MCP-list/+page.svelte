@@ -18,6 +18,8 @@
   let loading = true
   let loadingMore = false
   let allLoaded = false // Flag to check if all data has been loaded
+  let lastCursor = null // Track the last cursor to prevent infinite loops
+  let fetchAttempts = 0 // Counter to prevent too many attempts
 
   // START: Added variables
   let searchTermFromQuery = "" // Variable to store the search term from the URL
@@ -33,8 +35,10 @@
     const scrollPosition = window.innerHeight + window.scrollY
     const scrollHeight = document.body.offsetHeight
 
-    // Load next page if scroll is 300px from the bottom (detect faster)
-    if (scrollHeight - scrollPosition < 300) {
+    // Load next page if scroll is 1000px from the bottom (much earlier trigger)
+    // This will load the next batch well before the user reaches the bottom
+    if (scrollHeight - scrollPosition < 1000) {
+      console.log("Scroll threshold reached, loading next page");
       loadNextPage()
     }
   }
@@ -42,21 +46,73 @@
   // Function to load the next page
   async function loadNextPage() {
     if (!pageInfo.has_next_page || !pageInfo.end_cursor || loadingMore || allLoaded) return
-
+    
+    // Prevent infinite loops by checking if cursor hasn't changed
+    if (lastCursor === pageInfo.end_cursor) {
+      console.log("Cursor hasn't changed, stopping to prevent infinite loop");
+      allLoaded = true;
+      return;
+    }
+    
+    // Prevent too many fetch attempts
+    fetchAttempts++;
+    if (fetchAttempts > 100) {
+      console.log("Too many fetch attempts (100+), stopping pagination");
+      allLoaded = true;
+      return;
+    }
+    
+    lastCursor = pageInfo.end_cursor;
     loadingMore = true
     try {
+      console.log("Loading next page with cursor:", pageInfo.end_cursor);
+      
+      // Add a small delay to prevent rapid API calls
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
       const response = await fetchMCPCards(searchTermFromQuery || undefined, pageInfo.end_cursor)
 
-      // Add new cards to existing cards
-      mcpCards = [...mcpCards, ...response.cards]
-      pageInfo = response.page_info
+      // Skip loading if no new cards received
+      if (response.cards.length === 0) {
+        console.log("No more cards to load - received empty array");
+        allLoaded = true;
+        return;
+      }
+      
+      // Check if we received the expected number of items (10)
+      if (response.cards.length < 10) {
+        console.log(`Received fewer items than expected (${response.cards.length} < 10), might be at the end`);
+      }
 
-      // Check if all data has been loaded
-      if (!pageInfo.has_next_page || mcpCards.length >= pageInfo.total_items) {
-        allLoaded = true
+      // Add new cards to existing cards, but make sure we're not adding duplicates
+      const newCards = response.cards.filter(newCard => 
+        !mcpCards.some(existingCard => existingCard.id === newCard.id)
+      );
+      
+      if (newCards.length === 0) {
+        console.log("No new unique cards received, stopping pagination");
+        allLoaded = true;
+        return;
+      }
+      
+      mcpCards = [...mcpCards, ...newCards];
+      pageInfo = response.page_info;
+      console.log("Loaded cards:", mcpCards.length, "of total:", pageInfo.total_items);
+
+      // Check if all data has been loaded or if we received empty data
+      if (!pageInfo.has_next_page) {
+        console.log("Server indicates no more data available (has_next_page is false)");
+        allLoaded = true;
+      } else if (mcpCards.length >= pageInfo.total_items) {
+        console.log("All data loaded based on total items count");
+        allLoaded = true;
+      } else {
+        console.log(`More data available: loaded ${mcpCards.length} of ${pageInfo.total_items}, has_next_page=${pageInfo.has_next_page}, cursor=${pageInfo.end_cursor}`);
       }
     } catch (error) {
       console.error("Error loading next page:", error)
+      // Set allLoaded to true to prevent infinite retries on error
+      allLoaded = true;
     } finally {
       loadingMore = false
     }
@@ -64,19 +120,32 @@
 
   // Page initialization and data loading function
   function initPage() {
-    // Add global scroll event listener (with debounce)
+    // Add global scroll event listener (with improved debounce)
     let scrollTimer: ReturnType<typeof setTimeout> | null = null
+    let lastScrollTime = 0;
+    const scrollDebounceTime = 300; // Increase debounce time (was 100ms)
+    
     const scrollHandler = () => {
+      // Skip rapid successive scroll events
+      const now = Date.now();
+      if (now - lastScrollTime < 50) return; // Throttle rapid events
+      
+      lastScrollTime = now;
+      
+      // Debounce the actual scroll handler
       if (scrollTimer) clearTimeout(scrollTimer)
-      scrollTimer = setTimeout(handleScroll, 100)
+      scrollTimer = setTimeout(() => {
+        console.log("Scroll event detected");
+        handleScroll();
+      }, scrollDebounceTime)
     }
 
     window.addEventListener("scroll", scrollHandler)
 
-    // Check page bottom after initial load
+    // Check page bottom after initial load with a longer delay
     setTimeout(() => {
       handleScroll()
-    }, 500)
+    }, 1000) // Increased from 500ms to 1000ms
 
     return scrollHandler
   }
@@ -153,17 +222,27 @@
     // isRecommendedSearch can only be true if term exists, so don't change it here
     loading = true
     allLoaded = false // Reset allLoaded when loading new data
+    mcpCards = [] // Clear existing cards
+    lastCursor = null // Reset cursor tracker
+    fetchAttempts = 0 // Reset attempt counter
+    
     try {
+      console.log(`Searching for term: "${term}"`);
       const response = await fetchMCPCards(term)
       mcpCards = response.cards
       pageInfo = response.page_info
+      
+      console.log(`Search found ${mcpCards.length} cards of ${pageInfo.total_items} total`);
+      console.log("Has next page:", pageInfo.has_next_page, "End cursor:", pageInfo.end_cursor);
 
       // Check if all data has been loaded
       if (!pageInfo.has_next_page || mcpCards.length >= pageInfo.total_items) {
+        console.log("All search results loaded in initial fetch");
         allLoaded = true
       } else {
-        // Check scroll after initial load
-        setTimeout(handleScroll, 500)
+        // Check scroll after initial load with a longer delay
+        // to prevent immediate loading of next batch
+        setTimeout(handleScroll, 1000)
       }
     } catch (error) {
       console.error("Error during search:", error)
@@ -182,17 +261,28 @@
   async function fetchAllMCPs() {
     isRecommendedSearch = false // Clear recommendation state when fetching all list
     allLoaded = false // Reset allLoaded when loading new data
+    loading = true // Set loading to true
+    mcpCards = [] // Clear existing cards
+    lastCursor = null // Reset cursor tracker
+    fetchAttempts = 0 // Reset attempt counter
+    
     try {
+      console.log("Fetching initial MCP batch");
       const response = await fetchMCPCards()
       mcpCards = response.cards
       pageInfo = response.page_info
+      
+      console.log(`Loaded initial ${mcpCards.length} cards of ${pageInfo.total_items} total`);
+      console.log("Has next page:", pageInfo.has_next_page, "End cursor:", pageInfo.end_cursor);
 
       // Check if all data has been loaded
       if (!pageInfo.has_next_page || mcpCards.length >= pageInfo.total_items) {
+        console.log("All data loaded in initial fetch");
         allLoaded = true
       } else {
-        // Check scroll after initial load
-        setTimeout(handleScroll, 500)
+        // Check scroll after initial load with a longer delay
+        // to prevent immediate loading of next batch
+        setTimeout(handleScroll, 1000)
       }
     } catch (error) {
       console.error("Error fetching MCP data:", error)
@@ -236,7 +326,7 @@
         
         <Search 
           initialValue={searchTermFromQuery}
-          placeholder="Search MCPs..."
+          placeholder="Search servers..."
           customClass="input input-bordered w-full pr-10"
           on:search={(event) => handleSearchEvent(event)} 
         />

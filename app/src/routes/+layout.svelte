@@ -14,19 +14,22 @@
   import toastStore from "$lib/stores/toast"
 
   // --- Configuration for app appearance ---
-  // Background class for the title bar and the tab bar area.
-  const topAreaBackgroundClass = "bg-accent"
-  // Text color for the top area (title bar and tabs).
-  const topAreaContentColorClass = "text-accent-content"
-
+  // Window bar (title bar) styling - 통일된 디자인을 위해 base-100 사용
+  const windowBarBackgroundClass = "bg-base-100"
+  const windowBarContentColorClass = "text-base-content"
+  
+  // Tab bar styling - 상단바와 통일
+  const tabBarBackgroundClass = "bg-base-100"
+  const tabBarContentColorClass = "text-base-content"
+  
   // --- Tab Definitions ---
-  // mainThemeColorVar: CSS variable for the background of the main content area when this tab is active.
-  // mainContentColorVar: CSS variable for the text/icon color within the main content area.
+  // mainClass: CSS class for the main content area background when this tab is active.
+  // mainContentClass: CSS class for the text/icon color within the main content area.
   const tabs = [
-    { path: "/Installed-MCP", name: "Installed MCP", icon: Presentation, mainThemeColorVar: "--color-primary", mainContentColorVar: "--color-primary-content" },
-    { path: "/MCP-list", name: "MCP List", icon: Cog, mainThemeColorVar: "--color-secondary", mainContentColorVar: "--color-secondary-content" },
+    { path: "/Installed-MCP", name: "Installed MCP", icon: Presentation, mainClass: "bg-primary", mainContentClass: "text-primary-content", tabClass: "hover:bg-primary/10" },
+    { path: "/MCP-list", name: "MCP List", icon: Cog, mainClass: "bg-secondary", mainContentClass: "text-secondary-content", tabClass: "hover:bg-secondary/10" },
   ]
-  const settingsTab = { path: "/settings", name: "Settings", icon: Settings, mainThemeColorVar: "--color-base-100", mainContentColorVar: "--color-base-content" }
+  const settingsTab = { path: "/settings", name: "Settings", icon: Settings, mainClass: "bg-base-300", mainContentClass: "text-base-content", tabClass: "hover:bg-base-content/10" }
 
   // --- Tauri specific variables ---
   let tauriWindow: TauriWindowType | null = null
@@ -287,83 +290,101 @@
     const foundTab = tabs.find((t) => activeTabPath.startsWith(t.path))
     return foundTab || tabs.find((t) => t.path === "/Installed-MCP") || tabs[0] // Default
   })()
-
-  // Main content area's background and text color, determined by the active tab.
-  $: activeMainAreaBackgroundColor = `var(${currentActivePageConfig.mainThemeColorVar})`
-  $: activeMainAreaContentColor = `var(${currentActivePageConfig.mainContentColorVar})`
+  
+  // 윈도우 컨트롤 버튼 스타일은 CSS에서 처리
 </script>
 
 <!-- Outermost container. If an overall app background different from main content is needed, apply it here. -->
 <!-- For now, it's just a flex container. -->
 <div class="flex flex-col h-screen overflow-hidden">
-  <!-- Top Area: Title Bar and Tab Bar container, with 'accent' background -->
+  <!-- Top Area: Title Bar and Tab Bar container -->
   {#if !isPopupPage}
-    <!-- This is now a non-fixed element that takes up space in the flow -->
-    <div class="{topAreaBackgroundClass} {topAreaContentColorClass}">
-      <!-- Title Bar -->
+    <!-- Window Title Bar -->
+    <div class="{windowBarBackgroundClass} {windowBarContentColorClass}">
       <div class="h-8 flex items-center text-xs select-none" data-tauri-drag-region>
-        <div class="p-2">
-          <img src="/favicon.png" alt="App Icon" class="w-4 h-4" />
-        </div>
-        <div class="flex-1" data-tauri-drag-region>
+        <!-- 왼쪽 공간 -->
+        <div class="w-[100px]"></div>
+        
+        <!-- 중앙 제목 -->
+        <div class="absolute left-0 right-0 mx-auto flex justify-center items-center" data-tauri-drag-region>
+          <img src="/favicon.png" alt="App Icon" class="w-4 h-4 mr-2" />
           <slot name="title">MCPLINK</slot>
         </div>
-        <div class="flex items-center">
-          <button on:click={minimizeWindow} title="Minimize" class="p-2 hover:bg-black/5 rounded-sm"><Minus class="w-5 h-5" /></button>
-          <button on:click={maximizeWindow} title="Maximize" class="p-2 hover:bg-black/5 rounded-sm"><Square class="w-4 h-4" /></button>
-          <button on:click={hideToTray} title="Close to Tray" class="p-2 hover:bg-black/5 rounded-sm"><X class="w-5 h-5" /></button>
+        
+        <!-- 투명 버튼 위에 아이콘을 장식으로 배치 -->
+        <div class="ml-auto flex">
+          <!-- 아이콘은 버튼 내부에 절대 위치로 배치하여 장식으로 처리 -->
+          <div class="window-btn min-btn" on:click={minimizeWindow}>
+            <span class="icon-wrapper">
+              <Minus size={16} />
+            </span>
+          </div>
+          
+          <div class="window-btn max-btn" on:click={maximizeWindow}>
+            <span class="icon-wrapper">
+              <Square size={16} />
+            </span>
+          </div>
+          
+          <div class="window-btn close-btn" on:click={hideToTray}>
+            <span class="icon-wrapper">
+              <X size={16} />
+            </span>
+          </div>
         </div>
       </div>
+    </div>
 
-      <!-- Tab Bar (only if not the first install page) -->
-      {#if !isFirstInstallPage}
-        <div class="tab-bar px-2 flex w-full items-end" style="--Info">
-          <div class="flex gap-1">
-            {#each tabs as tab (tab.path)}
-              <a
-                href={tab.path}
-                class="tab text-sm md:text-base px-3 py-2 md:px-4 rounded-t-md transition-colors duration-150 ease-in-out hover:bg-white/10"
-                style="
-                  border-bottom: 2px solid {activeTabPath.startsWith(tab.path) ? 'currentColor' : 'transparent'};
-                  opacity: {activeTabPath.startsWith(tab.path) ? '1' : '0.7'};
-                "
-                on:click|preventDefault={() => goto(tab.path)}
-              >
+    <!-- Tab Bar (separate from title bar) -->
+    {#if !isFirstInstallPage}
+      <div class="{tabBarBackgroundClass} {tabBarContentColorClass} px-2 flex w-full items-end" style="padding-top: 0.25rem; position: relative;">
+        <div class="flex gap-1">
+          {#each tabs as tab (tab.path)}
+            <a
+              href={tab.path}
+              class="tab text-sm md:text-base {tab.path === '/Installed-MCP' ? 'bg-primary text-primary-content' : tab.path === '/MCP-list' ? 'bg-secondary text-secondary-content' : ''}"
+              class:active-tab-styling={activeTabPath.startsWith(tab.path)}
+              style="
+                opacity: {activeTabPath.startsWith(tab.path) ? '1' : '0.7'};
+                font-weight: {activeTabPath.startsWith(tab.path) ? '600' : '500'};
+                position: relative;
+              "
+              on:click|preventDefault={() => goto(tab.path)}
+            >
+              <div class="flex items-center justify-center">
                 <svelte:component this={tab.icon} class="w-4 h-4 mr-1 md:mr-2" />
                 <span>{tab.name}</span>
-              </a>
-            {/each}
-          </div>
-          <div class="ml-auto">
-            <!-- Settings Tab -->
-            <a
-              href={settingsTab.path}
-              class="tab text-sm md:text-base px-3 py-2 md:px-4 rounded-t-md transition-colors duration-150 ease-in-out hover:bg-white/10"
-              style="
-                border-bottom: 2px solid {activeTabPath === settingsTab.path ? 'currentColor' : 'transparent'};
-                opacity: {activeTabPath === settingsTab.path ? '1' : '0.7'};
-              "
-              on:click|preventDefault={() => goto(settingsTab.path)}
-            >
+              </div>
+            </a>
+          {/each}
+        </div>
+        <div class="ml-auto">
+          <!-- Settings Tab -->
+          <a
+            href={settingsTab.path}
+            class="tab text-sm md:text-base bg-base-300 text-base-content"
+            class:active-tab-styling={activeTabPath === settingsTab.path}
+            style="
+              opacity: {activeTabPath === settingsTab.path ? '1' : '0.7'};
+              font-weight: {activeTabPath === settingsTab.path ? '600' : '500'};
+              position: relative;
+            "
+            on:click|preventDefault={() => goto(settingsTab.path)}
+          >
+            <div class="flex items-center justify-center">
               <svelte:component this={settingsTab.icon} class="w-4 h-4 mr-1 md:mr-2" />
               <span>{settingsTab.name}</span>
-            </a>
-          </div>
+            </div>
+          </a>
         </div>
-      {/if}
-    </div>
+      </div>
+    {/if}
   {/if}
 
   <!-- Main Content Area -->
   <!-- This area's background and text color change based on the active tab. -->
-  <!-- Now it sits below the tabbar naturally in the document flow -->
   <main
-    class="flex-1 overflow-y-auto overflow-x-hidden p-4 custom-scrollbar"
-    style="
-      background-color: {isFirstInstallPage || isPopupPage ? 'var(--color-base-100)' : activeMainAreaBackgroundColor};
-      color: {isFirstInstallPage || isPopupPage ? 'var(--color-base-content)' : activeMainAreaContentColor};
-      padding-top: {isPopupPage ? '1rem' : '1rem'}; /* Only add minimal padding since we no longer need to accommodate fixed headers */
-    "
+    class="flex-1 overflow-y-auto overflow-x-hidden p-4 custom-scrollbar {isFirstInstallPage || isPopupPage ? 'bg-base-100 text-base-content' : `${currentActivePageConfig.mainClass} ${currentActivePageConfig.mainContentClass}`}"
   >
     <slot />
   </main>
@@ -379,11 +400,25 @@
 </div>
 
 <style>
+  /* 탭 기본 스타일 */
   .tab {
+    position: relative;
+    padding: 10px 15px;
+    margin-right: 1px;
+    border-top-left-radius: 10px;
+    border-top-right-radius: 10px;
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
     font-weight: 500;
-    /* Ensure consistent color from parent if not overridden by inline styles */
     color: inherit;
+    box-shadow: none;
+    transform: none;
+    min-width: 150px; /* "Installed MCP"보다 살짝 넓은 너비 */
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
+
   /* Custom scrollbar styles to make them more contained within the main content */
   .custom-scrollbar::-webkit-scrollbar {
     width: 8px;
@@ -404,4 +439,39 @@
     background: #555;
   }
   /* Add any other global styles or adjustments here */
+  
+  /* 윈도우 컨트롤 버튼 스타일 */
+  .window-btn {
+    width: 46px;
+    height: 32px;
+    background-color: transparent;
+    cursor: default; /* 일반 마우스 커서 유지 */
+    position: relative; /* 아이콘의 기준점 */
+    user-select: none;
+  }
+  
+  .icon-wrapper {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none; /* 아이콘은 이벤트를 처리하지 않음 */
+  }
+  
+  .min-btn:hover, .max-btn:hover {
+    background-color: oklch(var(--color-base-300)) !important; /* base-300 색상 */
+  }
+  
+  .close-btn:hover {
+    background-color: oklch(var(--color-error)) !important; /* error 색상 */
+  }
+  
+  /* 모든 SVG 아이콘에 대해 포인터 이벤트 차단 */
+  svg {
+    pointer-events: none;
+  }
 </style>

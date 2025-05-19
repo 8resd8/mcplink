@@ -72,6 +72,7 @@ pub struct MCPCard {
     pub description: String,
     pub url: String,
     pub stars: i32,
+    pub scanned: bool,
 }
 
 // Response struct including page information
@@ -129,6 +130,7 @@ pub struct MCPCardDetail {
     pub description: String,
     pub url: String,
     pub stars: i32,
+    pub scanned: bool,
     pub args: Option<Vec<String>>,
     pub env: Option<Map<String, Value>>,
     pub command: Option<String>,
@@ -191,8 +193,12 @@ pub async fn get_mcp_data(
             }
         } else {
             let encoded_term = encode(&term);
-            let search_url = format!("{}/search?name={}", base_url, encoded_term);
-            search_url
+            if let Some(cursor) = cursor_id {
+                // Add cursor for search requests too
+                format!("{}/search?name={}&size=10&cursorId={}", base_url, encoded_term, cursor)
+            } else {
+                format!("{}/search?name={}&size=10", base_url, encoded_term)
+            }
         }
     } else {
         if let Some(cursor) = cursor_id {
@@ -228,6 +234,7 @@ pub async fn get_mcp_data(
                                                         .clone(),
                                                     url: api_card.url.clone(),
                                                     stars: api_card.stars,
+                                                    scanned: api_card.scanned,
                                                 })
                                                 .collect();
 
@@ -341,6 +348,7 @@ pub async fn get_mcp_detail_data(
                                             description: detail_data.mcp_server_info.description, // Description from McpServerInfo
                                             url: detail_data.url,
                                             stars: detail_data.stars,
+                                            scanned: detail_data.scanned.unwrap_or(false),
                                             args: detail_data.mcp_server_info.args,
                                             env: detail_data.mcp_server_info.env,
                                             command: detail_data.mcp_server_info.command,
@@ -730,6 +738,7 @@ pub async fn get_installed_mcp_data(
                                                         .clone(),
                                                     url: api_card.url.clone(),
                                                     stars: api_card.stars,
+                                                    scanned: api_card.scanned,
                                                 })
                                                 .collect();
 
