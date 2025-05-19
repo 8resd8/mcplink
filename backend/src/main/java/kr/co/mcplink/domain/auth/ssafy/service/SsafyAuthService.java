@@ -2,11 +2,8 @@ package kr.co.mcplink.domain.auth.ssafy.service;
 
 import static kr.co.mcplink.global.common.Constants.*;
 
-import java.io.IOException;
 import java.util.Optional;
-import java.util.concurrent.TimeUnit;
 
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -45,48 +42,15 @@ public class SsafyAuthService {
 	private final RestTemplate restTemplate;
 	private final SsafyOauthProperties ssafyProperties;
 	private final JwtProperties jwtProperties;
-	@Value("${server.host}")
-	private String serverHost;
 
-	public void processSsafyLogin(String code, HttpServletResponse httpResponse) throws IOException {
+	public LoginResponse processSsafyLogin(String code) {
 		SsafyTokenDto ssafyTokenDto = requestAccessToken(code);
 		SsafyUserInfoDto ssafyUserInfo = validateDto(ssafyTokenDto);
 
 		User user = upsertUser(ssafyUserInfo);
 		user.updateLastLoginAt();
-		LoginResponse loginResponse = new LoginResponse(jwtUtil.generateToken(user), jwtProperties.accessExpiration());
 
-		ResponseCookie accessTokenCookie = ResponseCookie.from(ACCESS_TOKEN_NAME, loginResponse.accessToken())
-			.maxAge(TimeUnit.MILLISECONDS.toSeconds(loginResponse.accessExpiredAt()))
-			.path("/")
-			.secure(true)
-			.httpOnly(true)
-			.sameSite("LAX")
-			.build();
-
-		httpResponse.addHeader(HttpHeaders.SET_COOKIE, accessTokenCookie.toString());
-		httpResponse.sendRedirect(serverHost);
-	}
-
-	public String redirectToSsafyLogin() {
-		UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(ssafyProperties.authorizationUri())
-			.queryParam("response_type", "code")
-			.queryParam("client_id", ssafyProperties.clientId())
-			.queryParam("redirect_uri", ssafyProperties.redirectUri())
-			.queryParam("scope", ssafyProperties.scope().replace(",", " "));
-
-		return builder.toUriString();
-	}
-
-	public void logout(HttpServletResponse response) {
-		ResponseCookie deleteCookie = ResponseCookie.from(ACCESS_TOKEN_NAME, "")
-			.maxAge(0)
-			.path("/")
-			.secure(true)
-			.httpOnly(true)
-			.sameSite("LAX")
-			.build();
-		response.addHeader(HttpHeaders.SET_COOKIE, deleteCookie.toString());
+		return new LoginResponse(jwtUtil.generateToken(user), jwtProperties.accessExpiration());
 	}
 
 	private SsafyUserInfoDto validateDto(SsafyTokenDto ssafyTokenDto) {
@@ -99,6 +63,16 @@ public class SsafyAuthService {
 			throw new JwtForbiddenException("SSAFY 사용자 정보를 조회하는데 실패했습니다.");
 		}
 		return ssafyUserInfo;
+	}
+
+	public String redirectToSsafyLogin() {
+		UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(ssafyProperties.authorizationUri())
+			.queryParam("response_type", "code")
+			.queryParam("client_id", ssafyProperties.clientId())
+			.queryParam("redirect_uri", ssafyProperties.redirectUri())
+			.queryParam("scope", ssafyProperties.scope().replace(",", " "));
+
+		return builder.toUriString();
 	}
 
 	private SsafyTokenDto requestAccessToken(String code) {
@@ -120,6 +94,17 @@ public class SsafyAuthService {
 		} catch (HttpClientErrorException e) {
 			throw new HttpClientErrorException(e.getStatusCode(), "SSAFY 서버와 통신 중 오류가 발생하여 Access Token을 발급받지 못했습니다.");
 		}
+	}
+
+	public void logout(HttpServletResponse response) {
+		ResponseCookie deleteCookie = ResponseCookie.from(ACCESS_TOKEN_NAME, "")
+			.maxAge(0)
+			.path("/")
+			.secure(true)
+			.httpOnly(true)
+			.sameSite("LAX")
+			.build();
+		response.addHeader(HttpHeaders.SET_COOKIE, deleteCookie.toString());
 	}
 
 	private SsafyUserInfoDto requestUserInfo(String accessToken) {
