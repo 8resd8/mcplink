@@ -88,6 +88,69 @@ public class McpServerV3Service {
         return ApiResponse.success(HttpStatus.OK.toString(), Constants.MSG_SUCCESS_BATCH, response);
     }
 
+    public ApiResponse<McpListResponse> findAllServersForWeb(Integer size, Integer page) {
+        int offset = PaginationUtil.calculateOffset(size, page);
+        List<McpServerV3> servers = serverRepository.listAllWithOffset(size, offset);
+
+        long total = serverRepository.countAll();
+
+        PageInfoDto pageInfo = PaginationUtil.buildPageInfoV3ForWeb(total, size, page);
+
+        List<McpSummaryDataDto> mcpServers = servers.stream()
+                .map(this::toSummaryDataDto)
+                .collect(Collectors.toList());
+
+        McpListResponse response = new McpListResponse(pageInfo, mcpServers);
+
+        return ApiResponse.success(HttpStatus.OK.toString(), Constants.MSG_SUCCESS_LIST, response);
+    }
+
+    public ApiResponse<McpSearchResponse> searchServersByNameForWeb(String name, Integer size, Integer page) {
+        int offset = PaginationUtil.calculateOffset(size, page);
+        List<McpServerV3> servers = serverRepository.searchByNameWithOffset(name, size, offset);
+
+        long total = serverRepository.countByName(name);
+
+        PageInfoDto pageInfo = PaginationUtil.buildPageInfoV3ForWeb(total, size, page);
+
+        List<McpSummaryDataDto> mcpServers = servers.stream()
+                .map(this::toSummaryDataDto)
+                .collect(Collectors.toList());
+
+        McpSearchResponse response = new McpSearchResponse(pageInfo, mcpServers);
+
+        return ApiResponse.success(HttpStatus.OK.toString(), Constants.MSG_SUCCESS_SEARCH, response);
+    }
+
+    public ApiResponse<McpBatchResponse> findServersByIdsForWeb(List<Long> seqs, Integer size, Integer page) {
+        List<McpServerV3> servers = new ArrayList<>();
+
+        for (Long seq : seqs) {
+            McpServerV3 server = serverRepository.findBySeq(seq).orElse(null);
+
+            if(server == null) {
+                return ApiResponse.error(HttpStatus.NOT_FOUND.toString(), Constants.MSG_NOT_FOUNDS);
+            }
+        }
+
+        List<Long> pageIds = PaginationUtil.slicePageIdsForBatchForWeb(seqs, size, page);
+
+        for (Long seq : pageIds) {
+            McpServerV3 server = serverRepository.findBySeq(seq).orElse(null);
+            servers.add(server);
+        }
+
+        PageInfoDto pageInfo = PaginationUtil.buildPageInfoForBatchForWeb(seqs, size, page);
+
+        List<McpSummaryDataDto> mcpServers = servers.stream()
+                .map(this::toSummaryDataDto)
+                .collect(Collectors.toList());
+
+        McpBatchResponse response = new McpBatchResponse(pageInfo, mcpServers);
+
+        return ApiResponse.success(HttpStatus.OK.toString(), Constants.MSG_SUCCESS_BATCH, response);
+    }
+
     public ApiResponse<McpDetailResponse> findServerById(Long seq) {
         McpServerV3 server = serverRepository.findBySeq(seq).orElse(null);
 
