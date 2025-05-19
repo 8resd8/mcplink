@@ -64,27 +64,59 @@ public class FetchSynonymService {
         Generate Korean synonyms for the following English technical term: "%s"
         
         Rules:
-        1. Provide Korean terms that have the same meaning as the English term
-        2. Include transliterations (how Koreans would pronounce the English term)
-        3. Include common Korean usage or translations
-        4. Provide 1-3 Korean synonyms for the term
-        5. Do NOT include ANY English words in your response, especially "%s" itself
-        6. Do NOT include the original English term in your response
+        1. For brand names, product names, or proper nouns (like Google, AWS, GitHub):
+        - ONLY provide the Korean transliteration (how Koreans pronounce it)
+        - Example: "google" → ["구글"] ONLY
+        - Example: "aws" → ["에이더블유에스"] ONLY
+        - Example: "notion" → ["노션"] ONLY
+        - NEVER include generic meanings or concepts (like "검색하다", "웹 서비스", "개념")
         
-        Examples of good responses:
-        - For "chat": ["챗", "채팅"]
+        2. For common nouns or verbs (like chat, map, search):
+        - Include both the Korean transliteration AND Korean translations
+        - Example: "chat" → ["챗", "채팅"]
+        - Example: "maps" → ["맵스", "지도"]
+        - Example: "search" → ["서치", "검색"]
+        
+        3. For compound terms:
+        A. With brand names (like GitLab, GitHub):
+        - Treat as a single transliteration unit
+        - Example: "gitlab" → ["깃랩"] CORRECT
+        - Example: "github" → ["깃허브"] CORRECT
+        - NEVER separate: "gitlab" → ["깃", "랩"] WRONG
+        
+        B. With brand name + common word (like Google Maps, Notion Server):
+        - Keep the structure intact, transliterate brand name, translate common word
+        - Example: "google maps" → ["구글 맵스", "구글 지도"]
+        - Example: "notion server" → ["노션 서버"]
+        - Example: "github actions" → ["깃허브 액션", "깃허브 액션즈"]
+        - NEVER provide parts separately: ["구글", "지도"] WRONG
+        - NEVER include just one part: "google maps" → ["구글"] or ["지도"] WRONG
+        
+        4. Do NOT include ANY English words in your response:
+        - "AWS" → WRONG (contains English)
+        - "에이더블유에스" → RIGHT
+        - Do NOT include the original English term in your response, especially "%s" itself
+        
+        5. Provide 1-4 Korean synonyms for the term, focusing on direct transliterations
+        
+        Examples of GOOD responses:
         - For "google": ["구글"]
-        - For "aws": ["아마존 웹 서비스", "에이더블유에스"]
-        - For "maps": ["맵스", "지도"]
+        - For "aws": ["에이더블유에스"]
+        - For "gitlab": ["깃랩"]
+        - For "chat": ["챗", "채팅"]
         - For "google maps": ["구글 맵스", "구글 지도"]
+        - For "notion server": ["노션 서버"]
         
         Examples of BAD responses (do NOT do this):
-        - For "aws": ["AWS", "아마존 웹 서비스", "에이더블유에스"] ← WRONG, contains English "AWS"
-        - For "api": ["API", "에이피아이"] ← WRONG, contains English "API"
+        - For "google": ["구글", "검색하다", "찾아보다"] ← WRONG, includes generic meanings
+        - For "notion": ["노션", "개념", "아이디어"] ← WRONG, includes generic meanings
+        - For "aws": ["AWS", "에이더블유에스"] ← WRONG, contains English
+        - For "google maps": ["구글", "맵스", "지도"] ← WRONG, separates components
+        - For "github": ["깃허브", "깃", "소스 관리"] ← WRONG, includes generic terms
         
         Please respond ONLY with valid JSON in the following format:
         {
-            "synonyms": ["korean_synonym1", "korean_synonym2", "korean_synonym3"]
+        "synonyms": ["korean_synonym1", "korean_synonym2", "korean_synonym3"]
         }
         """.formatted(englishTerm, englishTerm);
     }
