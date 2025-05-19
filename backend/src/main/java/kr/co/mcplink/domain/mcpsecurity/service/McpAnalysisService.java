@@ -1,5 +1,14 @@
 package kr.co.mcplink.domain.mcpsecurity.service;
 
+import jakarta.annotation.PostConstruct;
+import kr.co.mcplink.domain.mcpsecurity.dto.McpScanResultDto;
+import kr.co.mcplink.domain.mcpserver.kr.repository.McpServerKrRepository;
+import kr.co.mcplink.domain.mcpserver.v3.entity.McpServerV3;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -12,16 +21,6 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
-
-import jakarta.annotation.PostConstruct;
-import kr.co.mcplink.domain.mcpsecurity.dto.McpScanResultDto;
-import kr.co.mcplink.domain.mcpserver.v2.entity.McpServerV2;
-import kr.co.mcplink.domain.mcpserver.v2.repository.McpServerV2Repository;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 
 /**
  * 작업 흐름도:
@@ -43,7 +42,7 @@ public class McpAnalysisService {
 	@Value("${app.analysis.temp-dir}")
 	private String tempDirStr;
 
-	private final McpServerV2Repository serverRepository;
+	private final McpServerKrRepository serverRepository;
 
 	@PostConstruct
 	public void init() {
@@ -61,7 +60,7 @@ public class McpAnalysisService {
 	 * @return 모든 서버의 스캔 결과 리스트
 	 */
 	public List<McpScanResultDto> scanSpecificServer() {
-		List<McpServerV2> servers = serverRepository.findByOfficialFalse();
+		List<McpServerV3> servers = serverRepository.findByOfficialFalse();
 
 		if (servers.isEmpty()) {
 			log.error("오피셜이 false인게 없으면 안됨.");
@@ -69,7 +68,7 @@ public class McpAnalysisService {
 		}
 		List<McpScanResultDto> results = new ArrayList<>();
 
-		for (McpServerV2 server : servers) {
+		for (McpServerV3 server : servers) {
 			String rawUrl = server.getUrl();
 			String cloneUrl = rawUrl.endsWith(".git") ? rawUrl : rawUrl + ".git";
 			String name = cloneUrl.substring(cloneUrl.lastIndexOf('/') + 1);
