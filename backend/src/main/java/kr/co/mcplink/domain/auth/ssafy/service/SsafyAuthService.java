@@ -92,7 +92,8 @@ public class SsafyAuthService {
 				ssafyProperties.tokenUri(), request, SsafyTokenDto.class);
 			return response.getBody();
 		} catch (HttpClientErrorException e) {
-			throw new HttpClientErrorException(e.getStatusCode(), "SSAFY 서버와 통신 중 오류가 발생하여 Access Token을 발급받지 못했습니다.");
+			log.error("SSAFY OAuth Token Request Error: {}", e.getMessage());
+			throw new HttpClientErrorException(e.getStatusCode(), e.getMessage());
 		}
 	}
 
