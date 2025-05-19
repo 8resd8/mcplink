@@ -1,9 +1,9 @@
 package kr.co.mcplink.domain.mcpserver.v3.service;
 
+import kr.co.mcplink.domain.mcpserver.kr.repository.McpServerKrRepository;
 import kr.co.mcplink.domain.mcpserver.v1.dto.*;
 import kr.co.mcplink.domain.mcpserver.v1.dto.response.*;
 import kr.co.mcplink.domain.mcpserver.v3.entity.McpServerV3;
-import kr.co.mcplink.domain.mcpserver.v3.repository.McpServerV3Repository;
 import kr.co.mcplink.domain.mcpserver.v3.repository.McpTagV3Repository;
 import kr.co.mcplink.global.common.ApiResponse;
 import kr.co.mcplink.global.common.Constants;
@@ -20,7 +20,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class McpServerV3Service {
 
-    private final McpServerV3Repository serverRepository;
+    private final McpServerKrRepository serverRepository;
     private final McpTagV3Repository tagRepository;
 
     public ApiResponse<McpListResponse> findAllServers(Integer size, Long cursorId) {
