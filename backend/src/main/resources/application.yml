@@ -44,6 +44,7 @@ mongodb:
     database: ${mongodb.atlas.database}
 
 server:
+  host: ${server.host}
   http2:
     enabled: true
   servlet:
