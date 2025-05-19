@@ -66,7 +66,7 @@ public class JwtAuthenticationFilter implements Filter {
 		}
 
 		// 보안 경로 검사
-		boolean pathIsSecure = isPathMatch(pathToCheck, jwtProperties.securePath());
+		boolean pathIsSecure = isSecurePathRequested(pathToCheck, httpMethod, jwtProperties.securePath());
 
 		if (pathIsSecure) {
 			if (authenticatedUser == null) {
