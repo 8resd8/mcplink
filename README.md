@@ -1,5 +1,162 @@
-# GUI Guide
+<img src="images/logo.png" width="150" alt="200"/>
 
-## Installation
+<div> 
 
-- use 'pnpm install'
+# Mcplink
+> 데스크탑에서 MCP 서버를 원클릭으로 설치·관리할 수 있는 GUI 애플리케이션
+
+## Contents
+1. [기획 의도](#기획-의도)
+2. [주요 기능](#주요-기능)
+3. [서비스 화면](#실제-서비스-화면)
+4. [설치 및 실행](#설치-및-실행)
+5. [프로젝트 아키텍처](#프로젝트-아키텍처)
+6. [문제 해결 경험](#트러블-슈팅-및-문제-해결-경험)
+7. [기술 스택](#기술-스택)
+8. [프로젝트 일정](#프로젝트-일정)
+9. [프로젝트 팀원 & 역할](#프로젝트-팀원-&-역할)
+
+## 기획 의도
+> 2024년 10월 Anthropic Claude에서 표준으로 내놓은 MCP Server 설치하는 데 많은 번거로움이 있었음
+> 서버를 확인하고 설치, 삭제하는 번거로움, 불편함을 줄이고자 만든 데스크탑 애플리케이션 
+
+## 주요 기능
+
+- **로컬 MCP 목록 조회**: 호스트 시스템에 설치된 MCP 인스턴스를 스캔하여 메타데이터 기반 목록을 출력
+
+
+- **osv-scanner 라이브러리 검사**: mcp 실제 코드를 확인해 스캔하여 취약점이 있는 라이브러리를 사용할 경우 위험도 표시
+
+
+- **서버 등록 MCP 전체 조회**: MCP 서버에서 정합성 검사를 거친 MCP 전체 목록을 정렬된 형태로 제공
+
+
+- **클로드 데스크탑 앱 연동 설치 지원**: GUI 기반의 클로드 데스크탑 앱과 연동되어, MCP를 원클릭으로 설치하고 자동 등록
+
+
+- **MCP 삭제 및 수정 기능**: 설치한 MCP 설정을 수정, 삭제
+
+
+- **백그라운드 서비스 지원**: 데스크탑 앱이 최소화되거나 종료되어도 MCP 관리 기능은 백그라운드에서 지속적으로 동작
+
+
+- **OAuth 연동**: SSAFY 계정 기반의 OAuth 2.0 인증을 통해 보안성 있는 사용자 인증 및 세션 처리를 지원
+
+## 실제 서비스 화면
+
+<details>
+  <summary>&nbsp;&nbsp;주요 화면</summary>
+
+|               **로그인**                |           **회원 가입 (이메일 인증)**           |
+|:------------------------------------:|:--------------------------------------:|
+|    ![로그인 화면](images/screen/1.png)    |    ![회원 가입 화면](images/screen/2.png)    |
+|               **프롤로그**               |               **캐릭터 선택**               |
+|     ![프롤로그](images/screen/3.png)     |     ![캐릭터 선택](images/screen/4.png)     |
+|              **메인 화면**               |               **마을 화면**                |
+|    ![메인 화면](images/screen/6N.png)    |     ![마을 화면](images/screen/7.png)      |
+|             **탄소 배출 퀴즈**             |               **퀴즈 결과**                |
+|   ![탄소 배출 퀴즈](images/screen/8.png)   | ![퀴즈 결과 및 캐릭터 변화](images/screen/9.png) |
+|             **일일 체크리스트**             |          **커스텀 체크리스트 AI 검증**           |
+|  ![기본 체크리스트](images/screen/11N.png)  |  ![커스텀 체크리스트](images/screen/12N.png)   |
+</details>
+
+
+
+## [API 설계](https://www.notion.so/1e013cd52d71807b9c9bc8c4ae14e31f?pvs=25)
+
+
+## 🛠️ 프로젝트 아키텍쳐
+
+<img src="images/SystemArchitecture.png" width="80%"/>
+
+<br />
+
+# 트러블 슈팅 및 문제 해결 경험
+
+- **MongoDB 설치**: EC2 서버, Docker 활용한 설치 방법
+    - [MongoDB](https://www.notion.so/EC2-MongoDB-1e513cd52d7180828330cf40b78fa515?pvs=4)
+
+
+- **Linux, Vim, Docker**: 실제로 자주 사용한 명령어
+    - [서버 명령어](https://www.notion.so/Linux-vim-docker-1eb13cd52d7180a297c8ff4f14a56632?pvs=4)
+
+    
+# 기술 스택
+
+  <div>
+    <h3>Desktop application</h3>
+    <img src="images/icon/SvelteKit.png" width="120"/>
+    <img src="images/icon/Tauri.png" width="120"/>
+    <img src="images/icon/Rust.png" width="120"/>
+    
+  </div>
+  <div>
+    <h3>Web Frontend</h3>
+    <img src="images/icon/HTMLCSS.png" width="120"/>
+    <img src="images/icon/JavaScript.png" width="120"/>
+    <img src="images/icon/Tailwind.png" width="120"/><br>
+    <img src="images/icon/Bootstrap.png" width="120"/><br>
+
+  </div>
+
+  <div>
+    <h3>Web Backend</h3>
+    <img src="images/icon/Java.png" width="120"/>
+    <img src="images/icon/SpringBoot.png" width="120"/>
+    <img src="images/icon/SpringDataJPA.png" width="120"/><br>
+    <img src="images/icon/Mysql.png" width="120"/>
+    <img src="images/icon/MongoDB.png" width="120"/>
+  </div>
+
+  <div>
+    <h3>Infra</h3>
+    <img src="images/icon/AWSEC2.png" width="120"/>
+    <img src="images/icon/Nginx.png" width="120"/>
+    <img src="images/icon/Docker.png" width="120"/><br>
+    <img src="images/icon/Jenkins.png" width="120"/>
+    <img src="images/icon/Actions.png" width="120"/>
+    <img src="images/icon/AWSS3.png" width="120"/>
+  </div>
+<br>
+
+  <div>
+    <h3>Others</h3>
+    <img src="images/icon/Gemini.png" width="120"/>
+    <img src="images/icon/Jira.png" width="120"/><br>
+    <img src="images/icon/Github.png" width="120"/>
+    <img src="images/icon/GitLab.png" width="120"/>
+  </div>
+</div>
+
+# 프로젝트 일정
+
+### 기획: 04.14 ~ 04.18 (5일)
+
+### 개발: 04.21 ~ 05.16 (1달)
+
+### 테스트 : 05.02 ~ 05.16 (2주)
+
+### 프로젝트 종료: 2025.05.22
+
+---
+
+# 프로젝트 팀원 & 역할
+
+## 김동욱
+
+## 김성현
+
+## 김현우
+- 전체 인프라 담당
+- GitHub Actions 기반 정적 페이지 EC2 자동 배포
+- GitLab Jenkins 기반 CI/CD 자동 배포
+- 구글 오픈소스 osv-scanner 이용한 mcp-server 라이브러리 검사 및 스케줄링
+- Oauth2.0 로그인 백엔드 로직 처리
+- 웹페이지 게시판 백엔드 CRUD 로직 구현
+- 웹페이지 메인 화면 구성
+
+## 방승윤
+
+## 오승원
+
+## 오완진
