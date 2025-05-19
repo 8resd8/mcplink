@@ -15,6 +15,7 @@ import io.jsonwebtoken.UnsupportedJwtException;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import io.jsonwebtoken.security.SignatureException;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import kr.co.mcplink.domain.user.entity.User;
 import kr.co.mcplink.global.config.JwtProperties;
@@ -60,10 +61,22 @@ public class JwtUtil {
 		return getClaims(token).get("userId", Long.class);
 	}
 
-	public String getResolveAccessToken(HttpServletRequest request) {
+	public String getResolveAccessTokenFromAuthorization(HttpServletRequest request) {
 		String bearerToken = request.getHeader("Authorization");
 		if (StringUtils.hasText(bearerToken) && bearerToken.startsWith("Bearer ")) {
 			return bearerToken.substring(7);
+		}
+		return null;
+	}
+
+	public String extractTokenFromCookie(HttpServletRequest request, String cookieName) {
+		Cookie[] cookies = request.getCookies();
+		if (cookies != null) {
+			for (Cookie cookie : cookies) {
+				if (cookieName.equals(cookie.getName())) {
+					return cookie.getValue();
+				}
+			}
 		}
 		return null;
 	}

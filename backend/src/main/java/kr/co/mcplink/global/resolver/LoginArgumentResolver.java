@@ -36,8 +36,7 @@ public class LoginArgumentResolver implements HandlerMethodArgumentResolver {
 		NativeWebRequest webRequest, WebDataBinderFactory binderFactory) throws Exception {
 
 		HttpServletRequest request = (HttpServletRequest)webRequest.getNativeRequest();
-		// User user = (User)request.getAttribute("user");
-		String token = jwtUtil.getResolveAccessToken(request);
+		String token = jwtUtil.extractTokenFromCookie(request, "accessToken");
 
 		if (token == null) {
 			throw new JwtForbiddenException("Token is Null");
