@@ -5,7 +5,9 @@ import kr.co.mcplink.domain.mcpserver.v1.entity.McpServer;
 import kr.co.mcplink.domain.mcpserver.v2.entity.McpServerV2;
 import kr.co.mcplink.domain.mcpserver.v3.entity.McpServerV3;
 
+import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 public class PaginationUtil {
 
@@ -15,8 +17,8 @@ public class PaginationUtil {
         boolean hasNext  = remaining > 0;
 
         return PageInfoDto.builder()
-                .startCursor(startCursor)
-                .endCursor(endCursor)
+                .startCursor(Optional.of(startCursor))
+                .endCursor(Optional.of(endCursor))
                 .hasNextPage(hasNext)
                 .totalItems(totalItems)
                 .build();
@@ -28,8 +30,8 @@ public class PaginationUtil {
         boolean hasNext  = remaining > 0;
 
         return PageInfoDto.builder()
-                .startCursor(startCursor)
-                .endCursor(endCursor)
+                .startCursor(Optional.of(startCursor))
+                .endCursor(Optional.of(endCursor))
                 .hasNextPage(hasNext)
                 .totalItems(totalItems)
                 .build();
@@ -41,8 +43,8 @@ public class PaginationUtil {
         boolean hasNext  = remaining > 0;
 
         return PageInfoDto.builder()
-                .startCursor(startCursor)
-                .endCursor(endCursor)
+                .startCursor(Optional.of(startCursor))
+                .endCursor(Optional.of(endCursor))
                 .hasNextPage(hasNext)
                 .totalItems(totalItems)
                 .build();
@@ -63,8 +65,8 @@ public class PaginationUtil {
         boolean hasNext = endIndex < totalItems;
 
         return PageInfoDto.builder()
-                .startCursor(startCursor)
-                .endCursor(endCursor)
+                .startCursor(Optional.of(startCursor))
+                .endCursor(Optional.of(endCursor))
                 .hasNextPage(hasNext)
                 .totalItems(totalItems)
                 .build();
@@ -80,6 +82,39 @@ public class PaginationUtil {
             }
         }
         int endIndex = (int) Math.min(totalItems, startIndex + size);
+
+        return items.subList(startIndex, endIndex);
+    }
+
+    public static int calculateOffset(int size, int page) {
+        if (page <= 1) {
+            return 0;
+        }
+        return (page - 1) * size;
+    }
+
+    public static PageInfoDto buildPageInfoV3ForWeb(long totalItems, int size, int page) {
+        long totalPages = (totalItems + size - 1) / size;
+        boolean hasNext = page < totalPages;
+
+        return PageInfoDto.builder()
+                .hasNextPage(hasNext)
+                .totalItems(totalItems)
+                .build();
+    }
+
+    public static PageInfoDto buildPageInfoForBatchForWeb(List<Long> items, int size, int page) {
+        long totalItems = items.size();
+
+        return buildPageInfoV3ForWeb(totalItems, size, page);
+    }
+
+    public static List<Long> slicePageIdsForBatchForWeb(List<Long> items, int size, int page) {
+        int startIndex = (page <= 1) ? 0 : (page - 1) * size;
+        if (startIndex >= items.size()) {
+            return Collections.emptyList();
+        }
+        int endIndex = Math.min(items.size(), startIndex + size);
 
         return items.subList(startIndex, endIndex);
     }

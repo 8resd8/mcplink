@@ -21,9 +21,9 @@ public class McpServerV3Controller {
     @GetMapping
     public ApiResponse<McpListResponse> getAllServers(
             @RequestParam(required = false, defaultValue = "5") Integer size,
-            @RequestParam(required = false, defaultValue = "0") Long cursorId
+            @RequestParam(required = false, defaultValue = "0") Long page
     ) {
-        return mcpServerService.findAllServers(size, cursorId);
+        return mcpServerService.findAllServers(size, page);
     }
 
     @GetMapping("/search")
@@ -43,6 +43,33 @@ public class McpServerV3Controller {
     ) {
         List<Long> serverIds = batchRequest.serverIds();
         return mcpServerService.findServersByIds(serverIds, size, cursorId);
+    }
+
+    @GetMapping("/web")
+    public ApiResponse<McpListResponse> getAllServersForWeb(
+            @RequestParam(required = false, defaultValue = "10") Integer size,
+            @RequestParam(required = false, defaultValue = "1") Integer page
+    ) {
+        return mcpServerService.findAllServersForWeb(size, page);
+    }
+
+    @GetMapping("/web/search")
+    public ApiResponse<McpSearchResponse> getServersByNameForWeb(
+            @RequestParam("name") String name,
+            @RequestParam(required = false, defaultValue = "10") Integer size,
+            @RequestParam(required = false, defaultValue = "1") Integer page
+    ) {
+        return mcpServerService.searchServersByNameForWeb(name, size, page);
+    }
+
+    @PostMapping("/web/batch")
+    public ApiResponse<McpBatchResponse> getServersByIdsForWeb(
+            @RequestParam(required = false, defaultValue = "10") Integer size,
+            @RequestParam(required = false, defaultValue = "1") Integer page,
+            @RequestBody McpBatchRequest batchRequest
+    ) {
+        List<Long> serverIds = batchRequest.serverIds();
+        return mcpServerService.findServersByIdsForWeb(serverIds, size, page);
     }
 
     @GetMapping("/{serverId}")

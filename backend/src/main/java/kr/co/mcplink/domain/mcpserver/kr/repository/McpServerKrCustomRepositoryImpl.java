@@ -52,6 +52,20 @@ public class McpServerKrCustomRepositoryImpl implements McpServerKrCustomReposit
     }
 
     @Override
+    public List<McpServerV3> listAllWithOffset(int size, int offset) {
+        Aggregation agg = Aggregation.newAggregation(
+                context -> new Document("$sort",
+                        new Document("stars", -1).append("seq", 1)),
+                context -> new Document("$skip", offset),
+                context -> new Document("$limit", size)
+        );
+
+        return mongoTemplate
+                .aggregate(agg, mongoTemplate.getCollectionName(McpServerV3.class), McpServerV3.class)
+                .getMappedResults();
+    }
+
+    @Override
     public long countByName(String name) {
         Aggregation agg = Aggregation.newAggregation(
                 createNameAndDescriptionMatch(name),
@@ -79,6 +93,21 @@ public class McpServerKrCustomRepositoryImpl implements McpServerKrCustomReposit
                 createCursorMatch(cursor),
                 context -> new Document("$sort",
                         new Document("stars", -1).append("seq", 1)),
+                context -> new Document("$limit", size)
+        );
+
+        return mongoTemplate
+                .aggregate(agg, mongoTemplate.getCollectionName(McpServerV3.class), McpServerV3.class)
+                .getMappedResults();
+    }
+
+    @Override
+    public List<McpServerV3> searchByNameWithOffset(String name, int size, int offset) {
+        Aggregation agg = Aggregation.newAggregation(
+                createNameAndDescriptionMatch(name),
+                context -> new Document("$sort",
+                        new Document("stars", -1).append("seq", 1)),
+                context -> new Document("$skip", offset),
                 context -> new Document("$limit", size)
         );
 
