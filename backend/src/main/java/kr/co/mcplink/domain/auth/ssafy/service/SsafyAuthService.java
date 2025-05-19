@@ -1,11 +1,14 @@
 package kr.co.mcplink.domain.auth.ssafy.service;
 
+import static kr.co.mcplink.global.common.Constants.*;
+
 import java.util.Optional;
 
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,6 +18,7 @@ import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
+import jakarta.servlet.http.HttpServletResponse;
 import kr.co.mcplink.domain.auth.ssafy.dto.LoginResponse;
 import kr.co.mcplink.domain.auth.ssafy.dto.SsafyTokenDto;
 import kr.co.mcplink.domain.auth.ssafy.dto.SsafyUserInfoDto;
@@ -90,6 +94,17 @@ public class SsafyAuthService {
 		} catch (HttpClientErrorException e) {
 			throw new HttpClientErrorException(e.getStatusCode(), "SSAFY 서버와 통신 중 오류가 발생하여 Access Token을 발급받지 못했습니다.");
 		}
+	}
+
+	public void logout(HttpServletResponse response) {
+		ResponseCookie deleteCookie = ResponseCookie.from(ACCESS_TOKEN_NAME, "")
+			.maxAge(0)
+			.path("/")
+			.secure(true)
+			.httpOnly(true)
+			.sameSite("LAX")
+			.build();
+		response.addHeader(HttpHeaders.SET_COOKIE, deleteCookie.toString());
 	}
 
 	private SsafyUserInfoDto requestUserInfo(String accessToken) {
