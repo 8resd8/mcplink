@@ -1,5 +1,7 @@
 package kr.co.mcplink.domain.user.entity;
 
+import java.time.LocalDateTime;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -42,6 +44,9 @@ public class User extends BaseTimeEntity {
 	@Enumerated(EnumType.STRING)
 	private UserRole role;
 
+	@Column(name = "last_login_at")
+	private LocalDateTime lastLoginAt;
+
 	@Builder
 	private User(String name, String email, String nickname, String ssafyUserId, UserRole role) {
 		this.name = name;
@@ -54,6 +59,10 @@ public class User extends BaseTimeEntity {
 	public void updateSsafyUser(String name, String ssafyUserId) {
 		this.name = name;
 		this.ssafyUserId = ssafyUserId;
+	}
+
+	public void updateLastLoginAt() {
+		this.lastLoginAt = LocalDateTime.now();
 	}
 
 	public static User createUser(String name, String nickname,String email) {

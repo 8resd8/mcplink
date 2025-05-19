@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
 
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Component;
 import org.springframework.util.AntPathMatcher;
@@ -15,7 +14,6 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
-import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import kr.co.mcplink.domain.user.entity.User;
 import kr.co.mcplink.domain.user.repository.UserRepository;
@@ -54,13 +52,8 @@ public class JwtAuthenticationFilter implements Filter {
 			return;
 		}
 
-		// Bearer 검사
-		String jwtFromAuthorization = extractJwtFromAuthorization(httpRequest);
-		log.info("0. Bearer 검사 후 jwt: {}", jwtFromAuthorization);
-
 		// Cookie 검사
-		String jwt = extractJwtFromCookie(httpRequest);
-		log.info("1. 쿠키 검사 후 jwt: {}", jwt);
+		String jwt = jwtUtil.extractTokenFromCookie(httpRequest, "accessToken");
 		User authenticatedUser = null;
 
 		if (StringUtils.hasText(jwt) && jwtUtil.validateToken(jwt)) {
@@ -69,11 +62,8 @@ public class JwtAuthenticationFilter implements Filter {
 
 			if (optionalUser.isPresent()) {
 				authenticatedUser = optionalUser.get();
-				httpRequest.setAttribute("user", authenticatedUser);
 			}
 		}
-		
-		log.info("2. 유저 확인: {}", authenticatedUser);
 
 		// 보안 경로 검사
 		boolean pathIsSecure = isPathMatch(pathToCheck, jwtProperties.securePath());
@@ -84,32 +74,8 @@ public class JwtAuthenticationFilter implements Filter {
 				throw new JwtForbiddenException("로그인이 필요한 서비스입니다.");
 			}
 		}
-		
-		log.info("3. 통과 성공");
+
 		chain.doFilter(request, response);
-	}
-
-	private String extractJwtFromAuthorization(HttpServletRequest request) {
-		String bearerToken = request.getHeader(HttpHeaders.AUTHORIZATION);
-		if (StringUtils.hasText(bearerToken) && bearerToken.startsWith("Bearer ")) {
-			return bearerToken.substring(7);
-		}
-		return null;
-	}
-
-	private String extractJwtFromCookie(HttpServletRequest request) {
-		Cookie[] cookies = request.getCookies();
-		log.info("cookieSize: {}", cookies == null ? 0 : cookies.length);
-
-		if (cookies != null) {
-			for (Cookie cookie : cookies) {
-				if ("accessToken".equals(cookie.getName())) {
-					return cookie.getValue();
-				}
-			}
-		}
-
-		return null;
 	}
 
 	private boolean isPathMatch(String requestPath, List<String> patterns) {

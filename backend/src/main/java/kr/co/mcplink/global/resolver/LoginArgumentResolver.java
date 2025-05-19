@@ -1,5 +1,7 @@
 package kr.co.mcplink.global.resolver;
 
+import static kr.co.mcplink.global.common.Constants.*;
+
 import org.springframework.core.MethodParameter;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.support.WebDataBinderFactory;
@@ -36,7 +38,7 @@ public class LoginArgumentResolver implements HandlerMethodArgumentResolver {
 		NativeWebRequest webRequest, WebDataBinderFactory binderFactory) throws Exception {
 
 		HttpServletRequest request = (HttpServletRequest)webRequest.getNativeRequest();
-		String token = jwtUtil.extractTokenFromCookie(request, "accessToken");
+		String token = jwtUtil.extractTokenFromCookie(request, ACCESS_TOKEN_NAME);
 
 		if (token == null) {
 			throw new JwtForbiddenException("Token is Null");

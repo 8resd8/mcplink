@@ -48,4 +48,6 @@ public final class Constants {
     public static final String MSG_NOT_FOUND                    = "해당 파일을 찾을 수 없습니다.";
     public static final String MSG_NOT_FOUNDS                   = "요청한 파일 목록 중 일부 파일을 찾을 수 없습니다.";
     public static final String MSG_INTERNAL_ERROR               = "서버 처리 중 오류가 발생했습니다.";
+
+    public static final String ACCESS_TOKEN_NAME                = "accessToken";
 }

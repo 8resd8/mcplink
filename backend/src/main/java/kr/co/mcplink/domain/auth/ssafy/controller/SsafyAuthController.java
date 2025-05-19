@@ -1,5 +1,7 @@
 package kr.co.mcplink.domain.auth.ssafy.controller;
 
+import static kr.co.mcplink.global.common.Constants.*;
+
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
@@ -35,7 +37,7 @@ public class SsafyAuthController {
 		HttpServletResponse httpServletResponse) throws IOException {
 		LoginResponse response = ssafyAuthService.processSsafyLogin(code);
 
-		ResponseCookie accessTokenCookie = ResponseCookie.from("accessToken", response.accessToken())
+		ResponseCookie accessTokenCookie = ResponseCookie.from(ACCESS_TOKEN_NAME, response.accessToken())
 			.maxAge(TimeUnit.MILLISECONDS.toSeconds(response.accessExpiredAt()))
 			.path("/")
 			.secure(true)
@@ -45,6 +47,5 @@ public class SsafyAuthController {
 
 		httpServletResponse.addHeader(HttpHeaders.SET_COOKIE, accessTokenCookie.toString());
 		httpServletResponse.sendRedirect("https://mcplink.co.kr");
-		// httpServletResponse.sendRedirect("http://localhost:5500?at=" + response.accessToken());
 	}
 }

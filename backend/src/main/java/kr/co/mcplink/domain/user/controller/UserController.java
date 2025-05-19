@@ -1,4 +1,4 @@
-package kr.co.mcplink.domain.user;
+package kr.co.mcplink.domain.user.controller;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

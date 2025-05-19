@@ -44,6 +44,7 @@ public class SsafyAuthService {
 		SsafyUserInfoDto ssafyUserInfo = validateDto(ssafyTokenDto);
 
 		User user = upsertUser(ssafyUserInfo);
+		user.updateLastLoginAt();
 
 		return new LoginResponse(jwtUtil.generateToken(user), jwtProperties.accessExpiration());
 	}
