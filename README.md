@@ -23,7 +23,9 @@
 > 서버를 확인하고 설치, 삭제하는 번거로움, 불편함을 줄이고자 만든 데스크탑 애플리케이션
 
 ## 주요 기능
+
 ### 데스트탑 애플리케이션
+
 - **로컬 MCP 목록 조회**: 호스트 시스템에 설치된 MCP 인스턴스를 스캔하여 메타데이터 기반 목록을 출력
 
 - **서버 등록 MCP 전체 조회**: MCP 서버에서 정합성 검사를 거친 MCP 전체 목록을 정렬된 형태로 제공
@@ -35,6 +37,7 @@
 - **백그라운드 서비스 지원**: 데스크탑 앱이 최소화되거나 종료되어도 MCP 관리 기능은 백그라운드에서 지속적으로 동작
 
 ### 웹페이지
+
 - **튜토리얼**": 애플리케이션을 사용하기 위한 가이드 제공
 
 - **데스크탑 앱 다운로드**
@@ -56,22 +59,25 @@
 <details>
   <summary>&nbsp;&nbsp;웹 사이트 화면</summary>
 
-|                   **소개 페이지**                    |          **데크스탑 애플리케이션 다운로드**          |
-|:-----------------------------------------------:|:--------------------------------------:|
-| ![소개](images/screens/introduction_tutorial.png) | ![애플리케이션](images/screens/download.png) |
-|                     **FAQ**                     |               **캐릭터 선택**               |
-|         ![FAQ](images/screens/FAQ.png)          |     ![캐릭터 선택](images/screen/4.png)     |
+|                   **소개 페이지**                    |                  **데크스탑 애플리케이션 다운로드**                   |
+|:-----------------------------------------------:|:-------------------------------------------------------:|
+| ![소개](images/screens/introduction_tutorial.png) |         ![애플리케이션](images/screens/download.png)          |
+|                     **FAQ**                     |                      **게시판 글 목록**                       |
+|         ![FAQ](images/screens/FAQ.png)          | ![MCP Server 상세페이지](images/screens/communityboard.png)  |
+|                 **MCP Server**                  |                  **MCP Server 상세페이지**                   |
+| ![MCP Server](images/screens/mcpserverlist.png) | ![MCP Server 상세페이지](images/screens/mcpserverdetail.png) |
 
 </details>
 <details>
 <summary>&nbsp;&nbsp;데스크탑 애플리케이션 화면</summary>
 
-|                **로그인**                 |           **회원 가입 (이메일 인증)**            |
-| :---------------------------------------: | :----------------------------------------------: |
-|    ![로그인 화면](images/screen/1.png)    |      ![회원 가입 화면](images/screen/2.png)      |
-|               **프롤로그**                |                 **캐릭터 선택**                  |
-|     ![프롤로그](images/screen/3.png)      |       ![캐릭터 선택](images/screen/4.png)        |
-|               **메인 화면**               |                  **마을 화면**                   |
+|            **로그인**             |        **회원 가입 (이메일 인증)**        |
+|:------------------------------:|:--------------------------------:|
+| ![로그인 화면](images/screen/1.png) | ![회원 가입 화면](images/screen/2.png) |
+|            **프롤로그**            |            **캐릭터 선택**            |
+|  ![프롤로그](images/screen/3.png)  |  ![캐릭터 선택](images/screen/4.png)  |
+|           **메인 화면**            |            **마을 화면**             |
+
 </details>
 
 ## [API 명세서](https://www.notion.so/1e013cd52d71807b9c9bc8c4ae14e31f?pvs=25)
@@ -86,10 +92,10 @@
 
 - **MongoDB 설치**: EC2 서버, Docker 활용한 설치 방법
 
-  - [MongoDB](https://www.notion.so/EC2-MongoDB-1e513cd52d7180828330cf40b78fa515?pvs=4)
+    - [MongoDB](https://www.notion.so/EC2-MongoDB-1e513cd52d7180828330cf40b78fa515?pvs=4)
 
 - **Linux, Vim, Docker**: 실제로 자주 사용한 명령어
-  - [서버 명령어](https://www.notion.so/Linux-vim-docker-1eb13cd52d7180a297c8ff4f14a56632?pvs=4)
+    - [서버 명령어](https://www.notion.so/Linux-vim-docker-1eb13cd52d7180a297c8ff4f14a56632?pvs=4)
 
 ---
 
@@ -101,7 +107,7 @@
     <img src="images/icon/Tauri.png" width="120"/><br>
     <img src="images/icon/Rust.png" width="120"/>
     <img src="images/icon/NodeJS.png" width="120"/>
-    
+
   </div>
   <div>
     <h3>Web Frontend</h3>
@@ -172,6 +178,8 @@
 - 웹페이지 메인 화면 구성
 
 ## 방승윤
+
+- 
 
 ## 오승원
 
