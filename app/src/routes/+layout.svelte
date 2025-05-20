@@ -1,17 +1,26 @@
 <script lang="ts">
   import "../app.css"
-  import { onMount, onDestroy } from "svelte"
+  import { onMount, onDestroy, setContext } from "svelte"
+  import { showNotification } from "$lib/notifications"
   import { browser } from "$app/environment"
   import type { Window as TauriWindowType } from "@tauri-apps/api/window"
   import { Presentation, Cog, Minus, X, Square, Settings } from "lucide-svelte"
   import { page } from "$app/stores"
   import { goto } from "$app/navigation"
   import { listen, type UnlistenFn } from "@tauri-apps/api/event"
-  import { getCurrentWindow, UserAttentionType } from "@tauri-apps/api/window"
+  import { UserAttentionType } from "@tauri-apps/api/window"
   import { platform as getOsPlatform } from "@tauri-apps/plugin-os"
   import { invoke } from "@tauri-apps/api/core"
+  import { WebviewWindow } from "@tauri-apps/api/webviewWindow"
   import Toast from "$lib/components/toast.svelte"
   import toastStore from "$lib/stores/toast"
+  import { initToastSystem, showToast } from "$lib/toast-system.js"
+  import { handleUriScheme } from "$lib/notifications"
+  import { scrollableContainerKey } from "$lib/contexts"
+
+  // --- Scrollable Container Context ---
+  // export const scrollableContainerKey = Symbol() // contexts.ts로 이동
+  let mainElement: HTMLElement
 
   // --- Configuration for app appearance ---
   // Window bar (title bar) styling - 통일된 디자인을 위해 base-100 사용
@@ -44,117 +53,131 @@
   $: isFirstInstallPage = $page?.url?.pathname === "/first-install"
   $: isPopupPage = $page?.url?.pathname === "/popup"
 
+  // mainElement가 할당된 후 컨텍스트를 설정합니다.
+  $: if (mainElement && browser) {
+    setContext(scrollableContainerKey, mainElement)
+  }
+
   // Notification activation handler - called when the app gains focus
   // Handles notification clicks or automatic activation events
   async function handleAppActivated() {
     try {
-
-      
       // Check for pending keywords from the backend and handle window activation
-      const response = await invoke<string | null>("check_and_mark_app_activated", {});
+      const response = await invoke<string | null>("check_and_mark_app_activated", {})
 
-      
       // Extract keyword from the response
-      let keyword = null;
-      
+      let keyword = null
+
       // Handle differently based on data type (to accommodate various ways Rust's Option<String> is converted to JSON)
-      if (response && typeof response === 'object') {
-        if (response.hasOwnProperty('Some')) {
+      if (response && typeof response === "object") {
+        const resObj = response as Record<string, any>
+        if (resObj.hasOwnProperty("Some")) {
           // Handle Rust's Option<String>::Some
-          keyword = response.Some;
-        } else if (response.hasOwnProperty('0')) {
+          keyword = resObj.Some
+        } else if (resObj.hasOwnProperty("0")) {
           // Handle if converted to an array
-          keyword = response[0];
+          keyword = resObj[0]
         }
-      } else if (response && typeof response === 'string' && response.trim() !== "") {
+      } else if (response && typeof response === "string" && response.trim() !== "") {
         // If converted directly to a string
-        keyword = response;
+        keyword = response
       }
 
-      
       // If a keyword exists, navigate to the MCP list page
       if (keyword) {
-        
         // Additional action to ensure the app is actually activated
         if (tauriWindow) {
           // Also attempt to activate the window from the frontend (additional check after backend activation)
           try {
-            await tauriWindow.show();
-            await tauriWindow.unminimize();
-            await tauriWindow.setFocus();
-            
+            await tauriWindow.show()
+            await tauriWindow.unminimize()
+            await tauriWindow.setFocus()
+
             // Add a short delay to ensure the window is definitely visible
-            await new Promise(resolve => setTimeout(resolve, 100));
+            await new Promise((resolve) => setTimeout(resolve, 100))
           } catch (e) {
-            console.error("[Notification] Frontend window activation failed:", e);
+            console.error("[Notification] Frontend window activation failed:", e)
           }
         }
-        
-        // URL encode the keyword to include it as a query parameter
-        const targetUrl = `/MCP-list?keyword=${encodeURIComponent(keyword)}`;
 
-        
+        // URL encode the keyword to include it as a query parameter
+        const targetUrl = `/MCP-list?keyword=${encodeURIComponent(keyword)}`
+
         // Page navigation (goto is client-side routing between pages)
         try {
-          
           // 1. First, switch URL and update state
-          activeTabPath = "/MCP-list";
-          
+          activeTabPath = "/MCP-list"
+
           // 2. Attempt to activate the app even if the window is already visible
           if (tauriWindow) {
             try {
               // Additional attempt to bring window focus
-              await tauriWindow.show();
-              await tauriWindow.setFocus();
-              
+              await tauriWindow.show()
+              await tauriWindow.setFocus()
+
               // Bring the window to the top using always-on-top setting
-              await tauriWindow.setAlwaysOnTop(true);
-              
+              await tauriWindow.setAlwaysOnTop(true)
+
               // Disable always-on-top after 5 seconds (to allow user to use other windows)
               setTimeout(async () => {
                 try {
-                  await tauriWindow.setAlwaysOnTop(false);
-
+                  if (tauriWindow) await tauriWindow.setAlwaysOnTop(false)
                 } catch (e) {
-                  console.error("[Notification] Error removing always-on-top:", e);
+                  console.error("[Notification] Error removing always-on-top:", e)
                 }
-              }, 5000);
+              }, 5000)
             } catch (e) {
-              console.error("[Notification] Frontend focus error:", e);
+              console.error("[Notification] Frontend focus error:", e)
             }
           }
-          
+
           // 3. Handle uniformly whether URL navigation succeeds or fails
           await Promise.race([
             goto(targetUrl, {
-              replaceState: true,    // Replace the current URL
-              invalidateAll: true,   // Reload all data
-              noScroll: false        // Scroll to the top of the page
+              replaceState: true, // Replace the current URL
+              invalidateAll: true, // Reload all data
+              noScroll: false, // Scroll to the top of the page
             }),
             // 1-second timeout (proceed even if navigation fails)
-            new Promise(resolve => setTimeout(resolve, 1000))
-          ]);
-          
+            new Promise((resolve) => setTimeout(resolve, 1000)),
+          ])
+
           // 4. Attempt to reactivate window regardless of page navigation
           if (tauriWindow) {
-            await tauriWindow.setFocus();
+            await tauriWindow.setFocus()
           }
-          
         } catch (err) {
-          console.error("[Notification] Navigation error:", err);
-          
+          console.error("[Notification] Navigation error:", err)
+
           // Attempt to force a path change even if an error occurs
-          window.location.href = targetUrl;
+          window.location.href = targetUrl
         }
       } else {
       }
     } catch (err) {
-      console.error("[Notification] Error in app activation handler:", err);
+      console.error("[Notification] Error in app activation handler:", err)
     }
   }
 
   // --- Lifecycle and Subscriptions ---
   onMount(async () => {
+    // 개선된 토스트 시스템 초기화
+    if (browser) {
+      initToastSystem()
+
+      // URI 스킴 프로토콜 핸들러는 deep-link 플러그인으로 대체됨
+      // 이벤트 리스너로 처리하는 방식으로 변경
+
+      // 테스트 토스트 알림 (개발 환경에서만)
+      if (import.meta.env.DEV) {
+        setTimeout(() => {
+          showToast("토스트 시스템이 성공적으로 초기화되었습니다.", {
+            title: "알림 시스템 초기화",
+            type: "success",
+          })
+        }, 1000)
+      }
+    }
     activeTabPath = $page.url.pathname
 
     if (browser) {
@@ -165,22 +188,22 @@
           // Check if config files exist on startup
           try {
             // Check claude_desktop_config.json
-            const claudeConfigExists = await invoke<boolean>("check_claude_config_exists");
-            
+            const claudeConfigExists = await invoke<boolean>("check_claude_config_exists")
+
             // Check mcplink_desktop_config.json
-            const mcplinkConfigExists = await invoke<boolean>("check_mcplink_config_exists");
-            
+            const mcplinkConfigExists = await invoke<boolean>("check_mcplink_config_exists")
+
             // Get current path
-            const currentPath = $page?.url?.pathname;
-            
+            const currentPath = $page?.url?.pathname
+
             // If any config file is missing and not already on first-install page
             if ((!claudeConfigExists || !mcplinkConfigExists) && currentPath !== "/first-install") {
-              await goto("/first-install", { replaceState: true });
-              return;
+              await goto("/first-install", { replaceState: true })
+              return
             } else if (claudeConfigExists && mcplinkConfigExists && currentPath === "/first-install") {
               // If all config files exist but we're on first-install page, redirect to main page
-              await goto("/Installed-MCP", { replaceState: true });
-              return;
+              await goto("/Installed-MCP", { replaceState: true })
+              return
             }
           } catch (error) {
             // Error checking config files
@@ -194,64 +217,63 @@
 
     if (typeof window !== "undefined" && "__TAURI__" in window) {
       try {
-        tauriWindow = await getCurrentWindow()
-        
+        tauriWindow = WebviewWindow.getCurrent()
+
         // Set up event listeners
         unlistenMoveToCenter = await listen("move-main-to-center", async () => {
           // This event should not be triggered anymore
           // We no longer automatically center the window
-          console.log("move-main-to-center event received but ignored to prevent auto-centering");
+          console.log("move-main-to-center event received but ignored to prevent auto-centering")
         })
-        
+
         unlistenNavigateTo = await listen("navigate-to", async (event) => {
           if (event.payload && typeof event.payload === "string") goto(event.payload as string)
         })
-        
+
         // Focus event listener that completely ignores all focus events
         // This prevents the window from auto-centering when focused
         const windowEventUnlistener = await tauriWindow.onFocusChanged(({ payload: focused }) => {
           // Simply do nothing when window gains focus
           if (focused) {
-            console.log("Window focused event ignored to prevent auto-centering");
+            console.log("Window focused event ignored to prevent auto-centering")
           }
-        });
-        
+        })
+
         // Store unlisten function for cleanup in a variable for later use
         if (windowEventUnlistener) {
-          unlistenFocusChange = windowEventUnlistener;
+          unlistenFocusChange = windowEventUnlistener
         }
-        
+
         // Do NOT call handleAppActivated at start - this prevents auto-centering
         // handleAppActivated();
-        
+
         // Start watching for config file changes
         try {
           // Start the config file watcher in the backend
-          await invoke("start_config_watch");
-          
+          await invoke("start_config_watch")
+
           // Listen for config files missing events
           unlistenConfigFiles = await listen("config-files-missing", async (event) => {
             try {
               // Get the current path and ignore if already on first-install page
-              const currentPath = $page?.url?.pathname;
-              if (currentPath === "/first-install") return;
-              
+              const currentPath = $page?.url?.pathname
+              if (currentPath === "/first-install") return
+
               // Extract which files are missing from the event payload
-              const { claudeConfigExists, mcplinkConfigExists } = event.payload;
-              
+              const { claudeConfigExists, mcplinkConfigExists } = event.payload as Record<string, any>
+
               // If any config file is missing, redirect to first-install page
               if (!claudeConfigExists || !mcplinkConfigExists) {
-                console.log("[Config Watch] Configuration files missing, redirecting to first-install");
-                await goto("/first-install", { replaceState: true });
+                console.log("[Config Watch] Configuration files missing, redirecting to first-install")
+                await goto("/first-install", { replaceState: true })
               }
             } catch (error) {
-              console.error("[Config Watch] Failed to handle config files event:", error);
+              console.error("[Config Watch] Failed to handle config files event:", error)
             }
-          });
+          })
         } catch (error) {
-          console.error("[Config Watch] Failed to start config watch:", error);
+          console.error("[Config Watch] Failed to start config watch:", error)
         }
-        
       } catch (error) {
         console.error("[Layout] Error during Tauri initialization:", error)
       }
@@ -265,11 +287,11 @@
   // Clean up all event listeners on component destruction
   onDestroy(() => {
     // Clean up Tauri event listeners
-    if (unlistenMoveToCenter) unlistenMoveToCenter();
-    if (unlistenNavigateTo) unlistenNavigateTo();
-    if (unlistenConfigFiles) unlistenConfigFiles();
-    if (unlistenFocusChange) unlistenFocusChange();
-  });
+    if (unlistenMoveToCenter) unlistenMoveToCenter()
+    if (unlistenNavigateTo) unlistenNavigateTo()
+    if (unlistenConfigFiles) unlistenConfigFiles()
+    if (unlistenFocusChange) unlistenFocusChange()
+  })
 
   // --- Window control functions ---
   async function minimizeWindow() {
@@ -384,19 +406,18 @@
   <!-- Main Content Area -->
   <!-- This area's background and text color change based on the active tab. -->
   <main
-    class="flex-1 overflow-y-auto overflow-x-hidden p-4 custom-scrollbar {isFirstInstallPage || isPopupPage ? 'bg-base-100 text-base-content' : `${currentActivePageConfig.mainClass} ${currentActivePageConfig.mainContentClass}`}"
+    bind:this={mainElement}
+    class="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar"
+    style="
+      background-color: {isFirstInstallPage || isPopupPage ? 'var(--color-base-100)' : activeMainAreaBackgroundColor};
+      color: {isFirstInstallPage || isPopupPage ? 'var(--color-base-content)' : activeMainAreaContentColor};
+    "
   >
-    <slot />
+    <slot></slot>
   </main>
-  
+
   <!-- Global Toast Notifications -->
-  <Toast 
-    bind:show={$toastStore.show}
-    message={$toastStore.message}
-    type={$toastStore.type}
-    duration={$toastStore.duration}
-    position={$toastStore.position}
-  />
+  <Toast bind:show={$toastStore.show} message={$toastStore.message} type={$toastStore.type} duration={$toastStore.duration} position={$toastStore.position} />
 </div>
 
 <style>
@@ -424,17 +445,17 @@
     width: 8px;
     height: 8px;
   }
-  
+
   .custom-scrollbar::-webkit-scrollbar-track {
     background: transparent;
-    margin-top: 8px; /* Add some space at the top to prevent overlap with tabs */
+    /* margin-top: 8px; */ /* Removed to allow scrollbar to reach top of main element */
   }
-  
+
   .custom-scrollbar::-webkit-scrollbar-thumb {
     background: #888;
     border-radius: 4px;
   }
-  
+
   .custom-scrollbar::-webkit-scrollbar-thumb:hover {
     background: #555;
   }
