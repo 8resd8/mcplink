@@ -9,20 +9,20 @@ use axum::{
     Json,
     Router,
 };
+use dotenvy::dotenv;
 use reqwest::Client;
 use serde::Deserialize;
 use std::{env, net::SocketAddr, sync::Arc};
-use dotenvy::dotenv;
 use tauri::{
     menu::{MenuBuilder, MenuItemBuilder},
     tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
-    AppHandle, Manager, Listener, Emitter,
+    AppHandle, Emitter, Listener, Manager,
 };
 use tokio::sync::Mutex;
 
 pub mod commands;
-pub mod notification_system;
 pub mod force_activate;
+pub mod notification_system;
 use crate::commands::AppState;
 use crate::notification_system::{init_notification_system, KeywordState};
 
@@ -77,51 +77,54 @@ async fn handle_recommendations(
         if let Some(main_keyword) = payload.keywords.first() {
             // 모든 키워드를 문자열로 합치기
             let keywords_str = payload.keywords.join(", ");
-            
+
             // 알림 제목과 내용 설정
-            let title = "MCP 키워드 추천";
-            let body = format!("검색어: {}", keywords_str);
-            
+            let title = "MCP keyword recommendation";
+            let body = format!("Click for keyword: {}", keywords_str);
+
             // 네이티브 알림 표시 시도
             #[cfg(target_os = "windows")]
             {
                 if let Err(e) = notification_system::show_windows_notification(
-                    title, 
-                    &body, 
-                    Some(main_keyword.to_string())
+                    title,
+                    &body,
+                    Some(main_keyword.to_string()),
                 ) {
-                    eprintln!("[Recommendation] Failed to show Windows notification: {}", e);
+                    eprintln!(
+                        "[Recommendation] Failed to show Windows notification: {}",
+                        e
+                    );
                 }
             }
-            
+
             #[cfg(target_os = "macos")]
             {
                 if let Err(e) = notification_system::show_macos_notification(
-                    title, 
-                    &body, 
-                    Some(main_keyword.to_string())
+                    title,
+                    &body,
+                    Some(main_keyword.to_string()),
                 ) {
                     eprintln!("[Recommendation] Failed to show macOS notification: {}", e);
                 }
             }
-            
+
             #[cfg(target_os = "linux")]
             {
                 if let Err(e) = notification_system::show_linux_notification(
-                    title, 
-                    &body, 
-                    Some(main_keyword.to_string())
+                    title,
+                    &body,
+                    Some(main_keyword.to_string()),
                 ) {
                     eprintln!("[Recommendation] Failed to show Linux notification: {}", e);
                 }
             }
-            
+
             // 키워드 상태에 저장
             if let Some(keyword_state) = app_handle.try_state::<KeywordState>() {
                 keyword_state.set_keyword(main_keyword.clone());
             }
         }
-        
+
         // 키워드 이벤트 발생 (UI 반응용)
         use tauri::Emitter;
         let _ = app_handle.emit("new-keywords", payload.keywords.clone());
@@ -139,15 +142,17 @@ async fn handle_api_v1_request(
 }
 
 // Function to start Axum server
-pub async fn start_axum_server(app_state: RecommendationServerState) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+pub async fn start_axum_server(
+    app_state: RecommendationServerState,
+) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     // Load .env file in development mode (ignore if already loaded)
     #[cfg(debug_assertions)]
     let _ = dotenv();
-    
+
     // Get GUI API URL settings from environment variables
     // Get environment variables at runtime (use default value)
     let gui_api_host = env::var("GUI_API_HOST").unwrap_or_else(|_| "0.0.0.0".to_string());
-    
+
     // Get environment variables at runtime (use default value)
     let gui_api_port = env::var("GUI_API_PORT").unwrap_or_else(|_| "8082".to_string());
 
@@ -179,9 +184,7 @@ pub async fn start_axum_server(app_state: RecommendationServerState) -> Result<(
     // Start Axum server
     match axum::serve(listener, app).await {
         Ok(_) => Ok(()),
-        Err(e) => {
-            Err(Box::new(e))
-        }
+        Err(e) => Err(Box::new(e)),
     }
 }
 
@@ -189,23 +192,27 @@ pub fn run() {
     // Load .env file in development mode (ignore if already loaded)
     #[cfg(debug_assertions)]
     let _ = dotenv();
-    
+
     // 앱 활성화 로그 초기화
     let activation_log_path = std::env::temp_dir().join("mcplink_activation.log");
     if let Ok(mut file) = std::fs::OpenOptions::new()
         .create(true)
         .write(true)
         .append(true)
-        .open(&activation_log_path) {
+        .open(&activation_log_path)
+    {
         use std::io::Write;
-        let _ = writeln!(file, "\n\n=== [{}] MCPLink 앱 시작됨 ===", 
-            chrono::Local::now().format("%Y-%m-%d %H:%M:%S"));
-        
+        let _ = writeln!(
+            file,
+            "\n\n=== [{}] MCPLink 앱 시작됨 ===",
+            chrono::Local::now().format("%Y-%m-%d %H:%M:%S")
+        );
+
         // OS 정보 로깅
         let _ = writeln!(file, "OS: {}", std::env::consts::OS);
         let _ = writeln!(file, "ARCH: {}", std::env::consts::ARCH);
     }
-    
+
     // Create AppState (maintains client for API requests)
     let app_state = AppState {
         client: Client::new(),
@@ -247,40 +254,44 @@ pub fn run() {
             if let Err(e) = init_notification_system(app) {
                 eprintln!("Failed to initialize notification system: {}", e);
             }
-            
+
             // Deep Link 리스너 설정
             let app_handle_for_deeplink = app.handle().clone();
-            
+
             // 로그 파일 설정
             let log_path = std::env::temp_dir().join("mcplink_debug.log");
             let log_path_str = log_path.to_string_lossy().to_string();
             eprintln!("DEBUG LOG FILE: {}", log_path_str);
-            
+
             // 디버그용 로그 파일에 시작 메시지 기록
             if let Ok(mut file) = std::fs::OpenOptions::new()
                 .create(true)
                 .write(true)
                 .append(true)
-                .open(&log_path) {
+                .open(&log_path)
+            {
                 use std::io::Write;
-                let _ = writeln!(file, "=== MCPLink Debug Log Started at {} ===", 
-                    chrono::Local::now().format("%Y-%m-%d %H:%M:%S"));
+                let _ = writeln!(
+                    file,
+                    "=== MCPLink Debug Log Started at {} ===",
+                    chrono::Local::now().format("%Y-%m-%d %H:%M:%S")
+                );
                 let _ = writeln!(file, "Waiting for deep link events...");
             }
-            
+
             // 키워드 파일 읽기 함수 등록
             // 알림에서 저장된 키워드를 읽어 처리
             let app_handle_clone = app.handle().clone();
-            
+
             // Tokio 런타임을 명시적으로 시작하여 비동기 작업 실행
             // 별도의 스레드에서 표준 스레드 API를 사용하여 비동기 작업 실행
             std::thread::spawn(move || {
                 // 잠시 대기 후 키워드 파일 확인
                 std::thread::sleep(std::time::Duration::from_secs(1));
-                
+
                 // 키워드 파일 경로
                 let keyword_path = std::env::temp_dir().join("mcplink_last_keyword.txt");
-                
+
                 // 파일이 존재하면 읽기 시도
                 if keyword_path.exists() {
                     if let Ok(keyword) = std::fs::read_to_string(&keyword_path) {
@@ -291,25 +302,35 @@ pub fn run() {
                                 .create(true)
                                 .write(true)
                                 .append(true)
-                                .open(&log_path) {
+                                .open(&log_path)
+                            {
                                 use std::io::Write;
-                                let _ = writeln!(file, "[{}] 임시 파일에서 키워드 읽음: {}", 
-                                    chrono::Local::now().format("%H:%M:%S"), keyword);
+                                let _ = writeln!(
+                                    file,
+                                    "[{}] 임시 파일에서 키워드 읽음: {}",
+                                    chrono::Local::now().format("%H:%M:%S"),
+                                    keyword
+                                );
                             }
-                            
+
                             // 키워드를 세션 스토리지에 저장하도록 이벤트 발생
                             if let Some(window) = app_handle_clone.get_webview_window("main") {
                                 let _ = window.emit("search-keyword", &keyword);
-                                
+
                                 // 로그 파일에 기록
                                 if let Ok(mut file) = std::fs::OpenOptions::new()
                                     .create(true)
                                     .write(true)
                                     .append(true)
-                                    .open(&log_path) {
+                                    .open(&log_path)
+                                {
                                     use std::io::Write;
-                                    let _ = writeln!(file, "[{}] search-keyword 이벤트 발생: {}", 
-                                        chrono::Local::now().format("%H:%M:%S"), keyword);
+                                    let _ = writeln!(
+                                        file,
+                                        "[{}] search-keyword 이벤트 발생: {}",
+                                        chrono::Local::now().format("%H:%M:%S"),
+                                        keyword
+                                    );
                                 }
                             } else {
                                 // 로그 파일에 기록
@@ -317,20 +338,24 @@ pub fn run() {
                                     .create(true)
                                     .write(true)
                                     .append(true)
-                                    .open(&log_path) {
+                                    .open(&log_path)
+                                {
                                     use std::io::Write;
-                                    let _ = writeln!(file, "[{}] 창을 찾을 수 없어 이벤트 발생 실패", 
-                                        chrono::Local::now().format("%H:%M:%S"));
+                                    let _ = writeln!(
+                                        file,
+                                        "[{}] 창을 찾을 수 없어 이벤트 발생 실패",
+                                        chrono::Local::now().format("%H:%M:%S")
+                                    );
                                 }
                             }
                         }
                     }
-                    
+
                     // 읽은 후 파일 삭제
                     let _ = std::fs::remove_file(&keyword_path);
                 }
             });
-            
+
             // deep-link 이벤트 리스닝
             let log_path_clone = log_path.clone();
             let _ = app.listen("deep-link://new-url", move |event| {
@@ -338,63 +363,81 @@ pub fn run() {
                 let url = event.payload().to_string();
                 let app_handle = app_handle_for_deeplink.clone();
                 eprintln!("Deep Link received: {}", url);
-                
+
                 // 디버그 로그 파일에 기록
                 if let Ok(mut file) = std::fs::OpenOptions::new()
                     .create(true)
                     .write(true)
                     .append(true)
-                    .open(&log_path_clone) {
+                    .open(&log_path_clone)
+                {
                     use std::io::Write;
-                    let _ = writeln!(file, "[{}] Deep Link received: {}", 
-                        chrono::Local::now().format("%H:%M:%S"), url);
+                    let _ = writeln!(
+                        file,
+                        "[{}] Deep Link received: {}",
+                        chrono::Local::now().format("%H:%M:%S"),
+                        url
+                    );
                 }
-                
+
                 // URL 파싱
                 // URL 파싱 - 더 자세한 디버깅 로그 추가
                 eprintln!("Processing URL: {}", url);
-                
+
                 // 로그 파일에 기록
                 if let Ok(mut file) = std::fs::OpenOptions::new()
                     .create(true)
                     .write(true)
                     .append(true)
-                    .open(&log_path_clone) {
+                    .open(&log_path_clone)
+                {
                     use std::io::Write;
-                    let _ = writeln!(file, "[{}] Processing URL: {}", 
-                        chrono::Local::now().format("%H:%M:%S"), url);
+                    let _ = writeln!(
+                        file,
+                        "[{}] Processing URL: {}",
+                        chrono::Local::now().format("%H:%M:%S"),
+                        url
+                    );
                 }
-                
+
                 // mcplink 프로토콜 확인 (URL 형식에 따라 검사 방식 조정)
                 if url.contains("mcplink") {
                     eprintln!("mcplink protocol detected");
-                    
+
                     // 로그 파일에 기록
                     if let Ok(mut file) = std::fs::OpenOptions::new()
                         .create(true)
                         .write(true)
                         .append(true)
-                        .open(&log_path_clone) {
+                        .open(&log_path_clone)
+                    {
                         use std::io::Write;
-                        let _ = writeln!(file, "[{}] mcplink protocol detected", 
-                            chrono::Local::now().format("%H:%M:%S"));
+                        let _ = writeln!(
+                            file,
+                            "[{}] mcplink protocol detected",
+                            chrono::Local::now().format("%H:%M:%S")
+                        );
                     }
-                    
+
                     // 키워드 추출 - 다양한 URL 형식 처리
                     let keyword = if url.contains("keyword=") {
                         eprintln!("keyword parameter found");
-                        
+
                         // 로그 파일에 기록
                         if let Ok(mut file) = std::fs::OpenOptions::new()
                             .create(true)
                             .write(true)
                             .append(true)
-                            .open(&log_path_clone) {
+                            .open(&log_path_clone)
+                        {
                             use std::io::Write;
-                            let _ = writeln!(file, "[{}] keyword parameter found", 
-                                chrono::Local::now().format("%H:%M:%S"));
+                            let _ = writeln!(
+                                file,
+                                "[{}] keyword parameter found",
+                                chrono::Local::now().format("%H:%M:%S")
+                            );
                         }
-                        
+
                         let parts: Vec<&str> = url.split("keyword=").collect();
                         if parts.len() > 1 {
                             let extracted = parts[1].trim().to_string();
@@ -405,141 +448,194 @@ pub fn run() {
                                 extracted
                             };
                             eprintln!("Extracted keyword: {}", clean_keyword);
-                            
+
                             // 로그 파일에 기록
                             if let Ok(mut file) = std::fs::OpenOptions::new()
                                 .create(true)
                                 .write(true)
                                 .append(true)
-                                .open(&log_path_clone) {
+                                .open(&log_path_clone)
+                            {
                                 use std::io::Write;
-                                let _ = writeln!(file, "[{}] Extracted keyword: {}", 
-                                    chrono::Local::now().format("%H:%M:%S"), clean_keyword);
+                                let _ = writeln!(
+                                    file,
+                                    "[{}] Extracted keyword: {}",
+                                    chrono::Local::now().format("%H:%M:%S"),
+                                    clean_keyword
+                                );
                             }
-                            
+
                             Some(clean_keyword)
                         } else {
                             eprintln!("Cannot extract keyword from parts");
-                            
+
                             // 로그 파일에 기록
                             if let Ok(mut file) = std::fs::OpenOptions::new()
                                 .create(true)
                                 .write(true)
                                 .append(true)
-                                .open(&log_path_clone) {
+                                .open(&log_path_clone)
+                            {
                                 use std::io::Write;
-                                let _ = writeln!(file, "[{}] Cannot extract keyword from parts", 
-                                    chrono::Local::now().format("%H:%M:%S"));
+                                let _ = writeln!(
+                                    file,
+                                    "[{}] Cannot extract keyword from parts",
+                                    chrono::Local::now().format("%H:%M:%S")
+                                );
                             }
-                            
+
                             None
                         }
                     } else {
                         eprintln!("No keyword parameter found");
-                        
+
                         // 로그 파일에 기록
                         if let Ok(mut file) = std::fs::OpenOptions::new()
                             .create(true)
                             .write(true)
                             .append(true)
-                            .open(&log_path_clone) {
+                            .open(&log_path_clone)
+                        {
                             use std::io::Write;
-                            let _ = writeln!(file, "[{}] No keyword parameter found", 
-                                chrono::Local::now().format("%H:%M:%S"));
+                            let _ = writeln!(
+                                file,
+                                "[{}] No keyword parameter found",
+                                chrono::Local::now().format("%H:%M:%S")
+                            );
                         }
-                        
+
                         None
                     };
-                    
+
                     // 앱 활성화
                     let window_result = app_handle.get_webview_window("main");
-                    
+
                     // 로그 파일에 기록
                     if let Ok(mut file) = std::fs::OpenOptions::new()
                         .create(true)
                         .write(true)
                         .append(true)
-                        .open(&log_path_clone) {
+                        .open(&log_path_clone)
+                    {
                         use std::io::Write;
-                        let _ = writeln!(file, "[{}] Window lookup result: {}", 
-                            chrono::Local::now().format("%H:%M:%S"), 
-                            if window_result.is_some() { "success" } else { "failed" });
+                        let _ = writeln!(
+                            file,
+                            "[{}] Window lookup result: {}",
+                            chrono::Local::now().format("%H:%M:%S"),
+                            if window_result.is_some() {
+                                "success"
+                            } else {
+                                "failed"
+                            }
+                        );
                     }
-                    
+
                     if let Some(window) = window_result {
                         // 앱 창 활성화 시도
                         let show_result = window.show();
                         let unminimize_result = window.unminimize();
                         let focus_result = window.set_focus();
-                        
+
                         // 로그 파일에 기록
                         if let Ok(mut file) = std::fs::OpenOptions::new()
                             .create(true)
                             .write(true)
                             .append(true)
-                            .open(&log_path_clone) {
+                            .open(&log_path_clone)
+                        {
                             use std::io::Write;
-                            let _ = writeln!(file, "[{}] Window activation: show={:?}, unminimize={:?}, focus={:?}", 
+                            let _ = writeln!(
+                                file,
+                                "[{}] Window activation: show={:?}, unminimize={:?}, focus={:?}",
                                 chrono::Local::now().format("%H:%M:%S"),
                                 show_result.is_ok(),
                                 unminimize_result.is_ok(),
-                                focus_result.is_ok());
+                                focus_result.is_ok()
+                            );
                         }
-                        
+
                         // 키워드가 있으면 검색 이벤트 발생
                         if let Some(kw) = keyword {
                             // 단순화: 키워드만 전달하는 방식으로 변경
                             let emit_result = window.emit("search-keyword", kw.clone());
-                            
+
                             // 로그 파일에 기록
                             if let Ok(mut file) = std::fs::OpenOptions::new()
                                 .create(true)
                                 .write(true)
                                 .append(true)
-                                .open(&log_path_clone) {
+                                .open(&log_path_clone)
+                            {
                                 use std::io::Write;
-                                let _ = writeln!(file, "[{}] Emitting search-keyword event with '{}': {:?}", 
+                                let _ = writeln!(
+                                    file,
+                                    "[{}] Emitting search-keyword event with '{}': {:?}",
                                     chrono::Local::now().format("%H:%M:%S"),
                                     kw,
-                                    emit_result.is_ok());
+                                    emit_result.is_ok()
+                                );
                             }
                         }
                     } else {
                         // 창을 찾을 수 없는 경우 에러 로그
                         eprintln!("Failed to find main window!");
-                        
+
                         // 로그 파일에 기록
                         if let Ok(mut file) = std::fs::OpenOptions::new()
                             .create(true)
                             .write(true)
                             .append(true)
-                            .open(&log_path_clone) {
+                            .open(&log_path_clone)
+                        {
                             use std::io::Write;
-                            let _ = writeln!(file, "[{}] ERROR: Failed to find main window!", 
-                                chrono::Local::now().format("%H:%M:%S"));
-                            
+                            let _ = writeln!(
+                                file,
+                                "[{}] ERROR: Failed to find main window!",
+                                chrono::Local::now().format("%H:%M:%S")
+                            );
+
                             // 대안으로 새 창 생성 시도
-                            let _ = writeln!(file, "[{}] Attempting to create a new window...", 
-                                chrono::Local::now().format("%H:%M:%S"));
-                            
+                            let _ = writeln!(
+                                file,
+                                "[{}] Attempting to create a new window...",
+                                chrono::Local::now().format("%H:%M:%S")
+                            );
+
                             // 키워드 정보 로깅
                             if let Some(kw) = keyword.clone() {
-                                let _ = writeln!(file, "[{}] Keyword found: {}", 
-                                    chrono::Local::now().format("%H:%M:%S"), kw);
+                                let _ = writeln!(
+                                    file,
+                                    "[{}] Keyword found: {}",
+                                    chrono::Local::now().format("%H:%M:%S"),
+                                    kw
+                                );
                             } else {
-                                let _ = writeln!(file, "[{}] No keyword found", 
-                                    chrono::Local::now().format("%H:%M:%S"));
+                                let _ = writeln!(
+                                    file,
+                                    "[{}] No keyword found",
+                                    chrono::Local::now().format("%H:%M:%S")
+                                );
                             };
-                            
+
                             // 창 목록 수동 확인
-                            let _ = writeln!(file, "[{}] Window lookup failed - manually check for main window", 
-                                chrono::Local::now().format("%H:%M:%S"));
-                            
-                            // 메인 윈도우가 있는지 명시적으로 확인 
+                            let _ = writeln!(
+                                file,
+                                "[{}] Window lookup failed - manually check for main window",
+                                chrono::Local::now().format("%H:%M:%S")
+                            );
+
+                            // 메인 윈도우가 있는지 명시적으로 확인
                             let main_window = app_handle.get_webview_window("main");
-                            let _ = writeln!(file, "[{}] Manual main window check: {}", 
+                            let _ = writeln!(
+                                file,
+                                "[{}] Manual main window check: {}",
                                 chrono::Local::now().format("%H:%M:%S"),
-                                if main_window.is_some() { "found" } else { "not found" });
+                                if main_window.is_some() {
+                                    "found"
+                                } else {
+                                    "not found"
+                                }
+                            );
                         }
                     }
                 }
@@ -600,7 +696,6 @@ pub fn run() {
                 })
                 .build(app)?;
 
-            
             // --- Start of Axum server startup code addition ---
             let app_handle_for_axum = app.handle().clone();
 
@@ -608,14 +703,14 @@ pub fn run() {
             std::thread::spawn(move || {
                 // 새로운 Tokio 런타임 생성
                 let rt = tokio::runtime::Runtime::new().unwrap();
-                
+
                 // Tokio 런타임에서 비동기 작업 실행
                 rt.block_on(async {
                     // Set AppHandle
                     recommendation_server_state_clone
                         .set_app_handle(app_handle_for_axum)
                         .await;
-    
+
                     // Start Axum server
                     match start_axum_server(recommendation_server_state_clone).await {
                         Ok(_) => {}
@@ -648,6 +743,7 @@ pub fn run() {
             commands::test_force_activate,
             commands::test_search_keyword,
             commands::simulate_notification_click,
+            commands::check_and_mark_app_activated,
             notification_system::show_notification,
         ])
         .run(tauri::generate_context!())
