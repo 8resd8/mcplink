@@ -43,17 +43,11 @@
 <details>
   <summary>&nbsp;&nbsp;웹 사이트 화면</summary>
 
-|                **로그인**                 |           **회원 가입 (이메일 인증)**            |
-| :---------------------------------------: | :----------------------------------------------: |
-|    ![로그인 화면](images/screen/1.png)    |      ![회원 가입 화면](images/screen/2.png)      |
-|               **프롤로그**                |                 **캐릭터 선택**                  |
-|     ![프롤로그](images/screen/3.png)      |       ![캐릭터 선택](images/screen/4.png)        |
-|               **메인 화면**               |                  **마을 화면**                   |
-|    ![메인 화면](images/screen/6N.png)     |        ![마을 화면](images/screen/7.png)         |
-|            **탄소 배출 퀴즈**             |                  **퀴즈 결과**                   |
-|  ![탄소 배출 퀴즈](images/screen/8.png)   | ![퀴즈 결과 및 캐릭터 변화](images/screen/9.png) |
-|            **일일 체크리스트**            |          **커스텀 체크리스트 AI 검증**           |
-| ![기본 체크리스트](images/screen/11N.png) |   ![커스텀 체크리스트](images/screen/12N.png)    |
+|                   **소개 페이지**                    |          **데크스탑 애플리케이션 다운로드**          |
+|:-----------------------------------------------:|:--------------------------------------:|
+| ![소개](images/screens/introduction_tutorial.png) | ![애플리케이션](images/screens/download.png) |
+|                     **FAQ**                     |               **캐릭터 선택**               |
+|         ![FAQ](images/screens/FAQ.png)          |     ![캐릭터 선택](images/screen/4.png)     |
 
 </details>
 <details>
@@ -65,11 +59,6 @@
 |               **프롤로그**                |                 **캐릭터 선택**                  |
 |     ![프롤로그](images/screen/3.png)      |       ![캐릭터 선택](images/screen/4.png)        |
 |               **메인 화면**               |                  **마을 화면**                   |
-|    ![메인 화면](images/screen/6N.png)     |        ![마을 화면](images/screen/7.png)         |
-|            **탄소 배출 퀴즈**             |                  **퀴즈 결과**                   |
-|  ![탄소 배출 퀴즈](images/screen/8.png)   | ![퀴즈 결과 및 캐릭터 변화](images/screen/9.png) |
-|            **일일 체크리스트**            |          **커스텀 체크리스트 AI 검증**           |
-| ![기본 체크리스트](images/screen/11N.png) |   ![커스텀 체크리스트](images/screen/12N.png)    |
 </details>
 
 ## [API 설계](https://www.notion.so/1e013cd52d71807b9c9bc8c4ae14e31f?pvs=25)
