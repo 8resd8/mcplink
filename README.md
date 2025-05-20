@@ -163,7 +163,7 @@
 
 ## 김현우
 
-- 인프라 총괄, 웹 백엔드, 웹 프론트 서브 담당
+- 인프라 총괄, 웹 백엔드, 웹 프론트 담당
 - GitHub Actions 기반 정적 페이지 EC2 자동 배포
 - GitLab Jenkins 기반 CI/CD 자동 배포
 - 구글 오픈소스 osv-scanner 이용한 mcp-server 라이브러리 검사 및 스케줄링
