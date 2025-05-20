@@ -1,12 +1,13 @@
 <script lang="ts">
   import { onMount } from "svelte"
-  import { Star, Github, ArrowLeft, ShieldCheck, ShieldX } from "lucide-svelte"
+  import { Star, Github, ArrowLeft, Skull, AlertTriangle, AlertCircle, ShieldCheck, HelpCircle } from "lucide-svelte"
   import { fetchMCPCardDetail } from "$lib/data/mcp-api"
   import { invoke } from "@tauri-apps/api/core"
   import { goto } from "$app/navigation"
   import { page } from "$app/stores"
   import ConfirmModal from "$lib/components/confirm-modal.svelte"
   import { showSuccess, showError } from "$lib/stores/toast"
+  import { listen } from "@tauri-apps/api/event"
 
   // Get MCP information from URL
   let id: number = 0
@@ -17,7 +18,7 @@
   let description: string = ""
   let url: string = ""
   let stars: number = 0
-  let scanned: boolean | undefined = undefined
+  let securityRank: "CRITICAL" | "HIGH" | "MODERATE" | "LOW" | "UNRATE" = "UNRATE"
   // Detailed settings binding
   let args: string[] = []
   let env: Record<string, any> = {}
@@ -93,7 +94,7 @@
       description = detail.description || description
       url = detail.url || url
       stars = detail.stars || stars
-      scanned = detail.scanned
+      securityRank = detail.securityRank || "UNRATE"
 
       // Update detailed settings - do not show fields if they are not present in the data received from the crawler server
       if (detail.args) args = detail.args
@@ -134,7 +135,7 @@
   }
 
 
-  onMount(() => {
+  onMount(async () => {
     // Get parameters from URL
     const params = new URLSearchParams(window.location.search)
     id = parseInt(params.get("id") || "0")
@@ -159,6 +160,24 @@
     description = params.get("description") || "No description"
     url = params.get("url") || ""
     stars = parseInt(params.get("stars") || "0")
+    
+    // 디테일 페이지에서 현재 모드에 따라 레이아웃에 알림
+    try {
+      if (typeof window !== "undefined") {
+        // 현재 모드에 따라 활성화할 탭 경로 결정
+        const activeTab = mode === "edit" ? "/Installed-MCP" : "/MCP-list";
+        
+        // 레이아웃에 알림 (activeTabPath 업데이트)
+        // 약간 지연시켜 모든 컴포넌트가 마운트된 후 실행
+        setTimeout(() => {
+          window.dispatchEvent(new CustomEvent('navigate-to-event', { 
+            detail: { path: activeTab }
+          }));
+        }, 10);
+      }
+    } catch (err) {
+      console.error("탭 활성화 이벤트 발생 실패:", err);
+    }
 
     // Create star rating array (max 5)
     const starCount = Math.min(Math.round(stars / 1000), 5)
@@ -180,8 +199,8 @@
 <div class="p-8 max-w-5xl mx-auto min-h-screen">
   <div class="bg-white rounded-lg shadow-sm p-6 relative">
     <!-- Back button -->
-    <button class="absolute top-4 right-4 btn btn-sm btn-ghost gap-1" on:click={goBack}>
-      <ArrowLeft size={18} />
+    <button class="absolute top-4 right-4 btn btn-sm btn-ghost gap-1 flex items-center" on:click={goBack}>
+      <ArrowLeft size={20} />
       <span>Back</span>
     </button>
 
@@ -190,17 +209,27 @@
       <div class="flex items-center gap-3">
         <h1 class="text-2xl font-bold">{title}</h1>
         
-        <!-- Security scan status icon -->
-        {#if scanned !== undefined}
-          {#if scanned === true}
-            <span class="tooltip" data-tip="Security checked">
-              <ShieldCheck class="text-info" size={20} />
-            </span>
-          {:else}
-            <span class="tooltip" data-tip="Not security checked">
-              <ShieldX class="text-warning" size={20} />
-            </span>
-          {/if}
+        <!-- Security rank status icon -->
+        {#if securityRank === "CRITICAL"}
+          <span class="tooltip" data-tip="CRITICAL">
+            <Skull class="text-error" size={20} />
+          </span>
+        {:else if securityRank === "HIGH"}
+          <span class="tooltip" data-tip="HIGH">
+            <AlertTriangle class="text-warning" size={20} />
+          </span>
+        {:else if securityRank === "MODERATE"}
+          <span class="tooltip" data-tip="MODERATE">
+            <AlertCircle style="color: oklch(0.7952 0.1617 86.05)" size={20} />
+          </span>
+        {:else if securityRank === "LOW"}
+          <span class="tooltip" data-tip="LOW">
+            <ShieldCheck class="text-success" size={20} />
+          </span>
+        {:else}
+          <span class="tooltip" data-tip="UNRATE">
+            <HelpCircle class="text-neutral" size={20} />
+          </span>
         {/if}
         
         <div class="flex items-center gap-1">
@@ -208,7 +237,7 @@
           <span class="text-gray-600 font-medium">{stars > 0 ? formatStars(stars) : "0"}</span>
         </div>
         {#if url && url.includes("github.com")}
-          <button on:click={() => openGitHub(url)} class="text-gray-500 hover:text-gray-700 transition-colors">
+          <button on:click={() => openGitHub(url)} class="text-gray-500 hover:text-gray-700 transition-colors flex items-center">
             <span class="tooltip" data-tip="Visit GitHub">
               <Github size={20} />
             </span>
@@ -341,7 +370,7 @@
     <!-- Bottom button area -->
     <div class="mt-8 flex justify-end gap-2 border-t pt-4">
       <button
-        class="btn btn-sm btn-primary"
+        class="btn btn-sm btn-secondary"
         on:click={() => {
           // Open confirmation modal
           showConfirmModal = true;

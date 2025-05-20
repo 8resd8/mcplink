@@ -8,6 +8,7 @@
   import { listen } from "@tauri-apps/api/event"
   import { WebviewWindow } from "@tauri-apps/api/webviewWindow"
   import NotificationHandler from "./NotificationHandler.svelte"
+  import { sharedDataStore, updateCount } from "$lib/stores/data-store"
 
   // define data type to receive from backend
   import type { MCPCard as MCPCardType, PageInfo } from "../../lib/data/mcp-api"
@@ -240,6 +241,9 @@
         mcpCards = response.cards
         pageInfo = response.page_info
         justLoadedNewData = true
+        
+        // 글로벌 데이터 스토어에 MCP 리스트 개수 업데이트
+        updateCount("listCount", pageInfo.total_items)
 
         if (!pageInfo.has_next_page || mcpCards.length >= pageInfo.total_items) {
           allLoaded = true
@@ -418,7 +422,7 @@
   <!-- Top header area (not fixed) - background color same as page background -->
   <div class="py-2 px-4 sticky top-0 z-10 bg-[var(--color-secondary)]">
     <div class="flex flex-col sm:flex-row justify-between items-center w-full px-4">
-      <h1 class="text-2xl font-bold text-center sm:text-left sm:mr-auto">MCP List ({pageInfo.total_items})</h1>
+      <h1 class="text-2xl font-bold text-center sm:text-left sm:mr-auto">MCP List ({$sharedDataStore.loaded ? $sharedDataStore.counts.listCount || pageInfo.total_items : pageInfo.total_items})</h1>
 
       <!-- Search UI -->
       <div class="relative w-full max-w-xs mx-auto sm:mx-0 sm:w-64 mt-2 sm:mt-0 sm:ml-auto">
@@ -461,9 +465,9 @@
       </div>
       <!-- MCP cards grid -->
     {:else if mcpCards.length > 0}
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
         {#each mcpCards as card (card.id)}
-          <MCPCard {...card} />
+          <MCPCard {...card} mode="" />
         {/each}
       </div>
 

@@ -1,13 +1,14 @@
 <script lang="ts">
   import { onMount } from "svelte"
   import { invoke } from "@tauri-apps/api/core"
-  import MCPCardComponent from "$lib/components/mcp-card.svelte"
-  import type { MCPCard, PageInfo } from "$lib/data/mcp-api"
+  import MCPCard from "$lib/components/mcp-card.svelte"
+  import type { MCPCard as MCPCardType, PageInfo } from "$lib/data/mcp-api"
   import { writable } from "svelte/store"
+  import { sharedDataStore, updateCount } from "$lib/stores/data-store"
 
   // State variables
-  let installedServers = writable<MCPCard[]>([])
-  let originalServers = writable<MCPCard[]>([]) // Store original data
+  let installedServers = writable<MCPCardType[]>([])
+  let originalServers = writable<MCPCardType[]>([]) // Store original data
   let pageInfo = writable<PageInfo | null>(null)
   let isLoading = writable(true)
   let errorMessage = writable<string | null>(null)
@@ -28,6 +29,12 @@
   async function loadInstalledMCPs() {
     isLoading.set(true)
     errorMessage.set(null)
+    
+    // 데이터 로딩 중 상태를 글로벌 스토어에도 표시
+    if ($sharedDataStore.loaded) {
+      // 이미 로드된 데이터가 있으면 유지 (다른 페이지에서 이미 로드한 경우)
+      // 여기서는 아무것도 하지 않음
+    }
 
     try {
       // Get the config file content directly from the backend
@@ -70,6 +77,11 @@
         searchTerm: searchTerm.trim() || null, // Pass search term if it exists
       })
 
+      // MCP-list 페이지와 같이 백엔드의 security_rank를 프론트엔드용 securityRank로 변환
+      for (const card of response.cards) {
+        card.securityRank = (card.security_rank as any) || "UNRATE";
+      }
+
       installedServers.set(response.cards)
       originalServers.set(response.cards) // Store original data
 
@@ -79,6 +91,9 @@
         ...response.page_info,
         total_items: actualTotalItems,
       })
+      
+      // 글로벌 데이터 스토어에 설치된 MCP 개수 업데이트
+      updateCount("installedCount", actualTotalItems)
     } catch (error: any) {
       errorMessage.set(`Failed to load installed MCPs: ${error.message || error}`)
       installedServers.set([])
@@ -177,9 +192,9 @@
 
 <div class="container mx-auto pb-4">
   <!-- Top header area (not fixed) - background color same as page background -->
-  <div class="py-2 px-4 sticky top-0 z-10 bg-[var(--color-primary)]">
+  <div class="py-2 px-4 sticky top-0 z-10 bg-[var(--color-secondary)]">
     <div class="flex flex-col sm:flex-row justify-between items-center w-full px-4">
-      <h1 class="text-2xl font-bold text-center sm:text-left sm:mr-auto">Installed MCP Servers ({searchTerm.trim() ? $installedServers.length : $pageInfo ? $pageInfo.total_items : 0})</h1>
+      <h1 class="text-2xl font-bold text-center sm:text-left sm:mr-auto">Installed MCP Servers ({searchTerm.trim() ? $installedServers.length : $sharedDataStore.loaded ? $sharedDataStore.counts.installedCount || ($pageInfo ? $pageInfo.total_items : 0) : ($pageInfo ? $pageInfo.total_items : 0)})</h1>
 
       <!-- Search UI -->
       <div class="relative w-full max-w-xs mx-auto sm:mx-0 sm:w-64 mt-2 sm:mt-0 sm:ml-auto">
@@ -219,9 +234,9 @@
         <p>Error: {$errorMessage}</p>
       </div>
     {:else if $installedServers.length > 0}
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
         {#each $installedServers as server (server.id)}
-          <MCPCardComponent id={server.id} title={server.title} description={server.description} url={server.url} stars={server.stars} mode="installed" on:deleted={handleCardDeleted} />
+          <MCPCard {...server} mode="installed" on:deleted={handleCardDeleted} />
         {/each}
       </div>
     {:else}

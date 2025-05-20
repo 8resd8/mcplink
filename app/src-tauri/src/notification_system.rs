@@ -40,7 +40,7 @@ impl KeywordState {
     }
 }
 
-/// Windows에서 알림 표시
+/// Windows에서 알림 표시 - 현재는 PowerShell ID 사용
 #[cfg(target_os = "windows")]
 pub fn show_windows_notification(
     title: &str,
@@ -139,8 +139,8 @@ pub fn show_windows_notification(
         }
     }
 
-    // 알림 생성 - 추가 핸들러 구성
-    let toast = Toast::new(Toast::POWERSHELL_APP_ID)
+    // 알림 생성 - PowerShell ID 사용
+    let toast = Toast::new("com.a201ksh.app")
         .title(title)
         .text1(body)
         .sound(Some(Sound::Default))
@@ -156,7 +156,7 @@ pub fn show_windows_notification(
         use std::io::Write;
         let _ = writeln!(
             file,
-            "[{}] Toast notification configured with activation handler",
+            "[{}] Toast notification configured with PowerShell ID",
             chrono::Local::now().format("%H:%M:%S")
         );
     }
@@ -197,6 +197,7 @@ pub fn show_windows_notification(
         Err(e) => Err(Box::new(e)),
     }
 }
+
 
 /// macOS에서 알림 표시
 #[cfg(target_os = "macos")]

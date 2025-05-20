@@ -66,13 +66,17 @@
       <!-- Modal actions -->
       <div class="flex justify-center space-x-4 mt-4">
         <button 
-          class="btn btn-sm btn-outline min-w-[80px]" 
+          class="btn btn-sm min-w-[80px] border-[1px] border-neutral-200" 
           on:click={handleCancel}
         >
           {cancelLabel}
         </button>
         <button 
-          class="btn btn-sm btn-primary min-w-[80px]" 
+          class="btn btn-sm {
+            type === 'warning' && okLabel === 'Delete' ? 'btn-warning' : 
+            okLabel === 'Install' || okLabel === 'Update' ? 'btn-success' : 
+            'btn-secondary'
+          } min-w-[80px]" 
           on:click={handleConfirm}
         >
           {okLabel}

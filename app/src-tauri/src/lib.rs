@@ -744,6 +744,8 @@ pub fn run() {
             commands::test_search_keyword,
             commands::simulate_notification_click,
             commands::check_and_mark_app_activated,
+            commands::get_installed_count,
+            commands::get_list_count,
             notification_system::show_notification,
         ])
         .run(tauri::generate_context!())
