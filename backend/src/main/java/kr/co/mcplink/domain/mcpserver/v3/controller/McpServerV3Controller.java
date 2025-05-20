@@ -21,9 +21,9 @@ public class McpServerV3Controller {
     @GetMapping
     public ApiResponse<McpListResponse> getAllServers(
             @RequestParam(required = false, defaultValue = "5") Integer size,
-            @RequestParam(required = false, defaultValue = "0") Long page
+            @RequestParam(required = false, defaultValue = "0") Long cursorId
     ) {
-        return mcpServerService.findAllServers(size, page);
+        return mcpServerService.findAllServers(size, cursorId);
     }
 
     @GetMapping("/search")
