@@ -11,7 +11,6 @@ use std::{env, fs, path::PathBuf, process::Command as StdCommand}; // env added 
 use tauri::{AppHandle, Emitter, Manager, State};
 use tokio::time::{sleep, Duration};
 use urlencoding::encode;
-use crate::force_activate;
 
 // --- Existing struct definitions (McpServerInfo, ApiCardData, PageInfo, DataWrapper, ApiResponse) ---
 #[derive(Debug, Deserialize)]
@@ -178,7 +177,10 @@ pub async fn get_mcp_data(
             let encoded_term = encode(&term);
             if let Some(cursor) = cursor_id {
                 // Add cursor for search requests too
-                format!("{}/search?name={}&size=10&cursorId={}", base_url, encoded_term, cursor)
+                format!(
+                    "{}/search?name={}&size=10&cursorId={}",
+                    base_url, encoded_term, cursor
+                )
             } else {
                 format!("{}/search?name={}&size=10", base_url, encoded_term)
             }
