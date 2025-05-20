@@ -61,7 +61,6 @@ export function initToastSystem() {
     showToast(message, { type, duration, position });
   });
   
-  console.log('Toast system initialized');
 }
 
 // 토스트 메시지 표시
