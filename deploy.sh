@@ -8,6 +8,7 @@ if [ -f .env ]; then
 fi
 
 IMAGE_TO_DEPLOY="${BACKEND_IMAGE_TAG}"
+BACKEND_CONTAINER_NAME="backend"
 
 if [ -z "$IMAGE_TO_DEPLOY" ]; then
   echo "오류: 배포할 Docker 이미지 태그(BACKEND_IMAGE_TAG 환경 변수)가 지정되지 않았습니다."
@@ -18,16 +19,25 @@ fi
 FULL_IMAGE_NAME="resd/backend:${IMAGE_TO_DEPLOY}"
 echo "==== 배포 시작: ${IMAGE_TO_DEPLOY} ===="
 
-# 몽고디비 실행
-docker compose up -d mongodb mysql --wait || { echo "오류: MongoDB 컨테이너 시작 실패"; exit 1; }
+echo "Database Start"
+docker compose up -d mongodb mysql --wait || { echo "오류: DB 컨테이너 시작 실패"; exit 1; }
 
-echo "Docker Image pull... ${IMAGE_TO_DEPLOY}"
+echo "Docker Image pull ${IMAGE_TO_DEPLOY}"
 docker pull "${FULL_IMAGE_NAME}" || { echo "오류: 이미지 풀(${FULL_IMAGE_NAME}) 실패"; exit 1; }
 
-# 기존 백엔드 컨테이너 중지 / 삭제 / 생성 (--no-deps: no dependencies, 백엔드 자체만 적용)
-echo "New Container Running... ${IMAGE_TO_DEPLOY}"
-docker compose up -d --no-deps --force-recreate backend --wait
+echo "Stop Container"
+if [ "$(docker ps -q -f name=^/backend)" ]; then
+  docker compose stop ${BACKEND_CONTAINER_NAME} || echo "${BACKEND_CONTAINER_NAME} 컨테이너 중지 시도 중 오류 발생"
+fi
 
-echo "Docker Image prune"
+echo "Remove Container"
+if ("$(docker ps -aq -f name=^/backend$)");then
+  docker compose rm -f ${BACKEND_CONTAINER_NAME}
+fi
+
+echo "New Container Start ${IMAGE_TO_DEPLOY}"
+docker compose up -d --no-deps --force-recreate ${BACKEND_CONTAINER_NAME} --wait
+
+echo "Clean Docker Image"
 docker images resd/backend --format "{{.Repository}}:{{.Tag}}" | sort -r | tail -n +6 | xargs -r docker rmi
 docker image prune -f || true
