@@ -10,9 +10,9 @@
 
 1. [기획 의도](#기획-의도)
 2. [주요 기능](#주요-기능)
-3. [서비스 화면](#실제-서비스-화면)
+3. [서비스 화면](#서비스-화면)
 4. [프로젝트 아키텍처](#프로젝트-아키텍쳐)
-5. [문제 해결 경험](#트러블-슈팅)
+5. [트러블슈팅](#트러블-슈팅)
 6. [기술 스택](#기술-스택)
 7. [프로젝트 일정](#프로젝트-일정)
 8. [프로젝트 팀원 & 역할](#프로젝트-팀원-역할)
@@ -23,10 +23,8 @@
 > 서버를 확인하고 설치, 삭제하는 번거로움, 불편함을 줄이고자 만든 데스크탑 애플리케이션
 
 ## 주요 기능
-
+### 데스트탑 애플리케이션
 - **로컬 MCP 목록 조회**: 호스트 시스템에 설치된 MCP 인스턴스를 스캔하여 메타데이터 기반 목록을 출력
-
-- **osv-scanner 라이브러리 검사**: mcp 실제 코드를 확인해 스캔하여 취약점이 있는 라이브러리를 사용할 경우 위험도 표시
 
 - **서버 등록 MCP 전체 조회**: MCP 서버에서 정합성 검사를 거친 MCP 전체 목록을 정렬된 형태로 제공
 
@@ -36,7 +34,22 @@
 
 - **백그라운드 서비스 지원**: 데스크탑 앱이 최소화되거나 종료되어도 MCP 관리 기능은 백그라운드에서 지속적으로 동작
 
-- **OAuth 연동**: SSAFY 계정 기반의 OAuth 2.0 인증을 통해 보안성 있는 사용자 인증 및 세션 처리를 지원
+### 웹페이지
+- **튜토리얼**": 애플리케이션을 사용하기 위한 가이드 제공
+
+- **데스크탑 앱 다운로드**
+
+- **OAuth**: SSAFY 계정 기반의 OAuth 2.0 인증을 통해 보안성 있는 사용자 인증 및 관리
+
+- **게시글 관리**: 게시글 작성 및 조회 가능
+
+- **MCP Server 목록 조회**: 수집한 MCP Server 조회 및 안전도 표시
+
+- **다국어 및 다크모드**: 한국어 / 영어 지원 및 다크모드 제공
+
+- **osv-scanner 라이브러리 검사**: mcp 실제 코드를 확인해 스캔하여 취약점이 있는 라이브러리를 사용할 경우 위험도 표시
+
+---
 
 ## 서비스 화면
 
@@ -61,7 +74,7 @@
 |               **메인 화면**               |                  **마을 화면**                   |
 </details>
 
-## [API 설계](https://www.notion.so/1e013cd52d71807b9c9bc8c4ae14e31f?pvs=25)
+## [API 명세서](https://www.notion.so/1e013cd52d71807b9c9bc8c4ae14e31f?pvs=25)
 
 ## 프로젝트 아키텍쳐
 
@@ -78,12 +91,14 @@
 - **Linux, Vim, Docker**: 실제로 자주 사용한 명령어
   - [서버 명령어](https://www.notion.so/Linux-vim-docker-1eb13cd52d7180a297c8ff4f14a56632?pvs=4)
 
+---
+
 # 기술 스택
 
   <div>
     <h3>Desktop application</h3>
     <img src="images/icon/SvelteKit.png" width="120"/>
-    <img src="images/icon/Tauri.png" width="120"/>
+    <img src="images/icon/Tauri.png" width="120"/><br>
     <img src="images/icon/Rust.png" width="120"/>
     <img src="images/icon/NodeJS.png" width="120"/>
     
@@ -91,9 +106,9 @@
   <div>
     <h3>Web Frontend</h3>
     <img src="images/icon/HTMLCSS.png" width="120"/>
-    <img src="images/icon/JavaScript.png" width="120"/>
-    <img src="images/icon/Tailwind.png" width="120"/><br>
-    <img src="images/icon/Bootstrap.png" width="120"/><br>
+    <img src="images/icon/JavaScript.png" width="120"/><br>
+    <img src="images/icon/Tailwind.png" width="120"/>
+    <img src="images/icon/Bootstrap.png" width="120"/>
 
   </div>
 
@@ -125,6 +140,8 @@
     <img src="images/icon/GitLab.png" width="120"/>
   </div>
 </div>
+
+---
 
 # 프로젝트 일정
 
