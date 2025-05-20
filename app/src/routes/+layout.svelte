@@ -26,11 +26,11 @@
   // Window bar (title bar) styling - 통일된 디자인을 위해 base-100 사용
   const windowBarBackgroundClass = "bg-base-100"
   const windowBarContentColorClass = "text-base-content"
-  
+
   // Tab bar styling - 상단바와 통일
   const tabBarBackgroundClass = "bg-base-100"
   const tabBarContentColorClass = "text-base-content"
-  
+
   // --- Tab Definitions ---
   // mainClass: CSS class for the main content area background when this tab is active.
   // mainContentClass: CSS class for the text/icon color within the main content area.
@@ -55,21 +55,14 @@
   $: isFirstInstallPage = $page?.url?.pathname === "/first-install"
   $: isPopupPage = $page?.url?.pathname === "/popup"
 
-  // mainElement가 할당된 후 컨텍스트를 설정합니다.
-  $: if (mainElement && browser) {
-    setContext(scrollableContainerKey, mainElement)
-  }
+  // mainElement가 할당된 후 컨텍스트를 설정합니다.  $: if (mainElement && browser) {    setContext(scrollableContainerKey, mainElement)  }
 
   // Notification activation handler - called when the app gains focus
   // Handles notification clicks or automatic activation events
   async function handleAppActivated() {
     try {
-      console.log("[FRONTEND] handleAppActivated called") // 로그 추가
 
-      // Check for pending keywords from the backend and handle window activation
-      console.log("[FRONTEND] Invoking 'check_and_mark_app_activated'") // 로그 추가
       const response = await invoke<any>("check_and_mark_app_activated", {}) // 타입을 any로 변경 또는 구체적인 타입 지정
-      console.log("[FRONTEND] 'check_and_mark_app_activated' response:", response) // 로그 추가
 
       // Extract keyword from the response
       let keyword = null
@@ -91,11 +84,9 @@
       }
 
       if (keyword) {
-        console.log(`[FRONTEND] Keyword found: "${keyword}". Preparing to navigate.`) // 로그 추가
         // 키워드가 있으면 검색 실행 함수 호출
         handleKeywordSearch(keyword)
       } else {
-        console.log("[FRONTEND] No keyword found in 'check_and_mark_app_activated' response.") // 로그 추가
       }
     } catch (err) {
       console.error("[FRONTEND][Notification] Error in app activation handler:", err)
@@ -105,25 +96,21 @@
   // 검색 키워드 처리 함수 분리
   async function handleKeywordSearch(keyword: string) {
     if (!keyword || typeof keyword !== "string" || !keyword.trim()) {
-      console.log("[FRONTEND] Invalid keyword:", keyword)
       return
     }
 
     try {
-      console.log(`[FRONTEND] Processing keyword: "${keyword}"`) // 로그 추가
 
       // Additional action to ensure the app is actually activated
       if (tauriWindow) {
         // Also attempt to activate the window from the frontend (additional check after backend activation)
         try {
-          console.log("[FRONTEND] Attempting frontend window activation (show, unminimize, setFocus)") // 로그 추가
           await tauriWindow.show()
           await tauriWindow.unminimize()
           await tauriWindow.setFocus()
 
           // Add a short delay to ensure the window is definitely visible
           await new Promise((resolve) => setTimeout(resolve, 100))
-          console.log("[FRONTEND] Frontend window activation successful.") // 로그 추가
         } catch (e) {
           console.error("[FRONTEND][Notification] Frontend window activation failed:", e)
         }
@@ -131,18 +118,15 @@
 
       // URL encode the keyword to include it as a query parameter
       const targetUrl = `/MCP-list?keyword=${encodeURIComponent(keyword)}`
-      console.log(`[FRONTEND] Target URL with keyword: ${targetUrl}`) // 로그 추가
 
       // Page navigation (goto is client-side routing between pages)
       try {
-        console.log("[FRONTEND] activeTabPath set to /MCP-list") // 로그 추가
         // 1. First, switch URL and update state
         activeTabPath = "/MCP-list"
 
         // 2. Attempt to activate the app even if the window is already visible
         if (tauriWindow) {
           try {
-            console.log("[FRONTEND] Additional attempt to bring window focus (show, setFocus, setAlwaysOnTop)") // 로그 추가
             // Additional attempt to bring window focus
             await tauriWindow.show()
             await tauriWindow.setFocus()
@@ -156,7 +140,6 @@
                 if (tauriWindow) {
                   // Null 체크 추가
                   await tauriWindow.setAlwaysOnTop(false)
-                  console.log("[FRONTEND] Removed always-on-top.") // 로그 추가
                 }
               } catch (e) {
                 console.error("[FRONTEND][Notification] Error removing always-on-top:", e)
@@ -168,7 +151,6 @@
         }
 
         // 3. Handle uniformly whether URL navigation succeeds or fails
-        console.log(`[FRONTEND] Attempting navigation to: ${targetUrl}`) // 로그 추가
         await Promise.race([
           goto(targetUrl, {
             replaceState: true, // Replace the current URL
@@ -182,14 +164,11 @@
         // 4. Attempt to reactivate window regardless of page navigation
         if (tauriWindow) {
           await tauriWindow.setFocus()
-          console.log("[FRONTEND] Final attempt to setFocus after navigation/timeout.") // 로그 추가
         }
-        console.log("[FRONTEND] Navigation process completed.") // 로그 추가
       } catch (err) {
         console.error("[FRONTEND][Notification] Navigation error:", err)
 
         // Attempt to force a path change even if an error occurs
-        console.log(`[FRONTEND] Forcing page reload to: ${targetUrl} due to navigation error.`) // 로그 추가
         window.location.href = targetUrl
       }
     } catch (err) {
@@ -205,21 +184,16 @@
 
       // URI 스킴 프로토콜 핸들러는 deep-link 플러그인으로 대체됨
       // 이벤트 리스너로 처리하는 방식으로 변경
-      console.log("[FRONTEND] Setting up 'search-keyword-event' listener.") // 로그 추가
       unlistenSearchKeyword = await listen("search-keyword-event", async (event) => {
         const keyword = event.payload as string
-        console.log(`[FRONTEND] Received 'search-keyword-event' with keyword: "${keyword}" (via direct listen)`)
         await handleKeywordSearch(keyword)
       })
 
       // 'search-keyword' 이벤트 리스너 추가
-      console.log("[FRONTEND] Setting up 'search-keyword' listener.") // 로그 추가
       unlistenSearchKeywordEvent = await listen("search-keyword", async (event) => {
         const keyword = event.payload as string
-        console.log(`[FRONTEND] Received 'search-keyword' with keyword: "${keyword}"`)
         await handleKeywordSearch(keyword)
       })
-      console.log("[FRONTEND] 'search-keyword' listener setup complete.") // 로그 추가
 
       // 테스트 토스트 알림 (개발 환경에서만)
       if (import.meta.env.DEV) {
@@ -271,13 +245,13 @@
     if (typeof window !== "undefined" && "__TAURI__" in window) {
       try {
         tauriWindow = WebviewWindow.getCurrent()
-        console.log("[FRONTEND] Tauri window object obtained.", tauriWindow) // 로그 추가
+
 
         // Set up event listeners
         unlistenMoveToCenter = await listen("move-main-to-center", async () => {
           // This event should not be triggered anymore
           // We no longer automatically center the window
-          console.log("move-main-to-center event received but ignored to prevent auto-centering")
+
         })
 
         unlistenNavigateTo = await listen("navigate-to", async (event) => {
@@ -288,10 +262,8 @@
         // This prevents the window from auto-centering when focused
         const focusListener = await tauriWindow.onFocusChanged(async ({ payload: focused }) => {
           if (focused) {
-            console.log("[FRONTEND] Window gained focus. Calling handleAppActivated.") // 로그 추가
             await handleAppActivated()
           } else {
-            console.log("[FRONTEND] Window lost focus.") // 로그 추가
           }
         })
 
@@ -319,7 +291,6 @@
               // If any config file is missing, redirect to first-install page
               if (claudeConfigExists === false || mcplinkConfigExists === false) {
                 // 명시적으로 false 비교
-                console.log("[Config Watch] Configuration files missing, redirecting to first-install")
                 await goto("/first-install", { replaceState: true })
               }
             } catch (error) {
@@ -348,7 +319,6 @@
     if (unlistenFocusChange) unlistenFocusChange()
     if (unlistenSearchKeyword) unlistenSearchKeyword() // 리스너 해제
     if (unlistenSearchKeywordEvent) unlistenSearchKeywordEvent() // 리스너 해제
-    console.log("[FRONTEND] Event listeners cleaned up on destroy.") // 로그 추가
   })
 
   // --- Window control functions ---
@@ -370,7 +340,12 @@
     const foundTab = tabs.find((t) => activeTabPath.startsWith(t.path))
     return foundTab || tabs.find((t) => t.path === "/Installed-MCP") || tabs[0] // Default
   })()
-  
+
+  // 배경색과 글자색을 활성화된 탭에 따라 반응형으로 계산
+  $: activeMainAreaBackgroundColor = isFirstInstallPage || isPopupPage ? "var(--color-base-100)" : `var(--${currentActivePageConfig.mainClass.replace("bg-", "color-")})`
+
+  $: activeMainAreaContentColor = isFirstInstallPage || isPopupPage ? "var(--color-base-content)" : `var(--${currentActivePageConfig.mainContentClass.replace("text-", "color-")})`
+
   // 윈도우 컨트롤 버튼 스타일은 CSS에서 처리
 </script>
 
@@ -384,13 +359,13 @@
       <div class="h-8 flex items-center text-xs select-none" data-tauri-drag-region>
         <!-- 왼쪽 공간 -->
         <div class="w-[100px]"></div>
-        
+
         <!-- 중앙 제목 -->
         <div class="absolute left-0 right-0 mx-auto flex justify-center items-center" data-tauri-drag-region>
           <img src="/favicon.png" alt="App Icon" class="w-4 h-4 mr-2" />
           <slot name="title">MCPLINK</slot>
         </div>
-        
+
         <!-- 투명 버튼 위에 아이콘을 장식으로 배치 -->
         <div class="ml-auto flex">
           <!-- 아이콘은 버튼 내부에 절대 위치로 배치하여 장식으로 처리 -->
@@ -399,13 +374,13 @@
               <Minus size={16} />
             </span>
           </div>
-          
+
           <div class="window-btn max-btn" on:click={maximizeWindow}>
             <span class="icon-wrapper">
               <Square size={16} />
             </span>
           </div>
-          
+
           <div class="window-btn close-btn" on:click={hideToTray}>
             <span class="icon-wrapper">
               <X size={16} />
@@ -518,7 +493,7 @@
     background: #555;
   }
   /* Add any other global styles or adjustments here */
-  
+
   /* 윈도우 컨트롤 버튼 스타일 */
   .window-btn {
     width: 46px;
@@ -528,7 +503,7 @@
     position: relative; /* 아이콘의 기준점 */
     user-select: none;
   }
-  
+
   .icon-wrapper {
     position: absolute;
     top: 0;
@@ -540,15 +515,16 @@
     justify-content: center;
     pointer-events: none; /* 아이콘은 이벤트를 처리하지 않음 */
   }
-  
-  .min-btn:hover, .max-btn:hover {
+
+  .min-btn:hover,
+  .max-btn:hover {
     background-color: oklch(var(--color-base-300)) !important; /* base-300 색상 */
   }
-  
+
   .close-btn:hover {
     background-color: oklch(var(--color-error)) !important; /* error 색상 */
   }
-  
+
   /* 모든 SVG 아이콘에 대해 포인터 이벤트 차단 */
   svg {
     pointer-events: none;
