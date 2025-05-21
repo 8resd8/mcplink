@@ -187,6 +187,12 @@
 
 ## 오승원
 
+- 서비스 기획, 테스트 및 디버깅 담당
+- 안정적인 기능 구현을 위해 서비스 아키텍처 기획
+- 서비스 구현 가능성 테스트를 위해 1차 MVP 구현
+- TypeScript, Node.js, Spring Boot 이용, MCP 서버 통신 구현
+- Oauth 2.0 구현을 위한 FrontEnd 구현 및 테스트, 디버깅
+
 ## 오완진
 
 - Spring Boot와 MongoDB 기반의 백엔드 및 외부 API 연동 담당
