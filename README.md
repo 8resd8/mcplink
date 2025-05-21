@@ -102,7 +102,7 @@
 # 기술 스택
 
   <div>
-    <h3>Desktop application</h3>
+    <h3>Desktop Application</h3>
     <img src="images/icon/SvelteKit.png" width="120"/>
     <img src="images/icon/Tauri.png" width="120"/><br>
     <img src="images/icon/Rust.png" width="120"/>
@@ -173,7 +173,7 @@
 - GitHub Actions 기반 정적 페이지 EC2 자동 배포
 - GitLab Jenkins 기반 CI/CD 자동 배포
 - 구글 오픈소스 osv-scanner 이용한 mcp-server 라이브러리 검사 및 스케줄링
-- Oauth2.0 로그인 백엔드 로직 처리
+- Oauth2.0 로그인 필터기반 인증 인가 처리
 - 웹페이지 게시판 백엔드 CRUD 로직 구현
 - 웹페이지 메인 화면 구성
 
