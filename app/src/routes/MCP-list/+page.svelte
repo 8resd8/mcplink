@@ -241,7 +241,7 @@
         mcpCards = response.cards
         pageInfo = response.page_info
         justLoadedNewData = true
-        
+
         // 글로벌 데이터 스토어에 MCP 리스트 개수 업데이트
         updateCount("listCount", pageInfo.total_items)
 
@@ -422,7 +422,7 @@
   <!-- Top header area (not fixed) - background color same as page background -->
   <div class="py-2 px-4 sticky top-0 z-10 bg-[var(--color-secondary)]">
     <div class="flex flex-col sm:flex-row justify-between items-center w-full px-4">
-      <h1 class="text-2xl font-bold text-center sm:text-left sm:mr-auto">MCP List ({$sharedDataStore.loaded ? $sharedDataStore.counts.listCount || pageInfo.total_items : pageInfo.total_items})</h1>
+      <h1 class="text-2xl font-bold text-center sm:text-left sm:mr-auto">MCP List ({$sharedDataStore.loaded ? (searchTermFromQuery ? mcpCards.length : $sharedDataStore.counts.listCount || pageInfo.total_items) : pageInfo.total_items})</h1>
 
       <!-- Search UI -->
       <div class="relative w-full max-w-xs mx-auto sm:mx-0 sm:w-64 mt-2 sm:mt-0 sm:ml-auto">
@@ -430,24 +430,10 @@
           <span class="absolute left-[-20px] top-3 text-yellow-500" title="Recommended Search">✨</span>
         {/if}
 
-        <Search initialValue={searchTermFromQuery} placeholder="Search MCPs..." customClass="input input-bordered w-full pr-10" on:search={handleSearch} />
+        <Search initialValue={searchTermFromQuery} placeholder="Search servers..." customClass="input input-bordered w-full" on:search={handleSearch} />
 
         {#if loading && !mcpCards.length}
           <span class="loading loading-spinner loading-xs absolute right-3 top-3"></span>
-        {:else}
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            class="w-5 h-5 absolute right-3 top-3"
-          >
-            <circle cx="11" cy="11" r="8"></circle>
-            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-          </svg>
         {/if}
       </div>
     </div>
@@ -480,19 +466,19 @@
 
       <!-- All loaded message -->
       {#if allLoaded && !loadingMore}
-        <div class="text-center py-4 text-gray-500">모든 MCP를 불러왔습니다.</div>
+        <div class="text-center py-4 text-gray-500">All MCPs loaded.</div>
       {/if}
       <!-- No results message -->
     {:else if searchTermFromQuery}
       <div class="text-center py-10 text-gray-500">
-        <p>"{searchTermFromQuery}"에 대한 검색 결과가 없습니다.</p>
-        <button class="btn btn-sm btn-outline mt-3" on:click={handleClearSearch}>검색 지우기</button>
+        <p>No search results for "{searchTermFromQuery}"</p>
+        <button class="btn btn-sm btn-outline mt-3" on:click={handleClearSearch}>Delete search</button>
       </div>
       <!-- Initially no cards and no search term (empty state) -->
     {:else}
       <div class="text-center py-10 text-gray-500">
-        <p>MCP 목록이 비어있습니다.</p>
-        <p class="mt-2">검색하거나 필터를 사용하여 MCP를 찾아보세요.</p>
+        <p>No MCPs found.</p>
+        <p class="mt-2">Search or filter to find MCPs.</p>
       </div>
     {/if}
   </div>

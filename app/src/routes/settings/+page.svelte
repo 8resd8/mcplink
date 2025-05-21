@@ -43,7 +43,7 @@
     <button class="btn btn-error" on:click={showResetConfirmation} disabled={isResetting}>
       {#if isResetting}
         <span class="loading loading-spinner loading-sm"></span>
-         Resetting...
+        Resetting...
       {:else}
         Reset Settings
       {/if}

@@ -194,28 +194,32 @@
   <!-- Top header area (not fixed) - background color same as page background -->
   <div class="py-2 px-4 sticky top-0 z-10 bg-[var(--color-secondary)]">
     <div class="flex flex-col sm:flex-row justify-between items-center w-full px-4">
-      <h1 class="text-2xl font-bold text-center sm:text-left sm:mr-auto">Installed MCP Servers ({searchTerm.trim() ? $installedServers.length : $sharedDataStore.loaded ? $sharedDataStore.counts.installedCount || ($pageInfo ? $pageInfo.total_items : 0) : ($pageInfo ? $pageInfo.total_items : 0)})</h1>
+      <h1 class="text-2xl font-bold text-center sm:text-left sm:mr-auto">Installed MCP({searchTerm.trim() ? $installedServers.length : $sharedDataStore.loaded ? $sharedDataStore.counts.installedCount || ($pageInfo ? $pageInfo.total_items : 0) : ($pageInfo ? $pageInfo.total_items : 0)})</h1>
 
       <!-- Search UI -->
       <div class="relative w-full max-w-xs mx-auto sm:mx-0 sm:w-64 mt-2 sm:mt-0 sm:ml-auto">
-        <input type="text" bind:value={searchTerm} placeholder="Search servers..." class="input input-bordered w-full pr-10" />
-        {#if $isSearching}
-          <span class="loading loading-spinner loading-xs absolute right-3 top-3"></span>
-        {:else}
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            class="w-5 h-5 absolute right-3 top-3"
-          >
-            <circle cx="11" cy="11" r="8"></circle>
-            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-          </svg>
-        {/if}
+        <div class="relative">
+          <input type="text" bind:value={searchTerm} placeholder="Search servers..." class="input input-bordered w-full pr-10" />
+          <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+            {#if $isSearching}
+              <span class="loading loading-spinner loading-xs"></span>
+            {:else}
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                class="w-5 h-5"
+              >
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+              </svg>
+            {/if}
+          </div>
+        </div>
       </div>
     </div>
   </div>

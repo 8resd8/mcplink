@@ -1379,6 +1379,7 @@ snapshots:
       '@tauri-apps/plugin-opener': 2.2.6
       '@tauri-apps/plugin-os': 2.2.1
       clsx: 2.1.1
+      gsap: 3.13.0
       lucide-svelte: 0.503.0(svelte@5.30.2)
       tailwindcss: 4.1.7
       zod: 3.24.4
