@@ -225,11 +225,12 @@ pub async fn get_mcp_data(
                                                 .iter()
                                                 .map(|api_card| {
                                                     // API에서 보안 랭크 값을 가져옴 (없으면 기본값 "UNRATE" 사용)
-                                                    let security_rank = match &api_card.security_rank {
-                                                        Some(rank) => rank.clone(),
-                                                        None => "UNRATE".to_string(),
-                                                    };
-                                                    
+                                                    let security_rank =
+                                                        match &api_card.security_rank {
+                                                            Some(rank) => rank.clone(),
+                                                            None => "UNRATE".to_string(),
+                                                        };
+
                                                     MCPCard {
                                                         id: api_card.id,
                                                         title: api_card.mcpServers.name.clone(),
@@ -356,7 +357,7 @@ pub async fn get_mcp_detail_data(
                                             Some(rank) => rank,
                                             None => "UNRATE".to_string(),
                                         };
-                                        
+
                                         let card_detail = MCPCardDetail {
                                             id: detail_data.id,
                                             title: detail_data.mcp_server_info.name, // Name from McpServerInfo
@@ -749,11 +750,12 @@ pub async fn get_installed_mcp_data(
                                                 .iter()
                                                 .map(|api_card| {
                                                     // API에서 보안 랭크 값을 가져옴 (없으면 기본값 "UNRATE" 사용)
-                                                    let security_rank = match &api_card.security_rank {
-                                                        Some(rank) => rank.clone(),
-                                                        None => "UNRATE".to_string(),
-                                                    };
-                                                    
+                                                    let security_rank =
+                                                        match &api_card.security_rank {
+                                                            Some(rank) => rank.clone(),
+                                                            None => "UNRATE".to_string(),
+                                                        };
+
                                                     MCPCard {
                                                         id: api_card.id,
                                                         title: api_card.mcpServers.name.clone(),
@@ -1106,11 +1108,8 @@ pub async fn ensure_config_files(app: AppHandle) -> Result<(), String> {
 
         let server_config = MCPServerConfig {
             command: "node".to_string(),
-            args: Some(vec![
-                "C:\\Users\\SSAFY\\Desktop\\0516\\S12P31A201\\mcp-server\\dist\\main.js"
-                    .to_string(),
-            ]),
-            cwd: Some("C:\\Users\\SSAFY\\Desktop\\0516\\S12P31A201\\mcp-server".to_string()),
+            args: Some(vec!["C:\\S12P31A201\\mcp-server\\dist\\main.js".to_string()]),
+            cwd: Some("C:\\S12P31A201\\mcp-server".to_string()),
             env: Some(env_map),
         };
 
@@ -1666,16 +1665,14 @@ pub fn check_and_mark_app_activated(app: AppHandle) -> Result<Option<String>, St
 pub fn get_installed_count(app: AppHandle) -> Result<i32, String> {
     // mcplink_desktop_config.json 파일 읽기
     let mcplink_content = read_mcplink_config_content(app)?;
-    
+
     // 파일 내용 파싱
     let config: Map<String, Value> = serde_json::from_str(&mcplink_content)
         .map_err(|e| format!("Failed to parse mcplink config: {}", e))?;
-    
+
     // 설치된 MCP 개수 계산 (fallback 서버 ID -1 제외)
-    let count = config.keys()
-        .filter(|&key| key != "-1")
-        .count() as i32;
-    
+    let count = config.keys().filter(|&key| key != "-1").count() as i32;
+
     Ok(count)
 }
 
@@ -1736,7 +1733,10 @@ pub async fn get_list_count(state: State<'_, AppState>) -> Result<i32, String> {
                         }
                     }
                     Err(e) => {
-                        return Err(format!("[get_list_count] Failed to read response text: {}", e));
+                        return Err(format!(
+                            "[get_list_count] Failed to read response text: {}",
+                            e
+                        ));
                     }
                 }
             } else {
