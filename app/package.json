@@ -27,6 +27,7 @@
     "@tauri-apps/plugin-os": "^2.2.1",
     "clsx": "^2.1.1",
     "fe": "file:",
+    "gsap": "^3.13.0",
     "lucide-svelte": "^0.503.0",
     "tailwindcss": "^4.1.4",
     "zod": "^3.24.3"

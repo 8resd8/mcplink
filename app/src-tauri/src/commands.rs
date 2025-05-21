@@ -34,6 +34,8 @@ struct ApiCardData {
     scanned: bool,
     #[serde(rename = "mcpServer")]
     mcpServers: McpServerInfo,
+    #[serde(rename = "securityRank")]
+    security_rank: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -73,6 +75,13 @@ pub struct MCPCard {
     pub url: String,
     pub stars: i32,
     pub scanned: bool,
+    #[serde(default = "default_security_rank")]
+    pub security_rank: String,
+}
+
+// 기본 보안 등급 값으로 "UNRATE" 반환하는 함수
+fn default_security_rank() -> String {
+    "UNRATE".to_string()
 }
 
 // Response struct including page information
@@ -101,6 +110,8 @@ struct DetailApiResponse {
     #[serde(rename = "type")]
     _type: Option<String>,
     views: Option<i32>,
+    #[serde(rename = "securityRank")]
+    security_rank: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -114,6 +125,8 @@ pub struct MCPCardDetail {
     pub args: Option<Vec<String>>,
     pub env: Option<Map<String, Value>>,
     pub command: Option<String>,
+    #[serde(default = "default_security_rank")]
+    pub security_rank: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -210,16 +223,25 @@ pub async fn get_mcp_data(
                                             let cards: Vec<MCPCard> = data_wrapper
                                                 .mcpServers
                                                 .iter()
-                                                .map(|api_card| MCPCard {
-                                                    id: api_card.id,
-                                                    title: api_card.mcpServers.name.clone(),
-                                                    description: api_card
-                                                        .mcpServers
-                                                        .description
-                                                        .clone(),
-                                                    url: api_card.url.clone(),
-                                                    stars: api_card.stars,
-                                                    scanned: api_card.scanned,
+                                                .map(|api_card| {
+                                                    // API에서 보안 랭크 값을 가져옴 (없으면 기본값 "UNRATE" 사용)
+                                                    let security_rank = match &api_card.security_rank {
+                                                        Some(rank) => rank.clone(),
+                                                        None => "UNRATE".to_string(),
+                                                    };
+                                                    
+                                                    MCPCard {
+                                                        id: api_card.id,
+                                                        title: api_card.mcpServers.name.clone(),
+                                                        description: api_card
+                                                            .mcpServers
+                                                            .description
+                                                            .clone(),
+                                                        url: api_card.url.clone(),
+                                                        stars: api_card.stars,
+                                                        scanned: api_card.scanned,
+                                                        security_rank,
+                                                    }
                                                 })
                                                 .collect();
 
@@ -329,6 +351,12 @@ pub async fn get_mcp_detail_data(
                                     inner_mcp_server_value.clone(),
                                 ) {
                                     Ok(detail_data) => {
+                                        // API에서 보안 랭크 값을 가져옴 (없으면 기본값 "UNRATE" 사용)
+                                        let security_rank = match detail_data.security_rank {
+                                            Some(rank) => rank,
+                                            None => "UNRATE".to_string(),
+                                        };
+                                        
                                         let card_detail = MCPCardDetail {
                                             id: detail_data.id,
                                             title: detail_data.mcp_server_info.name, // Name from McpServerInfo
@@ -339,6 +367,7 @@ pub async fn get_mcp_detail_data(
                                             args: detail_data.mcp_server_info.args,
                                             env: detail_data.mcp_server_info.env,
                                             command: detail_data.mcp_server_info.command,
+                                            security_rank,
                                         };
                                         Ok(card_detail)
                                     }
@@ -718,16 +747,25 @@ pub async fn get_installed_mcp_data(
                                             let mut cards: Vec<MCPCard> = data_wrapper
                                                 .mcpServers
                                                 .iter()
-                                                .map(|api_card| MCPCard {
-                                                    id: api_card.id,
-                                                    title: api_card.mcpServers.name.clone(),
-                                                    description: api_card
-                                                        .mcpServers
-                                                        .description
-                                                        .clone(),
-                                                    url: api_card.url.clone(),
-                                                    stars: api_card.stars,
-                                                    scanned: api_card.scanned,
+                                                .map(|api_card| {
+                                                    // API에서 보안 랭크 값을 가져옴 (없으면 기본값 "UNRATE" 사용)
+                                                    let security_rank = match &api_card.security_rank {
+                                                        Some(rank) => rank.clone(),
+                                                        None => "UNRATE".to_string(),
+                                                    };
+                                                    
+                                                    MCPCard {
+                                                        id: api_card.id,
+                                                        title: api_card.mcpServers.name.clone(),
+                                                        description: api_card
+                                                            .mcpServers
+                                                            .description
+                                                            .clone(),
+                                                        url: api_card.url.clone(),
+                                                        stars: api_card.stars,
+                                                        scanned: api_card.scanned,
+                                                        security_rank,
+                                                    }
                                                 })
                                                 .collect();
 
@@ -1621,4 +1659,92 @@ pub fn check_and_mark_app_activated(app: AppHandle) -> Result<Option<String>, St
 
     // 키워드가 없음
     Ok(None)
+}
+
+/// 설치된 MCP 개수를 가져오는 함수
+#[tauri::command]
+pub fn get_installed_count(app: AppHandle) -> Result<i32, String> {
+    // mcplink_desktop_config.json 파일 읽기
+    let mcplink_content = read_mcplink_config_content(app)?;
+    
+    // 파일 내용 파싱
+    let config: Map<String, Value> = serde_json::from_str(&mcplink_content)
+        .map_err(|e| format!("Failed to parse mcplink config: {}", e))?;
+    
+    // 설치된 MCP 개수 계산 (fallback 서버 ID -1 제외)
+    let count = config.keys()
+        .filter(|&key| key != "-1")
+        .count() as i32;
+    
+    Ok(count)
+}
+
+/// MCP 리스트 총 개수를 가져오는 함수
+#[tauri::command]
+pub async fn get_list_count(state: State<'_, AppState>) -> Result<i32, String> {
+    // Load .env file in development mode (ignored if already loaded)
+    #[cfg(debug_assertions)]
+    let _ = dotenv();
+
+    // Get environment variables at runtime
+    let base_url: String = if cfg!(debug_assertions) {
+        // Development mode: get from environment variable
+        env::var("CRAWLER_API_BASE_URL").unwrap_or_else(|_| String::new())
+    } else {
+        // Deployment mode: include the value from .env file at compile time
+        env::var("CRAWLER_API_BASE_URL").unwrap_or_else(|_| {
+            include_str!("../../.env")
+                .lines()
+                .find(|line| line.starts_with("CRAWLER_API_BASE_URL="))
+                .and_then(|line| line.split('=').nth(1))
+                .unwrap_or("")
+                .to_string()
+        })
+    };
+
+    // 한 개의 항목만 요청해서 전체 개수만 확인
+    let request_url = format!("{}?size=1", base_url);
+
+    match state.client.get(&request_url).send().await {
+        Ok(response) => {
+            let status = response.status();
+
+            if status.is_success() {
+                match response.text().await {
+                    Ok(text_body) => {
+                        match serde_json::from_str::<ApiResponse>(&text_body) {
+                            Ok(api_response) => {
+                                if let Value::Object(data_obj) = &api_response.data {
+                                    match serde_json::from_value::<DataWrapper>(Value::Object(
+                                        data_obj.clone(),
+                                    )) {
+                                        Ok(data_wrapper) => {
+                                            return Ok(data_wrapper.pageInfo.totalItems);
+                                        }
+                                        Err(e) => {
+                                            return Err(format!("[get_list_count] Failed to parse data into DataWrapper: {}", e));
+                                        }
+                                    }
+                                } else {
+                                    // 데이터가 없거나 접근할 수 없는 경우
+                                    return Ok(0);
+                                }
+                            }
+                            Err(e) => {
+                                return Err(format!("[get_list_count] JSON parsing error: {}", e));
+                            }
+                        }
+                    }
+                    Err(e) => {
+                        return Err(format!("[get_list_count] Failed to read response text: {}", e));
+                    }
+                }
+            } else {
+                return Err(format!("[get_list_count] Server error: {}", status));
+            }
+        }
+        Err(e) => {
+            return Err(format!("[get_list_count] Request error: {}", e));
+        }
+    }
 }

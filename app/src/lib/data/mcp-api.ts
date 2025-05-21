@@ -8,6 +8,8 @@ export interface MCPCard {
   stars: number // GitHub stars count
   installed?: boolean // Installation status (optional property added)
   scanned?: boolean // Security scan status (v2+ API)
+  security_rank?: string // Security rank from backend
+  securityRank?: "CRITICAL" | "HIGH" | "MODERATE" | "LOW" | "UNRATE" // Mapped security rank for frontend
 }
 
 export interface PageInfo {
@@ -27,6 +29,7 @@ export interface MCPCardDetail extends MCPCard {
   env?: Record<string, any>
   command?: string
   // scanned is already included from MCPCard
+  // security_rank and securityRank are already included from MCPCard
 }
 
 /**
@@ -46,16 +49,20 @@ export async function fetchMCPCards(searchTerm?: string, cursorId?: number): Pro
       response = await invoke<MCPCardResponse>("get_mcp_data", { searchTerm })
     }
 
-    // Check installation status and add 'installed' property
+    // Check installation status and add 'installed' property and set security rank
     for (const card of response.cards) {
       try {
         const isInstalled = await invoke<boolean>("is_mcp_server_installed", {
           serverName: card.title,
         })
         card.installed = isInstalled
+        
+        // 백엔드의 security_rank를 프론트엔드용 securityRank로 변환
+        card.securityRank = (card.security_rank as any) || "UNRATE";
       } catch (err) {
         console.error(`Failed to check installation status for ${card.title}:`, err)
         card.installed = false
+        card.securityRank = "UNRATE"; // 오류 시 기본값
       }
     }
 
@@ -85,6 +92,9 @@ export async function fetchMCPCardDetail(id: number, title?: string): Promise<MC
   try {
     // Fetch basic information from the API
     const detailFromAPI = await invoke<MCPCardDetail>("get_mcp_detail_data", { id })
+    
+    // 백엔드의 security_rank를 프론트엔드용 securityRank로 변환
+    detailFromAPI.securityRank = (detailFromAPI.security_rank as any) || "UNRATE";
 
     // If title is provided, check installation status
     if (title) {
@@ -102,6 +112,8 @@ export async function fetchMCPCardDetail(id: number, title?: string): Promise<MC
               command: config.command || detailFromAPI.command || "",
               args: config.args || detailFromAPI.args || [],
               env: config.env || detailFromAPI.env || {},
+              securityRank: detailFromAPI.securityRank || "UNRATE", // 보안 랭크 유지
+              security_rank: detailFromAPI.security_rank // 원본 security_rank도 유지
             }
           } catch (configErr) {
             console.warn(`Installed config exists but failed to read: ${configErr}`)

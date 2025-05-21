@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Star, Github, ShieldCheck, ShieldX } from "lucide-svelte"
+  import { Star, Github, Trash2, Skull, AlertTriangle, AlertCircle, ShieldCheck, HelpCircle } from "lucide-svelte"
   import { invoke } from "@tauri-apps/api/core"
   import { goto } from "$app/navigation"
   import { createEventDispatcher } from "svelte"
@@ -19,7 +19,7 @@
   export let url: string = "" // GitHub URL
   export let stars: number = 0 // GitHub Stars count
   export let installed = false // Prop to indicate if the MCP server is installed
-  export let scanned: boolean | undefined = undefined // Security scan status
+  export let securityRank: "CRITICAL" | "HIGH" | "MODERATE" | "LOW" | "UNRATE" = "UNRATE" // Security rank status
   export let onClick: (() => void) | undefined = undefined // Click handler (optional)
   export let className: string = "" // Additional CSS class (optional)
   export let variant: "default" | "primary" | "accent" = "default" // Card style variant
@@ -42,6 +42,10 @@
 
   // Final description to display
   const displayDescription = truncateDescription(description, maxDescLength)
+  
+  // 백엔드에서 제공하는 securityRank 값만 사용
+  // 더 이상 ID 기반 랜덤값 사용하지 않음
+  const assignedSecurityRank = securityRank;
 
   // Function to open GitHub link
   async function openGitHub(urlToOpen: string) {
@@ -74,7 +78,8 @@
       referrer: window.location.pathname, // Save current path as referrer
     })
 
-
+    // Ensure we're using a clean navigation method that doesn't cause problems
+    // with the tab highlighting system
     window.location.href = `/detail?${params.toString()}`
   }
 
@@ -123,58 +128,90 @@
 
 <!-- Reusable MCP card component -->
 <div class="card card-border w-full shadow-sm {variant === 'default' ? 'bg-base-100' : variant === 'primary' ? 'bg-primary text-primary-content' : 'bg-accent text-accent-content'} {className} {onClick ? 'cursor-pointer' : ''}" on:click={onClick}>
-  <div class="card-body h-[160px] flex flex-col">
-    <div class="flex justify-between items-start">
-      <div class="flex items-center gap-2">
-        <h2 class="card-title text-lg">{title}</h2>
-        <!-- Security scan status icon -->
-        {#if scanned !== undefined}
-          {#if scanned === true}
-            <span class="tooltip" data-tip="Security checked">
-              <ShieldCheck class="text-info" size={18} />
+  <div class="card-body h-[140px] p-4">
+    <!-- 메인 카드 내용을 좌우로 분할 (약 85:15 비율) -->
+    <div class="flex h-full gap-2">
+      <!-- 왼쪽 컨텐츠: 제목과 설명 (85% 정도로 확장) -->
+      <div class="w-[85%] flex flex-col">
+        <!-- 제목 영역 -->
+        <div class="flex items-center gap-2 mb-1">
+          <h2 class="card-title text-lg truncate">{title}</h2>
+          <!-- Security rank status icon -->
+          {#if assignedSecurityRank === "CRITICAL"}
+            <span class="tooltip" data-tip="CRITICAL">
+              <Skull class="text-error" size={16} />
+            </span>
+          {:else if assignedSecurityRank === "HIGH"}
+            <span class="tooltip" data-tip="HIGH">
+              <AlertTriangle class="text-warning" size={16} />
+            </span>
+          {:else if assignedSecurityRank === "MODERATE"}
+            <span class="tooltip" data-tip="MODERATE">
+              <AlertCircle style="color: oklch(0.7952 0.1617 86.05)" size={16} />
+            </span>
+          {:else if assignedSecurityRank === "LOW"}
+            <span class="tooltip" data-tip="LOW">
+              <ShieldCheck class="text-success" size={16} />
             </span>
           {:else}
-            <span class="tooltip" data-tip="Security not checked">
-              <ShieldX class="text-warning" size={18} />
+            <span class="tooltip" data-tip="UNRATE">
+              <HelpCircle class="text-neutral" size={16} />
             </span>
           {/if}
-        {/if}
+        </div>
+        
+        <!-- 설명 영역 - 고정 높이와 말줄임 처리 -->
+        <div class="flex-grow overflow-hidden">
+          <p class="text-sm line-clamp-3">{displayDescription}</p>
+        </div>
       </div>
-      <div class="flex items-center gap-1 flex-shrink-0">
-        <!-- Star icon and count -->
-        {#if stars > 0}
-          <Star class="text-yellow-400" size={18} />
-          <span>{formatStars(stars)}</span>
-        {/if}
+      
+      <!-- 오른쪽 컨텐츠: 스타/깃허브 아이콘과 버튼 (15% 정도) -->
+      <div class="w-[15%] flex flex-col justify-between">
+        <!-- 상단: 스타 카운트와 깃허브 링크 (가로 정렬) -->
+        <div class="flex justify-end items-center gap-2">
+          <!-- Star icon and count -->
+          {#if stars > 0}
+            <div class="flex items-center gap-1">
+              <Star class="text-yellow-400" size={16} />
+              <span class="text-sm">{formatStars(stars)}</span>
+            </div>
+          {/if}
 
-        <!-- GitHub link -->
-        {#if url}
-          <!-- If URL exists: clickable link -->
-          <button on:click={() => openGitHub(url)} class="ml-2 text-gray-600 hover:text-black focus:outline-none">
-            <span class="tooltip" data-tip="Visit GitHub">
-            <Github size={18} />
-          </span>
-          </button>
-        {:else}
-          <!-- If URL does not exist: display as disabled -->
-          <span class="ml-2 text-gray-400 opacity-40">
-            <Github size={18} />
-          </span>
-        {/if}
+          <!-- GitHub link -->
+          {#if url}
+            <!-- If URL exists: clickable link -->
+            <button on:click|stopPropagation={() => openGitHub(url)} class="text-gray-600 hover:text-black focus:outline-none flex items-center">
+              <span class="tooltip" data-tip="Visit GitHub">
+                <Github size={16} />
+              </span>
+            </button>
+          {:else}
+            <!-- If URL does not exist: display as disabled -->
+            <span class="text-gray-400 opacity-40 flex items-center">
+              <Github size={16} />
+            </span>
+          {/if}
+        </div>
+        
+        <!-- 하단: 버튼 영역 - 항상 하단에 고정 (가로 정렬) -->
+        <div class="flex justify-end mt-auto">
+          {#if mode === "installed"}
+            <div class="flex gap-1">
+              <button on:click|stopPropagation={goToDetail} class="btn btn-xs btn-secondary px-3">Edit</button>
+              <button on:click|stopPropagation={handleComplete} class="btn btn-xs btn-natural btn-square">
+                <span class="tooltip" data-tip="Delete">
+                  <Trash2 size={16} class="text-error" />
+                </span>
+              </button>
+            </div>
+          {:else if installed}
+            <button on:click|stopPropagation={goToDetail} class="btn btn-xs btn-secondary px-3">Installed</button>
+          {:else}
+            <button on:click|stopPropagation={goToDetail} class="btn btn-xs btn-secondary px-3">Install</button>
+          {/if}
+        </div>
       </div>
-    </div>
-    <div class="w-full">
-      <p class="text-sm overflow-hidden line-clamp-2 max-w-[85%]">{displayDescription}</p>
-    </div>
-    <div class="card-actions justify-end mt-1">
-      {#if mode === "installed"}
-        <button on:click={goToDetail} class="btn btn-sm btn-primary">Edit</button>
-        <button on:click={handleComplete} class="btn btn-sm btn-primary">Delete</button>
-      {:else if installed}
-        <button on:click={goToDetail} class="btn btn-sm btn-primary">Installed</button>
-      {:else}
-        <button on:click={goToDetail} class="btn btn-sm btn-primary">Install</button>
-      {/if}
     </div>
   </div>
 </div>
