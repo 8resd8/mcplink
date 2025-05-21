@@ -172,7 +172,7 @@
         <div class="flex justify-end items-center gap-2">
           <!-- Star icon and count -->
           {#if stars > 0}
-            <div class="flex items-center gap-1">
+            <div class="flex items-center gap-1 tooltip tooltip-left" data-tip="{stars} stars">
               <Star class="text-yellow-400" size={16} />
               <span class="text-sm">{formatStars(stars)}</span>
             </div>
@@ -200,7 +200,7 @@
             <div class="flex gap-1">
               <button on:click|stopPropagation={goToDetail} class="btn btn-xs btn-secondary px-3">Edit</button>
               <button on:click|stopPropagation={handleComplete} class="btn btn-xs btn-natural btn-square">
-                <span class="tooltip" data-tip="Delete">
+                <span class="tooltip tooltip-top" data-tip="Delete">
                   <Trash2 size={16} class="text-error" />
                 </span>
               </button>
@@ -229,3 +229,10 @@ Would you like to delete?`}
   on:confirm={handleDeleteConfirm}
   on:cancel={() => showDeleteModal = false}
 />
+
+<style>
+  /* Remove bold from tooltips */
+  :global(.tooltip::before) {
+    font-weight: normal !important;
+  }
+</style>

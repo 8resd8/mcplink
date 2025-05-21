@@ -232,7 +232,7 @@
           </span>
         {/if}
         
-        <div class="flex items-center gap-1">
+        <div class="flex items-center gap-1 tooltip" data-tip="{stars} stars">
           <Star class="text-yellow-400 fill-yellow-400" size={22} />
           <span class="text-gray-600 font-medium">{stars > 0 ? formatStars(stars) : "0"}</span>
         </div>
@@ -319,7 +319,9 @@
                     }}
                   ></textarea>
                 {/if}
-                <span class="text-xs text-gray-500 mt-1">Comma-separated values</span>
+                <label class="label pt-0 mt-0">
+                  <span class="label-text-alt text-xs text-gray-500">Comma-separated values</span>
+                </label>
               </div>
             </div>
 
@@ -354,7 +356,9 @@
                       }
                     }}
                   ></textarea>
-                  <span class="text-xs text-gray-500 mt-1">Key:value pairs, separated by commas</span>
+                  <label class="label pt-0 mt-0">
+                    <span class="label-text-alt text-xs text-gray-500">Key:value pairs, separated by commas</span>
+                  </label>
                 </div>
               </div>
             {/if}
