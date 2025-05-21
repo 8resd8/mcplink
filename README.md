@@ -106,9 +106,15 @@
     <img src="images/icon/SvelteKit.png" width="120"/>
     <img src="images/icon/Tauri.png" width="120"/><br>
     <img src="images/icon/Rust.png" width="120"/>
-    <img src="images/icon/NodeJS.png" width="120"/>
 
   </div>
+  <div>
+    <h3>MCP Server</h3>
+    <img src="images/icon/NodeJS.png" width="120"/>
+    <img src="images/icon/TypeScript.png" width="120"/>
+
+  </div>  
+
   <div>
     <h3>Web Frontend</h3>
     <img src="images/icon/HTMLCSS.png" width="120"/>
