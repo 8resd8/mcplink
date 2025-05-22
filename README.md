@@ -59,24 +59,23 @@
 <details>
   <summary>&nbsp;&nbsp;웹 사이트 화면</summary>
 
-|                   **소개 페이지**                    |                  **데크스탑 애플리케이션 다운로드**                   |
-|:-----------------------------------------------:|:-------------------------------------------------------:|
-| ![소개](images/screens/introduction_tutorial.png) |         ![애플리케이션](images/screens/download.png)          |
-|                     **FAQ**                     |                      **게시판 글 목록**                       |
-|         ![FAQ](images/screens/FAQ.png)          | ![MCP Server 상세페이지](images/screens/communityboard.png)  |
-|                 **MCP Server**                  |                  **MCP Server 상세페이지**                   |
-| ![MCP Server](images/screens/mcpserverlist.png) | ![MCP Server 상세페이지](images/screens/mcpserverdetail.png) |
+|                     **소개 페이지**                      |                    **데크스탑 애플리케이션 다운로드**                     |
+|:---------------------------------------------------:|:-----------------------------------------------------------:|
+| ![소개](images/screens/web/introduction_tutorial.png) |         ![애플리케이션](images/screens/web/download.png)          |
+|                       **FAQ**                       |                        **게시판 글 목록**                         |
+|         ![FAQ](images/screens/web/FAQ.png)          | ![MCP Server 상세페이지](images/screens/web/communityboard.png)  |
+|                   **MCP Server**                    |                    **MCP Server 상세페이지**                     |
+| ![MCP Server](images/screens/web/mcpserverlist.png) | ![MCP Server 상세페이지](images/screens/web/mcpserverdetail.png) |
 
 </details>
 <details>
 <summary>&nbsp;&nbsp;데스크탑 애플리케이션 화면</summary>
 
-|            **로그인**             |        **회원 가입 (이메일 인증)**        |
-|:------------------------------:|:--------------------------------:|
-| ![로그인 화면](images/screen/1.png) | ![회원 가입 화면](images/screen/2.png) |
-|            **프롤로그**            |            **캐릭터 선택**            |
-|  ![프롤로그](images/screen/3.png)  |  ![캐릭터 선택](images/screen/4.png)  |
-|           **메인 화면**            |            **마을 화면**             |
+|                **MCP Server 목록**                |                  **MCP Server 검색**                  |
+|:-----------------------------------------------:|:---------------------------------------------------:|
+|    ![서버목록](images/screens/desktop/list.png)     |     ![서버검색](images/screens/desktop/search.png)      |
+|                **설치한 Server 목록**                |                     **설정 초기화**                      |
+| ![설치서버목록](images/screens/desktop/installed.png) | ![설정초기화](images/screens/desktop/settings-reset.png) |
 
 </details>
 
