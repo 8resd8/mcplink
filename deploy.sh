@@ -31,8 +31,11 @@ if [ "$(docker ps -q -f name=^/backend)" ]; then
 fi
 
 echo "Remove Container"
-if ("$(docker ps -aq -f name=^/backend$)");then
+EXISTING_CONTAINER_ID=$(docker ps -aq -f name=^/${BACKEND_CONTAINER_NAME}$)
+if [ -n "${EXISTING_CONTAINER_ID}" ]; then
   docker compose rm -f ${BACKEND_CONTAINER_NAME}
+else
+  echo "${BACKEND_CONTAINER_NAME} 이름의 컨테이너를 찾을 수 없어 삭제하지 않습니다."
 fi
 
 echo "New Container Start ${IMAGE_TO_DEPLOY}"
