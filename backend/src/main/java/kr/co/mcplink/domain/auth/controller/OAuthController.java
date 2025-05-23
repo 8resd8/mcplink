@@ -49,7 +49,7 @@ public class OAuthController {
 		@RequestParam("code") String code, HttpServletResponse response) throws IOException {
 
 		SocialProvider socialProvider = SocialProvider.valueOf(provider.toUpperCase());
-		LoginResponse loginResponse = oAuthService.processOAuth2Login(code, socialProvider);
+		LoginResponse loginResponse = oAuthService.processOAuthLogin(code, socialProvider);
 
 		ResponseCookie accessTokenCookie = ResponseCookie.from(ACCESS_TOKEN_NAME, loginResponse.accessToken())
 			.maxAge(TimeUnit.MILLISECONDS.toSeconds(loginResponse.accessExpiredAt()))
