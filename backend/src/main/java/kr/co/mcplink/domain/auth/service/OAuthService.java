@@ -21,9 +21,7 @@ import kr.co.mcplink.global.config.JwtProperties;
 import kr.co.mcplink.global.exception.ProviderNotFountException;
 import kr.co.mcplink.global.util.JwtUtil;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 
-@Slf4j
 @Service
 @Transactional
 @RequiredArgsConstructor
@@ -35,7 +33,7 @@ public class OAuthService {
 	private final JwtUtil jwtUtil;
 	private final JwtProperties jwtProperties;
 
-	public LoginResponse processOAuth2Login(String code, SocialProvider provider) {
+	public LoginResponse processOAuthLogin(String code, SocialProvider provider) {
 		OAuthUserInfo userInfo = switch (provider) {
 			case SSAFY -> oauthSsafyService.getUserInfo(code);
 			// case GOOGLE -> googleOAuth2Service.getUserInfo(code);
@@ -90,7 +88,7 @@ public class OAuthService {
 		addSocialAccount(savedUser, provider, userInfo);
 		savedUser.updateLastLoginAt();
 
-		return savedUser;
+		return userRepository.save(savedUser);
 	}
 
 	private void addSocialAccount(User user, SocialProvider provider, OAuthUserInfo userInfo) {
