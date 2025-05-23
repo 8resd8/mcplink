@@ -1,2 +1,0 @@
-const API_BASE_URL = 'https://mcplink.co.kr/api';
-const WINDOWS_DOWNLOAD_URL = 'https://ssafyapp-stg-project-prv-data.s3.amazonaws.com/4nrfou/mcplink_0.1.0_x64-setup.exe?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIAW7FB3555JNHECWCW%2F20250519%2Fap-northeast-2%2Fs3%2Faws4_request&X-Amz-Date=20250519T085124Z&X-Amz-Expires=604000&X-Amz-SignedHeaders=host&X-Amz-Signature=68f01a1c3e296af739f794ac9646888bd4f24498ce01c6ba4361cd5e7a82848b';
