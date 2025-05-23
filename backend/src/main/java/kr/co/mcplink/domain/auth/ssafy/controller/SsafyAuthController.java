@@ -20,8 +20,8 @@ import kr.co.mcplink.domain.auth.ssafy.service.SsafyAuthService;
 import kr.co.mcplink.global.common.ApiResponse;
 import lombok.RequiredArgsConstructor;
 
-@RestController
-@RequestMapping("/v1/auth")
+// @RestController
+// @RequestMapping("/v1/auth")
 @RequiredArgsConstructor
 public class SsafyAuthController {
 
