@@ -10,7 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import jakarta.servlet.http.HttpServletResponse;
-import kr.co.mcplink.domain.auth.ssafy.dto.LoginResponse;
+import kr.co.mcplink.domain.auth.dto.LoginResponse;
 import kr.co.mcplink.domain.user.dto.OAuthUserInfo;
 import kr.co.mcplink.domain.user.entity.User;
 import kr.co.mcplink.domain.user.entity.UserSocialAccount;

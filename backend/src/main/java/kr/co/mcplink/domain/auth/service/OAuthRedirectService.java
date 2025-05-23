@@ -1,10 +1,10 @@
-package kr.co.mcplink.domain.auth.ssafy.service;
+package kr.co.mcplink.domain.auth.service;
 
 import java.io.IOException;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import kr.co.mcplink.domain.auth.ssafy.dto.LoginResponse;
+import kr.co.mcplink.domain.auth.dto.LoginResponse;
 import kr.co.mcplink.global.common.SocialProvider;
 
 public interface OAuthRedirectService {

@@ -1,4 +1,4 @@
-package kr.co.mcplink.domain.auth.ssafy.dto;
+package kr.co.mcplink.domain.auth.dto;
 
 import kr.co.mcplink.domain.user.dto.OAuthUserInfo;
 

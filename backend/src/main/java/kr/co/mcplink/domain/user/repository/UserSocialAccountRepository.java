@@ -10,4 +10,6 @@ import kr.co.mcplink.global.common.SocialProvider;
 public interface UserSocialAccountRepository extends JpaRepository<UserSocialAccount, Long> {
 
 	Optional<UserSocialAccount> findByProviderAndProviderId(SocialProvider provider, String providerId);
+
+	Optional<UserSocialAccount> findByUserId(Long userId);
 }

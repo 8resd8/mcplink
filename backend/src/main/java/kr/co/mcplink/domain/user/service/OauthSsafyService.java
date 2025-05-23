@@ -10,14 +10,17 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
-import kr.co.mcplink.domain.auth.ssafy.dto.OAuthSsafyUserInfo;
-import kr.co.mcplink.domain.auth.ssafy.dto.SsafyTokenDto;
-import kr.co.mcplink.domain.auth.ssafy.dto.SsafyUserInfoDto;
+import kr.co.mcplink.domain.auth.dto.OAuthSsafyUserInfo;
+import kr.co.mcplink.domain.auth.dto.SsafyTokenDto;
+import kr.co.mcplink.domain.auth.dto.SsafyUserInfoDto;
 import kr.co.mcplink.domain.user.dto.OAuthUserInfo;
 import kr.co.mcplink.domain.user.entity.User;
+import kr.co.mcplink.domain.user.entity.UserSocialAccount;
 import kr.co.mcplink.domain.user.repository.UserRepository;
+import kr.co.mcplink.domain.user.repository.UserSocialAccountRepository;
 import kr.co.mcplink.global.config.SsafyOauthProperties;
 import kr.co.mcplink.global.exception.JwtForbiddenException;
+import kr.co.mcplink.global.exception.UserNotFoundException;
 import kr.co.mcplink.global.util.JwtUtil;
 import lombok.RequiredArgsConstructor;
 
@@ -26,6 +29,7 @@ import lombok.RequiredArgsConstructor;
 public class OauthSsafyService {
 
 	private final UserRepository userRepository;
+	private final UserSocialAccountRepository socialAccountRepository;
 	private final RestTemplate restTemplate;
 	private final SsafyOauthProperties ssafyProperties;
 	private final JwtUtil jwtUtil;
@@ -44,7 +48,10 @@ public class OauthSsafyService {
 		User user = userRepository.findById(userId)
 			.orElseThrow(() -> new JwtForbiddenException("SSAFY 사용자 정보를 조회하는데 실패했습니다."));
 
-		return new SsafyUserInfoDto(user.getSsafyUserId(), user.getEmail(), user.getName());
+		UserSocialAccount userSocialAccount = socialAccountRepository.findByUserId(user.getId())
+			.orElseThrow(() -> new UserNotFoundException("SSAFY 사용자 정보를 조회하는데 실패했습니다."));
+
+		return new SsafyUserInfoDto(userSocialAccount.getProviderId(), user.getEmail(), user.getName());
 	}
 
 	private SsafyUserInfoDto validateToken(SsafyTokenDto ssafyTokenDto) {

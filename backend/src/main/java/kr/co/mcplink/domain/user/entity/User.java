@@ -39,9 +39,6 @@ public class User extends BaseTimeEntity {
 	@Column(name = "email", unique = true, nullable = false)
 	private String email;
 
-	@Column(name = "ssafy_user_id", unique = true)
-	private String ssafyUserId;
-
 	@Column(name = "nickname")
 	private String nickname;
 
@@ -56,17 +53,11 @@ public class User extends BaseTimeEntity {
 	private List<UserSocialAccount> socialAccounts = new ArrayList<>();
 
 	@Builder
-	private User(String name, String email, String nickname, String ssafyUserId, UserRole role) {
+	private User(String name, String email, String nickname, UserRole role) {
 		this.name = name;
 		this.email = email;
 		this.nickname = nickname;
-		this.ssafyUserId = ssafyUserId;
 		this.role = role;
-	}
-
-	public void updateSsafyUser(String name, String ssafyUserId) {
-		this.name = name;
-		this.ssafyUserId = ssafyUserId;
 	}
 
 	public void updateLastLoginAt() {
@@ -78,16 +69,6 @@ public class User extends BaseTimeEntity {
 			.name(name)
 			.email(email)
 			.nickname(nickname == null ? name : nickname)
-			.role(UserRole.USER)
-			.build();
-	}
-
-	public static User createSsafyUser(String name, String email, String ssafyUserId) {
-		return User.builder()
-			.name(name)
-			.email(email)
-			.nickname(name)
-			.ssafyUserId(ssafyUserId)
 			.role(UserRole.USER)
 			.build();
 	}

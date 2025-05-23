@@ -7,7 +7,7 @@ import java.util.Map;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import kr.co.mcplink.domain.auth.ssafy.service.OAuthRedirectService;
+import kr.co.mcplink.domain.auth.service.OAuthRedirectService;
 import kr.co.mcplink.global.common.SocialProvider;
 
 @Configuration

@@ -1,4 +1,4 @@
-package kr.co.mcplink.domain.auth.ssafy.controller;
+package kr.co.mcplink.domain.auth.controller;
 
 import static kr.co.mcplink.global.common.Constants.*;
 
@@ -10,13 +10,11 @@ import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
 
 import jakarta.servlet.http.HttpServletResponse;
-import kr.co.mcplink.domain.auth.ssafy.dto.LoginResponse;
-import kr.co.mcplink.domain.auth.ssafy.service.SsafyAuthService;
+import kr.co.mcplink.domain.auth.dto.LoginResponse;
+import kr.co.mcplink.domain.auth.service.SsafyAuthService;
 import kr.co.mcplink.global.common.ApiResponse;
 import lombok.RequiredArgsConstructor;
 

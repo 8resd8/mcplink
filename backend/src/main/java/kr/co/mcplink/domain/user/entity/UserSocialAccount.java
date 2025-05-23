@@ -56,13 +56,4 @@ public class UserSocialAccount extends BaseTimeEntity {
 		this.providerEmail = providerEmail;
 	}
 
-	public static UserSocialAccount createUserSocialAccount(User user, SocialProvider provider, String providerId,
-		String providerEmail) {
-		return UserSocialAccount.builder()
-			.user(user)
-			.provider(provider)
-			.providerId(providerId)
-			.providerEmail(providerEmail)
-			.build();
-	}
 }

@@ -1,4 +1,4 @@
-package kr.co.mcplink.domain.auth.ssafy.service;
+package kr.co.mcplink.domain.auth.service;
 
 import static kr.co.mcplink.global.common.Constants.*;
 
@@ -19,9 +19,9 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import jakarta.servlet.http.HttpServletResponse;
-import kr.co.mcplink.domain.auth.ssafy.dto.LoginResponse;
-import kr.co.mcplink.domain.auth.ssafy.dto.SsafyTokenDto;
-import kr.co.mcplink.domain.auth.ssafy.dto.SsafyUserInfoDto;
+import kr.co.mcplink.domain.auth.dto.LoginResponse;
+import kr.co.mcplink.domain.auth.dto.SsafyTokenDto;
+import kr.co.mcplink.domain.auth.dto.SsafyUserInfoDto;
 import kr.co.mcplink.domain.user.entity.User;
 import kr.co.mcplink.domain.user.repository.UserRepository;
 import kr.co.mcplink.global.config.JwtProperties;
@@ -127,18 +127,18 @@ public class SsafyAuthService {
 		Optional<User> optionalUser = userRepository.findByEmail(ssafyUserInfo.email());
 
 		User user;
-		if (optionalUser.isPresent()) {
-			user = optionalUser.get();
-			user.updateSsafyUser(ssafyUserInfo.name(), ssafyUserInfo.ssafyUserId());
-		} else {
-			user = User.createSsafyUser(
-				ssafyUserInfo.name(),
-				ssafyUserInfo.email(),
-				ssafyUserInfo.ssafyUserId()
-			);
-		}
-		user.updateLastLoginAt();
+		// if (optionalUser.isPresent()) {
+		// 	user = optionalUser.get();
+		// 	user.updateSsafyUser(ssafyUserInfo.name(), ssafyUserInfo.ssafyUserId());
+		// } else {
+		// 	user = User.createSsafyUser(
+		// 		ssafyUserInfo.name(),
+		// 		ssafyUserInfo.email(),
+		// 		ssafyUserInfo.ssafyUserId()
+		// 	);
+		// }
+		// user.updateLastLoginAt();
 
-		return userRepository.save(user);
+		return null;
 	}
 }
