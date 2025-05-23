@@ -15,6 +15,7 @@ import kr.co.mcplink.global.common.ErrorResponse;
 import kr.co.mcplink.global.exception.CommentNotFoundException;
 import kr.co.mcplink.global.exception.JwtForbiddenException;
 import kr.co.mcplink.global.exception.PostNotFoundException;
+import kr.co.mcplink.global.exception.ProviderNotFountException;
 import kr.co.mcplink.global.exception.UserNotFoundException;
 
 @RestControllerAdvice
@@ -80,6 +81,12 @@ public class GlobalExceptionHandler {
 	public ResponseEntity<ErrorResponse> handleHttpClientException(HttpClientErrorException ex,
 		HttpServletRequest request) {
 		return ErrorResponse.toResponseEntity(HttpStatus.UNAUTHORIZED, "SSAFY 통신 에러", request.getRequestURI());
+	}
+
+	@ExceptionHandler
+	public ResponseEntity<ErrorResponse> handleHttpClientException(ProviderNotFountException ex,
+		HttpServletRequest request) {
+		return ErrorResponse.toResponseEntity(HttpStatus.NOT_FOUND, "존재하지 않는 로그인 제공입니다.", request.getRequestURI());
 	}
 
 	
