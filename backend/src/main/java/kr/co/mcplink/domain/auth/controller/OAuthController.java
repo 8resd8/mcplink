@@ -19,7 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
 import jakarta.servlet.http.HttpServletResponse;
 import kr.co.mcplink.domain.auth.dto.LoginResponse;
 import kr.co.mcplink.domain.auth.service.OAuthRedirectService;
-import kr.co.mcplink.domain.user.service.OAuthService;
+import kr.co.mcplink.domain.auth.service.OAuthService;
 import kr.co.mcplink.global.common.ApiResponse;
 import kr.co.mcplink.global.common.SocialProvider;
 import lombok.RequiredArgsConstructor;

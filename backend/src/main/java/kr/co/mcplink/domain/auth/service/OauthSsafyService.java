@@ -1,4 +1,4 @@
-package kr.co.mcplink.domain.user.service;
+package kr.co.mcplink.domain.auth.service;
 
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;

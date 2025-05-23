@@ -1,4 +1,4 @@
-package kr.co.mcplink.domain.user.service;
+package kr.co.mcplink.domain.auth.service;
 
 import static kr.co.mcplink.global.common.Constants.*;
 
