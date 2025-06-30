@@ -26,21 +26,4 @@ public class OAuthSsafyServiceImpl implements OAuthRedirectService {
 			.queryParam("redirect_uri", ssafyProperties.redirectUri())
 			.queryParam("scope", ssafyProperties.scope().replace(",", " ")).toUriString();
 	}
-
-	@Override
-	public void handleLoginSuccess(HttpServletRequest request, HttpServletResponse response,
-		LoginResponse loginResponse, String targetUrlParam) throws IOException {
-
-	}
-
-	@Override
-	public void handleLoginFailure(HttpServletRequest request, HttpServletResponse response, Exception exception,
-		String targetUrlParam) throws IOException {
-
-	}
-
-	@Override
-	public SocialProvider getProvider() {
-		return SocialProvider.SSAFY;
-	}
 }
