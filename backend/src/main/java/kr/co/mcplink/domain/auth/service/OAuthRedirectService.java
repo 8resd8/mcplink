@@ -14,4 +14,6 @@ public interface OAuthRedirectService {
 	 * @return 인증 페이지 URL
 	 */
 	String getRedirectUrl();
+
+	SocialProvider getProvider();
 }

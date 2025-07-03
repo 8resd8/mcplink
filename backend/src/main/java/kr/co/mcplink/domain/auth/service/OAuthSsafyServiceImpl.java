@@ -26,4 +26,9 @@ public class OAuthSsafyServiceImpl implements OAuthRedirectService {
 			.queryParam("redirect_uri", ssafyProperties.redirectUri())
 			.queryParam("scope", ssafyProperties.scope().replace(",", " ")).toUriString();
 	}
+
+	@Override
+	public SocialProvider getProvider() {
+		return SocialProvider.SSAFY;
+	}
 }
