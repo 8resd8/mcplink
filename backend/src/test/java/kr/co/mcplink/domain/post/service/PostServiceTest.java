@@ -37,9 +37,6 @@ class PostServiceTest {
 	@Autowired
 	private UserRepository userRepository;
 
-	@Autowired
-	private EntityManager em;
-
 	private User fixedUser;
 	private Post post;
 
